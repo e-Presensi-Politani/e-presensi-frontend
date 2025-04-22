@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Container,
@@ -10,11 +10,94 @@ import {
   Paper,
   useMediaQuery,
   Theme,
+  Alert,
 } from "@mui/material";
 import { AccountCircle, Lock } from "@mui/icons-material";
+import { AuthService } from "../services/AuthService";
+import axios from "axios";
+
+// Define types for login
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user: {
+    guid: string;
+    fullName: string;
+    email: string;
+    role: string;
+    profileImage?: string;
+  };
+}
 
 const LoginPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
+
+  // State for form inputs
+  const [credentials, setCredentials] = useState<LoginCredentials>({
+    email: "",
+    password: "",
+  });
+
+  // State for error handling
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // Handle input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCredentials((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Call AuthService to handle login
+      const response = await AuthService.login(
+        credentials.email,
+        credentials.password
+      );
+
+      // Store tokens in localStorage
+      localStorage.setItem("access_token", response.access_token);
+      localStorage.setItem("refresh_token", response.refresh_token);
+
+      // Store user data
+      localStorage.setItem("user", JSON.stringify(response.user));
+
+      // Redirect to dashboard or home page
+      window.location.href = "/dashboard"; // Change this to your app's post-login route
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response) {
+        setError(
+          err.response.data.message ||
+            "Login failed. Please check your credentials."
+        );
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
+      console.error("Login error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  // Handle password reset
+  const handleForgotPassword = () => {
+    // Implement password reset logic or navigation
+    console.log("Forgot password clicked");
+  };
 
   return (
     <Box
@@ -28,8 +111,8 @@ const LoginPage: React.FC = () => {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        overflow: "hidden", // Prevents scrollbars if content exactly matches viewport
-        position: "fixed", // Forces the box to cover the entire viewport
+        overflow: "hidden",
+        position: "fixed",
         top: 0,
         left: 0,
         right: 0,
@@ -102,17 +185,27 @@ const LoginPage: React.FC = () => {
         >
           <Box
             component="form"
+            onSubmit={handleSubmit}
             sx={{
               display: "flex",
               flexDirection: "column",
               gap: 2,
             }}
           >
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
             {/* Email input */}
             <TextField
               fullWidth
+              name="email"
               placeholder="Email"
               variant="outlined"
+              value={credentials.email}
+              onChange={handleChange}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -132,9 +225,12 @@ const LoginPage: React.FC = () => {
             {/* Password input */}
             <TextField
               fullWidth
+              name="password"
               placeholder="Password"
               type="password"
               variant="outlined"
+              value={credentials.password}
+              onChange={handleChange}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -160,6 +256,7 @@ const LoginPage: React.FC = () => {
                 cursor: "pointer",
                 mb: 2,
               }}
+              onClick={handleForgotPassword}
             >
               Forget Password?
             </Typography>
@@ -169,6 +266,8 @@ const LoginPage: React.FC = () => {
               fullWidth
               variant="contained"
               size="large"
+              type="submit"
+              disabled={loading}
               sx={{
                 mt: 2,
                 mb: 2,
@@ -182,7 +281,7 @@ const LoginPage: React.FC = () => {
                 },
               }}
             >
-              Login
+              {loading ? "Logging in..." : "Login"}
             </Button>
           </Box>
         </Container>
