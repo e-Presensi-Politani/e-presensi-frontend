@@ -27,6 +27,7 @@ import {
 import { MapContainer, TileLayer, Circle, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import BottomNav from "../components/BottomNav";
 
 // Fix Leaflet icon issue in React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -39,9 +40,10 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
+// ... imports tetap
+
 const PresensiPage: React.FC = () => {
   const navigate = useNavigate();
-  const [navValue, setNavValue] = useState(0);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
   );
@@ -55,12 +57,12 @@ const PresensiPage: React.FC = () => {
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Office location - example coordinates
-  const officeLocation: [number, number] = [-0.1693371254374395, 100.66447587819418]; // Example coordinates for Politeknik Pertanian
-  const maxRadius = 450; // Maximum radius in meters for attendance
+  const officeLocation: [number, number] = [
+    -0.1693371254374395, 100.66447587819418,
+  ];
+  const maxRadius = 450;
 
   useEffect(() => {
-    // Get user's current location
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setUserLocation([position.coords.latitude, position.coords.longitude]);
@@ -74,15 +76,12 @@ const PresensiPage: React.FC = () => {
       }
     );
 
-    // Mengakses kamera perangkat
     const getCameraStream = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
         });
         setVideoStream(stream);
-
-        // Menetapkan stream ke videoRef
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -97,7 +96,6 @@ const PresensiPage: React.FC = () => {
 
     getCameraStream();
 
-    // Clean up video stream on unmount
     return () => {
       if (videoStream) {
         videoStream.getTracks().forEach((track) => track.stop());
@@ -115,32 +113,11 @@ const PresensiPage: React.FC = () => {
     navigate("/dashboard");
   };
 
-  const handleNavChange = (event: React.SyntheticEvent, newValue: number) => {
-    setNavValue(newValue);
-    switch (newValue) {
-      case 0:
-        navigate("/dashboard");
-        break;
-      case 1:
-        navigate("/cuti");
-        break;
-      case 2:
-        navigate("/report");
-        break;
-      case 3:
-        navigate("/profile");
-        break;
-      default:
-        break;
-    }
-  };
-
-  // Simple distance calculation (haversine formula)
   const calculateDistance = (
     point1: [number, number],
     point2: [number, number]
   ): number => {
-    const R = 6371e3; // Earth's radius in meters
+    const R = 6371e3;
     const φ1 = (point1[0] * Math.PI) / 180;
     const φ2 = (point2[0] * Math.PI) / 180;
     const Δφ = ((point2[0] - point1[0]) * Math.PI) / 180;
@@ -150,8 +127,7 @@ const PresensiPage: React.FC = () => {
       Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
       Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // Distance in meters
+    return R * c;
   };
 
   const handleCameraCapture = () => {
@@ -171,7 +147,6 @@ const PresensiPage: React.FC = () => {
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
     context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
     const imageURL = canvas.toDataURL("image/jpeg");
     setCapturedImage(imageURL);
   };
@@ -186,7 +161,6 @@ const PresensiPage: React.FC = () => {
         bgcolor: "#f5f5f5",
       }}
     >
-      {/* App Bar */}
       <AppBar position="static" sx={{ bgcolor: "#0073e6" }}>
         <Toolbar>
           <IconButton
@@ -207,7 +181,6 @@ const PresensiPage: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Main Content */}
       <Container
         sx={{
           flex: 1,
@@ -217,7 +190,6 @@ const PresensiPage: React.FC = () => {
           overflow: "auto",
         }}
       >
-        {/* User Profile Section */}
         <Paper
           elevation={2}
           sx={{
@@ -225,10 +197,10 @@ const PresensiPage: React.FC = () => {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            p: 0, // remove padding so child can truly fill
+            p: 0,
             mb: 2,
             borderRadius: 2,
-            overflow: "hidden", // prevent overflow from rounded corners
+            overflow: "hidden",
           }}
         >
           {capturedImage ? (
@@ -261,7 +233,6 @@ const PresensiPage: React.FC = () => {
           )}
         </Paper>
 
-        {/* Map Section */}
         <Paper
           elevation={2}
           sx={{
@@ -283,8 +254,6 @@ const PresensiPage: React.FC = () => {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-
-              {/* Office location with radius */}
               <Circle
                 center={officeLocation}
                 radius={maxRadius}
@@ -294,8 +263,6 @@ const PresensiPage: React.FC = () => {
                   color: "#0066cc",
                 }}
               />
-
-              {/* User location */}
               <Marker position={userLocation}>
                 <Popup>Your Location</Popup>
               </Marker>
@@ -318,6 +285,7 @@ const PresensiPage: React.FC = () => {
             </Box>
           )}
         </Paper>
+
         <Button
           variant="contained"
           startIcon={<CameraAlt />}
@@ -337,21 +305,10 @@ const PresensiPage: React.FC = () => {
         </Button>
       </Container>
 
-      {/* Bottom Navigation */}
-      <Paper sx={{ width: "100%" }} elevation={3}>
-        <BottomNavigation
-          value={navValue}
-          onChange={handleNavChange}
-          showLabels
-        >
-          <BottomNavigationAction label="Home" icon={<Home />} />
-          <BottomNavigationAction label="Cuti" icon={<CalendarToday />} />
-          <BottomNavigationAction label="Report" icon={<Description />} />
-          <BottomNavigationAction label="Profil" icon={<Person />} />
-        </BottomNavigation>
-      </Paper>
+      {/* Replaced default BottomNavigation with custom BottomNav */}
+      <BottomNav />
 
-      {/* Notification */}
+      {/* Snackbar for notifications */}
       <Snackbar
         open={showAlert}
         autoHideDuration={4000}

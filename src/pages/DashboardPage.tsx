@@ -64,7 +64,19 @@ const DashboardPage: React.FC = () => {
 
   const handlePresensiClick = () => {
     navigate("/presensi");
-  }
+  };
+
+  const handleHistoryClick = () => {
+    navigate("/history");
+  };
+
+  const handleCutiClick = () => {
+    navigate("/under-development");
+  };
+
+  const handleProfileClick = () => {
+    navigate("/under-development");
+  };
 
   return (
     <Box
@@ -101,12 +113,8 @@ const DashboardPage: React.FC = () => {
               <Typography variant="h5" fontWeight="bold">
                 {userData?.fullName}
               </Typography>
-              <Typography variant="body1">
-                {userData?.role}
-              </Typography>
-              <Typography variant="body2">
-                {userData?.guid}
-              </Typography>
+              <Typography variant="body1">{userData?.role}</Typography>
+              <Typography variant="body2">{userData?.guid}</Typography>
             </Box>
           </Box>
 
@@ -278,11 +286,11 @@ const DashboardPage: React.FC = () => {
         <IconButton color="primary">
           <Home />
         </IconButton>
-        <IconButton>
+        <IconButton onClick={handleCutiClick}>
           <CalendarToday />
         </IconButton>
         <IconButton
-          onClick={handlePresensiClick}        
+          onClick={handlePresensiClick}
           sx={{
             backgroundColor: "#0073e6",
             color: "white",
@@ -296,10 +304,10 @@ const DashboardPage: React.FC = () => {
         >
           <Fingerprint />
         </IconButton>
-        <IconButton>
+        <IconButton onClick={handleHistoryClick}>
           <Description />
         </IconButton>
-        <IconButton>
+        <IconButton onClick={handleProfileClick}>
           <Person />
         </IconButton>
       </Paper>
