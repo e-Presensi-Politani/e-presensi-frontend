@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   AppBar,
@@ -14,41 +14,50 @@ import {
   BottomNavigationAction,
   CircularProgress,
   Snackbar,
-  Alert
-} from '@mui/material';
+  Alert,
+} from "@mui/material";
 import {
   ArrowBack,
   CameraAlt,
   Home,
   CalendarToday,
   Description,
-  Person
-} from '@mui/icons-material';
-import { MapContainer, TileLayer, Circle, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+  Person,
+} from "@mui/icons-material";
+import { MapContainer, TileLayer, Circle, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
 // Fix Leaflet icon issue in React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
 const PresensiPage: React.FC = () => {
   const navigate = useNavigate();
   const [navValue, setNavValue] = useState(0);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(
+    null
+  );
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState('');
-  const [alertSeverity, setAlertSeverity] = useState<'success' | 'error'>('success');
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertSeverity, setAlertSeverity] = useState<"success" | "error">(
+    "success"
+  );
+  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Office location - example coordinates
-  const officeLocation: [number, number] = [-6.594, 106.784]; // Example coordinates for Politeknik Pertanian
-  const maxRadius = 200; // Maximum radius in meters for attendance
+  const officeLocation: [number, number] = [-0.1693371254374395, 100.66447587819418]; // Example coordinates for Politeknik Pertanian
+  const maxRadius = 450; // Maximum radius in meters for attendance
 
   useEffect(() => {
     // Get user's current location
@@ -58,46 +67,68 @@ const PresensiPage: React.FC = () => {
       },
       (error) => {
         console.error("Error getting location:", error);
-        showNotification('Error accessing your location. Please enable location services.', 'error');
+        showNotification(
+          "Error accessing your location. Please enable location services.",
+          "error"
+        );
       }
     );
+
+    // Mengakses kamera perangkat
+    const getCameraStream = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
+        setVideoStream(stream);
+
+        // Menetapkan stream ke videoRef
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error("Error accessing the camera:", error);
+        showNotification(
+          "Unable to access camera. Please check permissions.",
+          "error"
+        );
+      }
+    };
+
+    getCameraStream();
+
+    // Clean up video stream on unmount
+    return () => {
+      if (videoStream) {
+        videoStream.getTracks().forEach((track) => track.stop());
+      }
+    };
   }, []);
 
-  const showNotification = (message: string, severity: 'success' | 'error') => {
+  const showNotification = (message: string, severity: "success" | "error") => {
     setAlertMessage(message);
     setAlertSeverity(severity);
     setShowAlert(true);
   };
 
-  const handleCameraCapture = () => {
-    // In a real app, this would access the device camera
-    // For this example, we'll simulate a camera capture with a placeholder
-    setLoading(true);
-    setTimeout(() => {
-      setCapturedImage('/api/placeholder/150/150');
-      setLoading(false);
-      showNotification('Photo captured successfully', 'success');
-    }, 1500);
-  };
-
   const handleBackClick = () => {
-    navigate('/dashboard');
+    navigate("/dashboard");
   };
 
   const handleNavChange = (event: React.SyntheticEvent, newValue: number) => {
     setNavValue(newValue);
     switch (newValue) {
       case 0:
-        navigate('/dashboard');
+        navigate("/dashboard");
         break;
       case 1:
-        navigate('/cuti');
+        navigate("/cuti");
         break;
       case 2:
-        navigate('/report');
+        navigate("/report");
         break;
       case 3:
-        navigate('/profile');
+        navigate("/profile");
         break;
       default:
         break;
@@ -105,149 +136,179 @@ const PresensiPage: React.FC = () => {
   };
 
   // Simple distance calculation (haversine formula)
-  const calculateDistance = (point1: [number, number], point2: [number, number]): number => {
+  const calculateDistance = (
+    point1: [number, number],
+    point2: [number, number]
+  ): number => {
     const R = 6371e3; // Earth's radius in meters
-    const φ1 = point1[0] * Math.PI / 180;
-    const φ2 = point2[0] * Math.PI / 180;
-    const Δφ = (point2[0] - point1[0]) * Math.PI / 180;
-    const Δλ = (point2[1] - point1[1]) * Math.PI / 180;
+    const φ1 = (point1[0] * Math.PI) / 180;
+    const φ2 = (point2[0] * Math.PI) / 180;
+    const Δφ = ((point2[0] - point1[0]) * Math.PI) / 180;
+    const Δλ = ((point2[1] - point1[1]) * Math.PI) / 180;
 
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c; // Distance in meters
   };
 
+  const handleCameraCapture = () => {
+    if (!videoStream || !videoRef.current) {
+      showNotification("No camera stream available.", "error");
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) {
+      showNotification("Failed to capture image.", "error");
+      return;
+    }
+
+    const videoElement = videoRef.current;
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+    const imageURL = canvas.toDataURL("image/jpeg");
+    setCapturedImage(imageURL);
+  };
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', bgcolor: '#f5f5f5' }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        width: "100vw",
+        bgcolor: "#f5f5f5",
+      }}
+    >
       {/* App Bar */}
-      <AppBar position="static" sx={{ bgcolor: '#0073e6' }}>
+      <AppBar position="static" sx={{ bgcolor: "#0073e6" }}>
         <Toolbar>
-          <IconButton 
-            edge="start" 
-            color="inherit" 
+          <IconButton
+            edge="start"
+            color="inherit"
             aria-label="back"
             onClick={handleBackClick}
           >
             <ArrowBack />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, textAlign: 'center' }}>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{ flexGrow: 1, textAlign: "center" }}
+          >
             Presensi
           </Typography>
         </Toolbar>
       </AppBar>
 
       {/* Main Content */}
-      <Container sx={{ flex: 1, display: 'flex', flexDirection: 'column', my: 2, overflow: 'auto' }}>
+      <Container
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          my: 2,
+          overflow: "auto",
+        }}
+      >
         {/* User Profile Section */}
-        <Paper 
-          elevation={2} 
-          sx={{ 
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            p: 3,
+        <Paper
+          elevation={2}
+          sx={{
+            height: "30vh",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            p: 0, // remove padding so child can truly fill
             mb: 2,
-            borderRadius: 2
+            borderRadius: 2,
+            overflow: "hidden", // prevent overflow from rounded corners
           }}
         >
-          <Box sx={{ position: 'relative', mb: 2 }}>
-            <Avatar
-              src={capturedImage || undefined}
-              sx={{ 
-                width: 100, 
-                height: 100,
-                border: '3px solid #fff',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-              }}
-            />
-            {loading && (
-              <CircularProgress
-                size={110}
-                thickness={2}
-                sx={{
-                  position: 'absolute',
-                  top: -5,
-                  left: -5,
-                  zIndex: 1,
-                  color: '#0073e6'
+          {capturedImage ? (
+            <Box sx={{ width: "100%", height: "100%" }}>
+              <img
+                src={capturedImage}
+                alt="Captured"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
                 }}
               />
-            )}
-          </Box>
-
-          <Button
-            variant="contained"
-            startIcon={<CameraAlt />}
-            onClick={handleCameraCapture}
-            disabled={loading}
-            sx={{
-              bgcolor: '#0073e6',
-              borderRadius: 6,
-              px: 3,
-              py: 1,
-              textTransform: 'none',
-              mb: 2,
-              '&:hover': {
-                bgcolor: '#0066cc'
-              }
-            }}
-          >
-            Absen Masuk
-          </Button>
+            </Box>
+          ) : (
+            videoStream && (
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+            )
+          )}
         </Paper>
 
         {/* Map Section */}
-        <Paper 
-          elevation={2} 
-          sx={{ 
+        <Paper
+          elevation={2}
+          sx={{
             flex: 1,
             borderRadius: 2,
-            overflow: 'hidden',
-            position: 'relative',
-            height: 300
+            overflow: "hidden",
+            position: "relative",
+            height: 300,
           }}
         >
           {userLocation ? (
-            <MapContainer 
-              center={userLocation} 
-              zoom={16} 
-              style={{ height: '100%', width: '100%' }}
+            <MapContainer
+              center={userLocation}
+              zoom={16}
+              style={{ height: "100%", width: "100%" }}
               zoomControl={false}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              
+
               {/* Office location with radius */}
-              <Circle 
+              <Circle
                 center={officeLocation}
                 radius={maxRadius}
-                pathOptions={{ fillColor: 'blue', fillOpacity: 0.2, color: '#0073e6' }}
+                pathOptions={{
+                  fillColor: "blue",
+                  fillOpacity: 0.2,
+                  color: "#0066cc",
+                }}
               />
-              
-              {/* Office marker */}
-              <Marker position={officeLocation}>
-                <Popup>Campus Location</Popup>
-              </Marker>
-              
+
               {/* User location */}
               <Marker position={userLocation}>
                 <Popup>Your Location</Popup>
               </Marker>
             </MapContainer>
           ) : (
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                height: '100%',
-                flexDirection: 'column',
-                p: 2
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+                flexDirection: "column",
+                p: 2,
               }}
             >
               <CircularProgress size={40} sx={{ mb: 2 }} />
@@ -257,10 +318,27 @@ const PresensiPage: React.FC = () => {
             </Box>
           )}
         </Paper>
+        <Button
+          variant="contained"
+          startIcon={<CameraAlt />}
+          onClick={handleCameraCapture}
+          sx={{
+            bgcolor: "#0073e6",
+            borderRadius: 6,
+            mt: 2,
+            px: 3,
+            py: 1,
+            textTransform: "none",
+            mb: 2,
+            "&:hover": { bgcolor: "#0066cc" },
+          }}
+        >
+          Absen Masuk
+        </Button>
       </Container>
 
       {/* Bottom Navigation */}
-      <Paper sx={{ width: '100%' }} elevation={3}>
+      <Paper sx={{ width: "100%" }} elevation={3}>
         <BottomNavigation
           value={navValue}
           onChange={handleNavChange}
@@ -274,16 +352,16 @@ const PresensiPage: React.FC = () => {
       </Paper>
 
       {/* Notification */}
-      <Snackbar 
-        open={showAlert} 
-        autoHideDuration={4000} 
+      <Snackbar
+        open={showAlert}
+        autoHideDuration={4000}
         onClose={() => setShowAlert(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert 
-          onClose={() => setShowAlert(false)} 
+        <Alert
+          onClose={() => setShowAlert(false)}
           severity={alertSeverity}
-          sx={{ width: '100%' }}
+          sx={{ width: "100%" }}
         >
           {alertMessage}
         </Alert>
