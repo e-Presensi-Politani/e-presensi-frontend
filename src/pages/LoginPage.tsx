@@ -22,17 +22,17 @@ interface LoginCredentials {
   password: string;
 }
 
-interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  user: {
-    guid: string;
-    fullName: string;
-    email: string;
-    role: string;
-    profileImage?: string;
-  };
-}
+// interface LoginResponse {
+//   access_token: string;
+//   refresh_token: string;
+//   user: {
+//     guid: string;
+//     fullName: string;
+//     email: string;
+//     role: string;
+//     profileImage?: string;
+//   };
+// }
 
 const LoginPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));

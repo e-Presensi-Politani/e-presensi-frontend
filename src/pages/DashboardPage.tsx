@@ -49,11 +49,11 @@ const DashboardPage: React.FC = () => {
     }
   }, []);
 
-  // Calculate current time to display
-  const getCurrentTime = () => {
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
+  // // Calculate current time to display
+  // const getCurrentTime = () => {
+  //   const now = new Date();
+  //   return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  // };
 
   // For demo purposes only - normally this would come from your backend
   const checkInTime = "07:00";
@@ -75,11 +75,11 @@ const DashboardPage: React.FC = () => {
           bgcolor: "#0073e6",
           width: "100vw",
           color: "white",
-          px: { xs: 2, sm: 3, md: 4 }, // responsive horizontal padding
-          py: { xs: 2, sm: 3 }, // responsive vertical padding
+          px: { xs: 2, sm: 3, md: 4 },
+          py: { xs: 2, sm: 3 },
           borderBottomLeftRadius: { xs: 10, sm: 15, md: 20 },
           borderBottomRightRadius: { xs: 10, sm: 15, md: 20 },
-          boxSizing: "border-box", // ensures padding doesn't overflow
+          boxSizing: "border-box",
         }}
       >
         <Container maxWidth="lg">
@@ -92,13 +92,13 @@ const DashboardPage: React.FC = () => {
             </Avatar>
             <Box ml={2}>
               <Typography variant="h5" fontWeight="bold">
-                {userData?.fullName || "M. Ghozi Syah Putra"}
+                {userData?.fullName}
               </Typography>
               <Typography variant="body1">
-                {userData?.role || "Rekayasa Pertanian dan Komputer"}
+                {userData?.role}
               </Typography>
               <Typography variant="body2">
-                {userData?.guid || "2125423029"}
+                {userData?.guid}
               </Typography>
             </Box>
           </Box>
