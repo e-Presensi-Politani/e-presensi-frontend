@@ -28,6 +28,7 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
+import { useNavigate } from "react-router-dom";
 
 // Sample attendance data (you would fetch this from an API)
 const attendanceData = [
@@ -58,6 +59,12 @@ const DashboardPage: React.FC = () => {
   // For demo purposes only - normally this would come from your backend
   const checkInTime = "07:00";
   const checkOutTime = "17:00";
+
+  const navigate = useNavigate();
+
+  const handlePresensiClick = () => {
+    navigate("/presensi");
+  }
 
   return (
     <Box
@@ -275,6 +282,7 @@ const DashboardPage: React.FC = () => {
           <CalendarToday />
         </IconButton>
         <IconButton
+          onClick={handlePresensiClick}        
           sx={{
             backgroundColor: "#0073e6",
             color: "white",
