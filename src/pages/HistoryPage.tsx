@@ -9,8 +9,6 @@ import {
   Select,
   SelectChangeEvent,
   Pagination,
-  BottomNavigation,
-  BottomNavigationAction,
   FormControl,
   List,
   ListItem,
@@ -21,10 +19,6 @@ import {
   Check as CheckIcon,
   Close as CloseIcon,
   ReportProblem as WarningIcon,
-  Home as HomeIcon,
-  CalendarMonth as CalendarIcon,
-  DescriptionOutlined as ReportIcon,
-  Person as ProfileIcon,
 } from "@mui/icons-material";
 import BottomNav from "../components/BottomNav";
 
@@ -43,29 +37,6 @@ const HistoryPage: React.FC = () => {
     value: number
   ) => {
     setPage(value);
-  };
-
-  const handleBottomNavChange = (
-    event: React.SyntheticEvent,
-    newValue: number
-  ) => {
-    setValue(newValue);
-    switch (newValue) {
-      case 0:
-        navigate("/dashboard");
-        break;
-      case 1:
-        navigate("/cuti");
-        break;
-      case 2:
-        navigate("/history");
-        break;
-      case 3:
-        navigate("/profile");
-        break;
-      default:
-        break;
-    }
   };
 
   // Sample attendance data

@@ -9,20 +9,13 @@ import {
   Paper,
   Container,
   Button,
-  Avatar,
-  BottomNavigation,
-  BottomNavigationAction,
   CircularProgress,
   Snackbar,
   Alert,
 } from "@mui/material";
 import {
   ArrowBack,
-  CameraAlt,
-  Home,
-  CalendarToday,
-  Description,
-  Person,
+  CameraAlt
 } from "@mui/icons-material";
 import { MapContainer, TileLayer, Circle, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
