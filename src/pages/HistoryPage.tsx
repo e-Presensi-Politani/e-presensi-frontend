@@ -23,11 +23,9 @@ import {
 import BottomNav from "../components/BottomNav";
 
 const HistoryPage: React.FC = () => {
-  const navigate = useNavigate();
   const [month, setMonth] = useState("Januari 2025");
   const [page, setPage] = useState(1);
-  const [value, setValue] = useState(2);
-
+  const navigate = useNavigate();
   const handleMonthChange = (event: SelectChangeEvent) => {
     setMonth(event.target.value);
   };
@@ -37,6 +35,10 @@ const HistoryPage: React.FC = () => {
     value: number
   ) => {
     setPage(value);
+  };
+
+  const handleDetailClick = () => {
+    navigate("/attendance-present");
   };
 
   // Sample attendance data
@@ -137,6 +139,7 @@ const HistoryPage: React.FC = () => {
               key={index}
               elevation={1}
               sx={{ mb: 2, borderRadius: 2, overflow: "hidden" }}
+              onClick={handleDetailClick}
             >
               <ListItem sx={{ px: 2, py: 1.5 }}>
                 <ListItemIcon sx={{ minWidth: 40 }}>

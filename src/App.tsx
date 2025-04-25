@@ -8,6 +8,9 @@ import NotFoundPage from "./pages/NotFoundPage";
 import UnderDevelopmentPage from "./pages/UnderDevelopmentPage";
 import LeaveRequestPage from "./pages/LeaveRequestPage";
 import ProfilePage from "./pages/ProfilePage";
+import AttendanceDetailPresent from "./pages/AttendanceDetailPresent";
+import AttendanceDetailAbsent from "./pages/AttendanceDetailAbsent";
+import AttendanceDetailProblem from "./pages/AttendanceDetailProblem";
 
 function App() {
   return (
@@ -20,6 +23,9 @@ function App() {
         <Route path="/under-development" element={<UnderDevelopmentPage />} />
         <Route path="/leave-request" element={<LeaveRequestPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/attendance-present" element={<AttendanceDetailPresent />} />
+        <Route path="/attendance-absent" element={<AttendanceDetailAbsent />} />
+        <Route path="/attendance-problem" element={<AttendanceDetailProblem />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
