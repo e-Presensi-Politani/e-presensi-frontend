@@ -12,15 +12,11 @@ import {
   Theme,
 } from "@mui/material";
 import {
-  Home,
   CalendarToday,
   Description,
   LocationOn,
   Person,
-  Fingerprint,
   AssignmentTurnedIn,
-  EventNote,
-  AccountCircle,
 } from "@mui/icons-material";
 import {
   PieChart,
@@ -53,33 +49,9 @@ const DashboardPage: React.FC = () => {
     }
   }, []);
 
-  // // Calculate current time to display
-  // const getCurrentTime = () => {
-  //   const now = new Date();
-  //   return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  // };
-
   // For demo purposes only - normally this would come from your backend
   const checkInTime = "07:00";
   const checkOutTime = "17:00";
-
-  const navigate = useNavigate();
-
-  const handlePresensiClick = () => {
-    navigate("/presensi");
-  };
-
-  const handleHistoryClick = () => {
-    navigate("/history");
-  };
-
-  const handleCutiClick = () => {
-    navigate("/leave-request");
-  };
-
-  const handleProfileClick = () => {
-    navigate("/profile");
-  };
 
   return (
     <Box
@@ -241,7 +213,7 @@ const DashboardPage: React.FC = () => {
           <Typography variant="h6" gutterBottom fontWeight="medium">
             Rekap Kehadiran
           </Typography>
-          <Box sx={{ width: "100%", height: 300}}>
+          <Box sx={{ width: "100%", height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
