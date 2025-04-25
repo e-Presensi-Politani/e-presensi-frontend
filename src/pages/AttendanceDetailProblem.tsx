@@ -41,7 +41,7 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
   };
 
   const handleRequestPermission = () => {
-    navigate("/under-development");
+    navigate("/attendance-correction");
   };
 
   return (

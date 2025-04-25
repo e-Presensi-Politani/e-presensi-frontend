@@ -11,6 +11,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AttendanceDetailPresent from "./pages/AttendanceDetailPresent";
 import AttendanceDetailAbsent from "./pages/AttendanceDetailAbsent";
 import AttendanceDetailProblem from "./pages/AttendanceDetailProblem";
+import AttendanceCorrection from "./pages/AttendanceCorrectionPage";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/attendance-present" element={<AttendanceDetailPresent />} />
         <Route path="/attendance-absent" element={<AttendanceDetailAbsent />} />
         <Route path="/attendance-problem" element={<AttendanceDetailProblem />} />
+        <Route path="/attendance-correction" element={<AttendanceCorrection />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
