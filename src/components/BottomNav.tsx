@@ -23,7 +23,7 @@ const BottomNav = () => {
       case "/history":
         setValue(2);
         break;
-      case "/under-development":
+      case "/profile":
         setValue(3);
         break;
       default:

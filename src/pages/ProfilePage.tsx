@@ -62,13 +62,14 @@ const ProfilePage: React.FC = () => {
       {/* Header */}
       <Box
         sx={{
-          width: "100%",
+          width: "100vw",
           height: 60,
           bgcolor: "#0073e6",
           color: "white",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          overflow: "hidden",
           mb: 2,
         }}
       >
