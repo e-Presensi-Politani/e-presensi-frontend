@@ -7,6 +7,7 @@ import PresensiHistoryPage from "./pages/HistoryPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import UnderDevelopmentPage from "./pages/UnderDevelopmentPage";
 import LeaveRequestPage from "./pages/LeaveRequestPage";
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/history" element={<PresensiHistoryPage />} />
         <Route path="/under-development" element={<UnderDevelopmentPage />} />
         <Route path="/leave-request" element={<LeaveRequestPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>

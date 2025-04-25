@@ -44,7 +44,7 @@ const BottomNav = () => {
         navigate("/history");
         break;
       case 3:
-        navigate("/under-development");
+        navigate("/profile");
         break;
     }
   };

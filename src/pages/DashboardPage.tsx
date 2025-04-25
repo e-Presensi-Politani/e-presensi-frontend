@@ -77,7 +77,7 @@ const DashboardPage: React.FC = () => {
   };
 
   const handleProfileClick = () => {
-    navigate("/under-development");
+    navigate("/profile");
   };
 
   return (
