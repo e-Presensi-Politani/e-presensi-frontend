@@ -31,6 +31,7 @@ import {
   Tooltip,
 } from "recharts";
 import { useNavigate } from "react-router-dom";
+import BottomNav from "../components/BottomNav";
 
 // Sample attendance data (you would fetch this from an API)
 const attendanceData = [
@@ -175,7 +176,7 @@ const DashboardPage: React.FC = () => {
               variant="contained"
               startIcon={<AssignmentTurnedIn />}
               sx={{
-                width: "40vw",
+                width: "43vw",
                 bgcolor: "#4CAF50",
                 color: "white",
                 p: 2,
@@ -203,7 +204,7 @@ const DashboardPage: React.FC = () => {
               variant="contained"
               startIcon={<AssignmentTurnedIn />}
               sx={{
-                width: "40vw",
+                width: "43vw",
                 bgcolor: "#F44336",
                 color: "white",
                 p: 2,
@@ -240,7 +241,7 @@ const DashboardPage: React.FC = () => {
           <Typography variant="h6" gutterBottom fontWeight="medium">
             Rekap Kehadiran
           </Typography>
-          <Box sx={{ width: "100%", height: 300 }}>
+          <Box sx={{ width: "100%", height: 300}}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -271,48 +272,7 @@ const DashboardPage: React.FC = () => {
       </Container>
 
       {/* Bottom navigation */}
-      <Paper
-        sx={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "space-around",
-          padding: 1,
-          borderTop: "1px solid #e0e0e0",
-          zIndex: 1000,
-        }}
-        elevation={3}
-      >
-        <IconButton color="primary">
-          <Home />
-        </IconButton>
-        <IconButton onClick={handleCutiClick}>
-          <EventNote />
-        </IconButton>
-        <IconButton
-          onClick={handlePresensiClick}
-          sx={{
-            backgroundColor: "#0073e6",
-            color: "white",
-            borderRadius: "50%",
-            p: 1,
-            transform: "scale(1.2)",
-            "&:hover": {
-              backgroundColor: "#0066cc",
-            },
-          }}
-        >
-          <Fingerprint />
-        </IconButton>
-        <IconButton onClick={handleHistoryClick}>
-          <Description />
-        </IconButton>
-        <IconButton onClick={handleProfileClick}>
-          <AccountCircle />
-        </IconButton>
-      </Paper>
+      <BottomNav />
     </Box>
   );
 };

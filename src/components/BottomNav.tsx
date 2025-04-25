@@ -1,72 +1,88 @@
-import { BottomNavigation, BottomNavigationAction } from "@mui/material";
+import React from "react";
+import { Paper, IconButton } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import EventNoteIcon from "@mui/icons-material/EventNote";
-import { DescriptionOutlined as HistoryIcon } from "@mui/icons-material";
+import HistoryIcon from "@mui/icons-material/DescriptionOutlined";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 
-const BottomNav = () => {
+const BottomNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [value, setValue] = useState(0);
 
-  // Set nilai berdasarkan path URL
-  useEffect(() => {
-    switch (location.pathname) {
-      case "/dashboard":
-        setValue(0);
-        break;
-      case "/leave-request":
-        setValue(1);
-        break;
-      case "/history":
-        setValue(2);
-        break;
-      case "/profile":
-        setValue(3);
-        break;
-      default:
-        setValue(0);
-    }
-  }, [location.pathname]);
-
-  const handleChange = (_: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-    switch (newValue) {
-      case 0:
-        navigate("/dashboard");
-        break;
-      case 1:
-        navigate("/leave-request");
-        break;
-      case 2:
-        navigate("/history");
-        break;
-      case 3:
-        navigate("/profile");
-        break;
+  // Handler for navigation
+  const goTo = (path: string) => {
+    if (location.pathname !== path) {
+      navigate(path);
     }
   };
 
   return (
-    <BottomNavigation
-      value={value}
-      onChange={handleChange}
+    <Paper
+      elevation={3}
       sx={{
-        width: "100%",
         position: "fixed",
         bottom: 0,
-        zIndex: 10,
-        borderTop: "1px solid #ccc",
+        left: 0,
+        right: 0,
+        display: "flex",
+        justifyContent: "space-around",
+        p: 1,
+        borderTop: "1px solid #e0e0e0",
+        zIndex: 1000,
         bgcolor: "#fff",
       }}
     >
-      <BottomNavigationAction icon={<HomeIcon />} />
-      <BottomNavigationAction label="Cuti" icon={<EventNoteIcon />} />
-      <BottomNavigationAction label="Riwayat" icon={<HistoryIcon />} />
-      <BottomNavigationAction label="Profil" icon={<AccountCircleIcon />} />
-    </BottomNavigation>
+      {/* Dashboard */}
+      <IconButton
+        onClick={() => goTo("/dashboard")}
+        color={location.pathname === "/dashboard" ? "primary" : "default"}
+      >
+        <HomeIcon />
+      </IconButton>
+
+      {/* Leave Request */}
+      <IconButton
+        onClick={() => goTo("/leave-request")}
+        color={location.pathname === "/leave-request" ? "error" : "default"}
+      >
+        <EventNoteIcon />
+      </IconButton>
+
+      {/* Fingerprint: only on Dashboard */}
+      {location.pathname === "/dashboard" && (
+        <IconButton
+          onClick={() => goTo("/presensi")}
+          sx={{
+            backgroundColor: "#0073e6",
+            color: "white",
+            borderRadius: "50%",
+            p: 1,
+            transform: "scale(1.2)",
+            "&:hover": { backgroundColor: "#0066cc" },
+          }}
+        >
+          <FingerprintIcon />
+        </IconButton>
+      )}
+
+      {/* History */}
+      <IconButton
+        onClick={() => goTo("/history")}
+        color={location.pathname === "/history" ? "warning" : "default"}
+      >
+        <HistoryIcon />
+      </IconButton>
+
+      {/* Profile */}
+      <IconButton
+        onClick={() => goTo("/profile")}
+        color={location.pathname === "/profile" ? "info" : "default"}
+      >
+        <AccountCircleIcon />
+      </IconButton>
+    </Paper>
   );
 };
 
