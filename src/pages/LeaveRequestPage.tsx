@@ -11,6 +11,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HelpIcon from "@mui/icons-material/Help";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import BottomNav from "../components/BottomNav";
 
 interface LeaveRequestItemProps {
@@ -141,7 +142,7 @@ const LeaveRequestPage: React.FC = () => {
           right: 24,
         }}
       >
-        <KeyboardArrowUpIcon />
+        <UploadFileIcon />
       </Fab>
 
       {/* Bottom Navigation */}

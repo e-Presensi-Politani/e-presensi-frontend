@@ -37,8 +37,21 @@ const HistoryPage: React.FC = () => {
     setPage(value);
   };
 
-  const handleDetailClick = () => {
-    navigate("/attendance-present");
+  // Updated function to handle navigation based on status
+  const handleDetailClick = (status: string) => {
+    switch (status) {
+      case "present":
+        navigate("/attendance-present");
+        break;
+      case "absent":
+        navigate("/attendance-absent");
+        break;
+      case "warning":
+        navigate("/attendance-problem");
+        break;
+      default:
+        navigate("/attendance-present");
+    }
   };
 
   // Sample attendance data
@@ -138,8 +151,13 @@ const HistoryPage: React.FC = () => {
             <Paper
               key={index}
               elevation={1}
-              sx={{ mb: 2, borderRadius: 2, overflow: "hidden" }}
-              onClick={handleDetailClick}
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                overflow: "hidden",
+                cursor: "pointer",
+              }}
+              onClick={() => handleDetailClick(item.status)}
             >
               <ListItem sx={{ px: 2, py: 1.5 }}>
                 <ListItemIcon sx={{ minWidth: 40 }}>

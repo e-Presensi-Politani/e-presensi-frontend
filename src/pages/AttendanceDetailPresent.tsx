@@ -30,7 +30,7 @@ const AttendanceDetailPresent: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate(-1);
+    navigate("/history");
   };
 
   return (
