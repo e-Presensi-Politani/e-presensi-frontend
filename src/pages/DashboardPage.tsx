@@ -19,6 +19,8 @@ import {
   Person,
   Fingerprint,
   AssignmentTurnedIn,
+  EventNote,
+  AccountCircle,
 } from "@mui/icons-material";
 import {
   PieChart,
@@ -71,7 +73,7 @@ const DashboardPage: React.FC = () => {
   };
 
   const handleCutiClick = () => {
-    navigate("/under-development");
+    navigate("/leave-request");
   };
 
   const handleProfileClick = () => {
@@ -287,7 +289,7 @@ const DashboardPage: React.FC = () => {
           <Home />
         </IconButton>
         <IconButton onClick={handleCutiClick}>
-          <CalendarToday />
+          <EventNote />
         </IconButton>
         <IconButton
           onClick={handlePresensiClick}
@@ -308,7 +310,7 @@ const DashboardPage: React.FC = () => {
           <Description />
         </IconButton>
         <IconButton onClick={handleProfileClick}>
-          <Person />
+          <AccountCircle />
         </IconButton>
       </Paper>
     </Box>

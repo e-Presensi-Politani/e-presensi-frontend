@@ -181,6 +181,7 @@ const PresensiPage: React.FC = () => {
           flexDirection: "column",
           my: 2,
           overflow: "auto",
+          pb: 5,
         }}
       >
         <Paper

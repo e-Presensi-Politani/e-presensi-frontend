@@ -17,13 +17,13 @@ const BottomNav = () => {
       case "/dashboard":
         setValue(0);
         break;
-      case "/feature-coming-soon":
+      case "/leave-request":
         setValue(1);
         break;
       case "/history":
         setValue(2);
         break;
-      case "/feature-coming-soon":
+      case "/under-development":
         setValue(3);
         break;
       default:
@@ -38,7 +38,7 @@ const BottomNav = () => {
         navigate("/dashboard");
         break;
       case 1:
-        navigate("/under-development");
+        navigate("/leave-request");
         break;
       case 2:
         navigate("/history");
@@ -62,7 +62,7 @@ const BottomNav = () => {
         bgcolor: "#fff",
       }}
     >
-      <BottomNavigationAction label="Home" icon={<HomeIcon />} />
+      <BottomNavigationAction icon={<HomeIcon />} />
       <BottomNavigationAction label="Cuti" icon={<EventNoteIcon />} />
       <BottomNavigationAction label="Riwayat" icon={<HistoryIcon />} />
       <BottomNavigationAction label="Profil" icon={<AccountCircleIcon />} />
