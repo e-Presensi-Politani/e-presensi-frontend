@@ -12,6 +12,7 @@ import AttendanceDetailPresent from "./pages/AttendanceDetailPresent";
 import AttendanceDetailAbsent from "./pages/AttendanceDetailAbsent";
 import AttendanceDetailProblem from "./pages/AttendanceDetailProblem";
 import AttendanceCorrection from "./pages/AttendanceCorrectionPage";
+import LeaveRequestFormPage from "./pages/LeaveRequestFormPage";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         <Route path="/attendance-absent" element={<AttendanceDetailAbsent />} />
         <Route path="/attendance-problem" element={<AttendanceDetailProblem />} />
         <Route path="/attendance-correction" element={<AttendanceCorrection />} />
+        <Route path="/leave-request-form" element={<LeaveRequestFormPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>

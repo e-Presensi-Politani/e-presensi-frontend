@@ -10,9 +10,9 @@ import {
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HelpIcon from "@mui/icons-material/Help";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import BottomNav from "../components/BottomNav";
+import { useNavigate } from "react-router-dom";
 
 interface LeaveRequestItemProps {
   type: string;
@@ -104,6 +104,12 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
 };
 
 const LeaveRequestPage: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleForm = () => {
+    navigate("/leave-request-form");
+  };
+
   return (
     <Box sx={{ bgcolor: "#f5f5f5", height: "100vh", width: "100vw", pb: 8 }}>
       {/* Header */}
@@ -131,11 +137,12 @@ const LeaveRequestPage: React.FC = () => {
         />
       </Container>
 
-      {/* Scroll to top button */}
+      {/* Upload File Button*/}
       <Fab
+        onClick={handleForm}
         color="primary"
         size="medium"
-        aria-label="scroll back to top"
+        aria-label="Ajukan Izin"
         sx={{
           position: "fixed",
           bottom: 80,
