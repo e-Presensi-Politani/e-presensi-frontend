@@ -54,6 +54,11 @@ const DashboardPage: React.FC = () => {
   const checkInTime = "07:00";
   const checkOutTime = "17:00";
 
+  const navigate = useNavigate();
+  const handlePersetujuan = () => {
+    navigate("/persetujuan");
+  };
+
   return (
     <Box
       sx={{
@@ -131,7 +136,7 @@ const DashboardPage: React.FC = () => {
               </Grid>
               <Grid sx={{ textAlign: "center", position: "relative" }}>
                 <Box sx={{ position: "relative", display: "inline-block" }}>
-                  <IconButton color="info">
+                  <IconButton color="info" onClick={handlePersetujuan}>
                     <CheckBox />
                   </IconButton>
                   <Box
