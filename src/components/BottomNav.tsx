@@ -51,7 +51,8 @@ const BottomNav: React.FC = () => {
       </IconButton>
 
       {/* Fingerprint: only on Dashboard */}
-      {location.pathname === "/dashboard" && (
+      {(location.pathname === "/dashboard" ||
+        location.pathname === "/kajur-dashboard") && (
         <IconButton
           onClick={() => goTo("/presensi")}
           sx={{

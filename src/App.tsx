@@ -13,6 +13,8 @@ import AttendanceDetailAbsent from "./pages/AttendanceDetailAbsent";
 import AttendanceDetailProblem from "./pages/AttendanceDetailProblem";
 import AttendanceCorrection from "./pages/AttendanceCorrectionPage";
 import LeaveRequestFormPage from "./pages/LeaveRequestFormPage";
+import KajurDashboardPage from "./pages/KajurDashboardPage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
 
 function App() {
   return (
@@ -20,6 +22,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/kajur-dashboard" element={<KajurDashboardPage />} />
         <Route path="/presensi" element={<PresensiPage />} />
         <Route path="/history" element={<PresensiHistoryPage />} />
         <Route path="/under-development" element={<UnderDevelopmentPage />} />
@@ -30,6 +33,7 @@ function App() {
         <Route path="/attendance-problem" element={<AttendanceDetailProblem />} />
         <Route path="/attendance-correction" element={<AttendanceCorrection />} />
         <Route path="/leave-request-form" element={<LeaveRequestFormPage />} />
+        <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>

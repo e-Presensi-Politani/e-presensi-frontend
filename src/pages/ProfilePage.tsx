@@ -47,7 +47,7 @@ const ProfilePage: React.FC = () => {
   });
 
   const handleChangePassword = () => {
-    navigate("/under-development");
+    navigate("/change-password");
   };
 
   return (

@@ -104,7 +104,7 @@ const LoginPage: React.FC = () => {
       sx={{
         bgcolor: "#0073e6",
         minHeight: "100vh",
-        width: "100%",
+        width: "100vw",
         margin: 0,
         padding: 0,
         display: "flex",

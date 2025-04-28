@@ -160,7 +160,7 @@ const LeaveRequestFormPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100vw", pb: 8 }}>
+    <Box sx={{ bgcolor: "#fff", minHeight: "100vh", width: "100vw", pb: 5 }}>
       {/* Header */}
       <Box
         sx={{
@@ -180,11 +180,11 @@ const LeaveRequestFormPage: React.FC = () => {
       </Box>
 
       {/* Form Content */}
-      <Container sx={{ py: 3 }}>
+      <Container sx={{ py: 2 }}>
         <Paper
           elevation={0}
           sx={{
-            p: 2,
+            p: 0,
             borderRadius: 2,
             mb: 2,
           }}
@@ -197,6 +197,11 @@ const LeaveRequestFormPage: React.FC = () => {
               value={formData.leaveType}
               label="Jenis Pengajuan"
               onChange={handleLeaveTypeChange}
+              sx={{
+                "& fieldset": {
+                  borderRadius: 2,
+                },
+              }}
             >
               <MenuItem value="Cuti">Cuti</MenuItem>
               <MenuItem value="WFH">Work From Home (WFH)</MenuItem>
@@ -221,6 +226,11 @@ const LeaveRequestFormPage: React.FC = () => {
                     helperText: errors.startDate,
                   },
                 }}
+                sx={{
+                  "& fieldset": {
+                    borderRadius: 2,
+                  },
+                }}
               />
             </Box>
 
@@ -234,6 +244,11 @@ const LeaveRequestFormPage: React.FC = () => {
                     fullWidth: true,
                     error: !!errors.endDate,
                     helperText: errors.endDate,
+                  },
+                }}
+                sx={{
+                  "& fieldset": {
+                    borderRadius: 2,
                   },
                 }}
               />
@@ -253,6 +268,7 @@ const LeaveRequestFormPage: React.FC = () => {
                 justifyContent: "flex-start",
                 textTransform: "none",
                 py: 1.5,
+                borderRadius: 2,
                 border: errors.file ? "1px solid #f44336" : undefined,
                 color: errors.file ? "#f44336" : undefined,
               }}
@@ -280,6 +296,11 @@ const LeaveRequestFormPage: React.FC = () => {
             onChange={handleNotesChange}
             placeholder="Masukan Keterangan ..."
             sx={{ mb: 3 }}
+            InputProps={{
+              sx: {
+                borderRadius: 2, // Atau berapa pun radius yang kamu mau
+              },
+            }}
           />
 
           <Button
@@ -290,7 +311,7 @@ const LeaveRequestFormPage: React.FC = () => {
             onClick={handleSubmit}
             sx={{
               py: 1.5,
-              borderRadius: 6,
+              borderRadius: 3,
               textTransform: "none",
               fontSize: 16,
             }}
