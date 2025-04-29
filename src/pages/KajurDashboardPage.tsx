@@ -14,7 +14,6 @@ import {
 import {
   CalendarToday,
   Description,
-  LocationOn,
   Person,
   AssignmentTurnedIn,
   CheckBox,

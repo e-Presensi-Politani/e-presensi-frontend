@@ -32,6 +32,14 @@ const PersetujuanPage: React.FC = () => {
     navigate("/kajur-dashboard");
   };
 
+  const handleDetail = () => {
+    navigate("/cuti-detail");
+  };
+
+    const handleTolak = () => {
+      navigate("/reject-pengajuan");
+    };
+
   // Sample data based on the image
   const approvalItems: ApprovalItem[] = [
     {
@@ -79,7 +87,7 @@ const PersetujuanPage: React.FC = () => {
       name: "M. Ghozi Syah Putra",
       employeeId: "2124323029",
       startDate: "10 Januari 2025",
-      endDate: "12 Januari 2025",
+      endDate: "12 Mei 2025",
       status: "Cuti",
     },
   ];
@@ -101,7 +109,7 @@ const PersetujuanPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", pb: 7 }}>
+    <Box sx={{ bgcolor: "#f5f5f5", width: "100vw", minHeight: "100vh", pb: 7 }}>
       {/* Header */}
       <AppBar position="static" sx={{ bgcolor: "#0073e6" }}>
         <Toolbar>
@@ -122,6 +130,7 @@ const PersetujuanPage: React.FC = () => {
         <List sx={{ p: 0 }}>
           {approvalItems.map((item) => (
             <Paper
+              onClick={handleDetail}
               key={item.id}
               elevation={1}
               sx={{
@@ -164,15 +173,20 @@ const PersetujuanPage: React.FC = () => {
                     </Typography>
                   </Box>
                 </Box>
-                <Chip
-                  label={item.status}
-                  sx={{
-                    bgcolor: getStatusColor(item.status),
-                    color: "white",
-                    fontWeight: "bold",
-                    minWidth: 60,
-                  }}
-                />
+                <Box sx={{ display: "fix", alignItems: "right", ml: -5 }}>
+                  <Chip
+                    label={item.status}
+                    sx={{
+                      bgcolor: getStatusColor(item.status),
+                      borderRadius: 2,
+                      color: "white",
+                      fontWeight: "bold",
+                      minWidth: 60,
+                      mb: 4,
+                      mr: "-2px",
+                    }}
+                  />
+                </Box>
               </ListItem>
             </Paper>
           ))}

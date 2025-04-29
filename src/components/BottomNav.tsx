@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Paper, IconButton } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import EventNoteIcon from "@mui/icons-material/EventNote";
@@ -10,6 +10,27 @@ import { useLocation, useNavigate } from "react-router-dom";
 const BottomNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [userRole, setUserRole] = useState<string>("dosen"); // Default role
+
+  // Get user role from localStorage on component mount
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user && user.role) {
+          setUserRole(user.role);
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing user data from localStorage:", error);
+    }
+  }, []);
+
+  // Determine home path based on user role
+  const getHomePath = () => {
+    return userRole === "kajur" ? "/kajur-dashboard" : "/dashboard";
+  };
 
   // Handler for navigation
   const goTo = (path: string) => {
@@ -17,6 +38,9 @@ const BottomNav: React.FC = () => {
       navigate(path);
     }
   };
+
+  // Current home path based on user role
+  const homePath = getHomePath();
 
   return (
     <Paper
@@ -34,10 +58,10 @@ const BottomNav: React.FC = () => {
         bgcolor: "#fff",
       }}
     >
-      {/* Dashboard */}
+      {/* Dashboard - redirects based on user role */}
       <IconButton
-        onClick={() => goTo("/dashboard")}
-        color={location.pathname === "/dashboard" ? "primary" : "default"}
+        onClick={() => goTo(homePath)}
+        color={location.pathname === homePath ? "primary" : "default"}
       >
         <HomeIcon />
       </IconButton>

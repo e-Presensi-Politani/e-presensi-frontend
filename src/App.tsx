@@ -16,6 +16,8 @@ import LeaveRequestFormPage from "./pages/LeaveRequestFormPage";
 import KajurDashboardPage from "./pages/KajurDashboardPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import PersetujuanPage from "./pages/PersetujuanPage";
+import CutiDetailPage from "./pages/CutiDetailPage";
+import RejectApplicationForm from "./pages/RejectPengajuanPage";
 
 function App() {
   return (
@@ -36,7 +38,9 @@ function App() {
         <Route path="/leave-request-form" element={<LeaveRequestFormPage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route path="/persetujuan" element={<PersetujuanPage />} />
+        <Route path="/cuti-detail" element={<CutiDetailPage />} />
         <Route path="*" element={<NotFoundPage />} />
+        <Route path="/reject-pengajuan" element={<RejectApplicationForm />} />
       </Routes>
     </Router>
   );

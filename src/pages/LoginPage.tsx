@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -75,8 +75,13 @@ const LoginPage: React.FC = () => {
       // Store user data
       localStorage.setItem("user", JSON.stringify(response.user));
 
-      // Redirect to dashboard or home page
-      window.location.href = "/dashboard"; // Change this to your app's post-login route
+      // Redirect based on user role
+      if (response.user.role === "kajur") {
+        window.location.href = "/kajur-dashboard";
+      } else {
+        // Default for "dosen" or any other role
+        window.location.href = "/dashboard";
+      }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response) {
         setError(
@@ -91,7 +96,6 @@ const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
-
 
   // Handle password reset
   const handleForgotPassword = () => {
