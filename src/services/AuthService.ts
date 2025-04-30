@@ -33,7 +33,7 @@ API.interceptors.response.use(
         const refreshToken = localStorage.getItem("refresh_token");
         if (!refreshToken) {
           // No refresh token available, redirect to login
-          window.location.href = "/login";
+          window.location.href = "/";
           return Promise.reject(error);
         }
 
@@ -53,7 +53,7 @@ API.interceptors.response.use(
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("user");
-        window.location.href = "/login";
+        window.location.href = "/";
         return Promise.reject(refreshError);
       }
     }
@@ -73,7 +73,7 @@ export const AuthService = {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
-    window.location.href = "/login";
+    window.location.href = "/";
   },
 
   getProfile: async () => {
