@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Container,
@@ -13,8 +13,8 @@ import {
   Alert,
 } from "@mui/material";
 import { AccountCircle, Lock } from "@mui/icons-material";
-import { AuthService } from "../services/AuthService";
-import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 // Define types for login
 interface LoginCredentials {
@@ -22,20 +22,10 @@ interface LoginCredentials {
   password: string;
 }
 
-// interface LoginResponse {
-//   access_token: string;
-//   refresh_token: string;
-//   user: {
-//     guid: string;
-//     fullName: string;
-//     email: string;
-//     role: string;
-//     profileImage?: string;
-//   };
-// }
-
 const LoginPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
+  const navigate = useNavigate();
+  const { login, loading: authLoading } = useAuth();
 
   // State for form inputs
   const [credentials, setCredentials] = useState<LoginCredentials>({
@@ -62,35 +52,23 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     try {
-      // Call AuthService to handle login
-      const response = await AuthService.login(
-        credentials.email,
-        credentials.password
-      );
+      // Use the login function from AuthContext
+      await login(credentials.email, credentials.password);
 
-      // Store tokens in localStorage
-      localStorage.setItem("access_token", response.access_token);
-      localStorage.setItem("refresh_token", response.refresh_token);
-
-      // Store user data
-      localStorage.setItem("user", JSON.stringify(response.user));
-
-      // Redirect based on user role
-      if (response.user.role === "kajur") {
-        window.location.href = "/kajur-dashboard";
-      } else {
-        // Default for "dosen" or any other role
-        window.location.href = "/dashboard";
+      // Get user from localStorage to determine redirect
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        // Redirect based on user role
+        if (user.role === "kajur") {
+          navigate("/kajur-dashboard");
+        } else {
+          // Default for "dosen" or any other role
+          navigate("/dashboard");
+        }
       }
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response) {
-        setError(
-          err.response.data.message ||
-            "Login failed. Please check your credentials."
-        );
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
+      setError("Login failed. Please check your credentials.");
       console.error("Login error:", err);
     } finally {
       setLoading(false);
@@ -271,7 +249,7 @@ const LoginPage: React.FC = () => {
               variant="contained"
               size="large"
               type="submit"
-              disabled={loading}
+              disabled={loading || authLoading}
               sx={{
                 mt: 2,
                 mb: 2,
@@ -285,7 +263,7 @@ const LoginPage: React.FC = () => {
                 },
               }}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading || authLoading ? "Logging in..." : "Login"}
             </Button>
           </Box>
         </Container>
