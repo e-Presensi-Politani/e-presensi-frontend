@@ -42,20 +42,26 @@ const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
   return (
     <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100%", pb: 7 }}>
       {/* Header */}
-      <AppBar position="static" sx={{ bgcolor: "#0073e6" }}>
-        <Toolbar>
-          <IconButton edge="start" color="inherit" onClick={handleBack}>
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography
-            variant="h6"
-            sx={{ flexGrow: 1, textAlign: "center", mr: 4 }}
-          >
-            Pengajuan Detail Page
-          </Typography>
-        </Toolbar>
-      </AppBar>
-
+      <Box
+        sx={{
+          bgcolor: "#1976d2",
+          height: "5vh",
+          p: 2,
+          color: "white",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <IconButton color="inherit" onClick={handleBack}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography
+          variant="h6"
+          sx={{ flexGrow: 1, textAlign: "center", mr: 4 }}
+        >
+          Pengajuan Detail Page
+        </Typography>
+      </Box>
       {/* Main Content */}
       <Container maxWidth="sm" sx={{ mt: 2 }}>
         <Paper
