@@ -33,12 +33,8 @@ const PersetujuanPage: React.FC = () => {
   };
 
   const handleDetail = () => {
-    navigate("/cuti-detail");
+    navigate("/pengajuan-detail");
   };
-
-    const handleTolak = () => {
-      navigate("/reject-pengajuan");
-    };
 
   // Sample data based on the image
   const approvalItems: ApprovalItem[] = [

@@ -1,4 +1,3 @@
-import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -18,7 +17,7 @@ import LeaveRequestFormPage from "./pages/LeaveRequestFormPage";
 import KajurDashboardPage from "./pages/KajurDashboardPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import PersetujuanPage from "./pages/PersetujuanPage";
-import CutiDetailPage from "./pages/CutiDetailPage";
+import PengajuanDetailPage from "./pages/PengajuanDetailPage";
 import RejectApplicationForm from "./pages/RejectPengajuanPage";
 
 function App() {
@@ -35,9 +34,13 @@ function App() {
             <Route path="/change-password" element={<ChangePasswordPage />} />
           </Route>
 
-          {/* Protected routes for regular users (dosen) */}
+          {/* Routes exclusively for dosen */}
           <Route element={<ProtectedRoute allowedRoles={["dosen"]} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+          </Route>
+
+          {/* Routes accessible by both dosen and kajur */}
+          <Route element={<ProtectedRoute allowedRoles={["dosen", "kajur"]} />}>
             <Route path="/presensi" element={<PresensiPage />} />
             <Route path="/history" element={<PresensiHistoryPage />} />
             <Route path="/leave-request" element={<LeaveRequestPage />} />
@@ -63,11 +66,11 @@ function App() {
             />
           </Route>
 
-          {/* Protected routes for kajur (department head) */}
+          {/* Protected routes for kajur (department head) only */}
           <Route element={<ProtectedRoute allowedRoles={["kajur"]} />}>
             <Route path="/kajur-dashboard" element={<KajurDashboardPage />} />
             <Route path="/persetujuan" element={<PersetujuanPage />} />
-            <Route path="/cuti-detail" element={<CutiDetailPage />} />
+            <Route path="/pengajuan-detail" element={<PengajuanDetailPage />} />
             <Route
               path="/reject-pengajuan"
               element={<RejectApplicationForm />}

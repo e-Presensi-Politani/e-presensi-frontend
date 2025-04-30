@@ -21,11 +21,11 @@ interface CutiDetailProps {
   id?: string;
 }
 
-const CutiDetailPage: React.FC<CutiDetailProps> = () => {
+const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
   const navigate = useNavigate();
 
   const handleBack = () => {
-    navigate(-1);
+    navigate("/persetujuan");
   };
 
   const handleReject = () => {
@@ -240,4 +240,4 @@ const CutiDetailPage: React.FC<CutiDetailProps> = () => {
   );
 };
 
-export default CutiDetailPage;
+export default PengajuanDetailPage;

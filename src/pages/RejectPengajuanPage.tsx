@@ -19,7 +19,7 @@ const RejectApplicationForm = () => {
     const navigate = useNavigate();
   
     const handleBack = () => {
-      navigate("/cuti-detail");
+      navigate("/pengajuan-detail");
     };
 
   const handleSubmit = () => {
