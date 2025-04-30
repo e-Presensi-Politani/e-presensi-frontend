@@ -105,7 +105,7 @@ const PersetujuanPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ bgcolor: "#f5f5f5", width: "100vw", minHeight: "100vh", pb: 7 }}>
+    <Box sx={{ bgcolor: "#f5f5f5", width: "100%", minHeight: "100vh", pb: 7 }}>
       {/* Header */}
       <AppBar position="static" sx={{ bgcolor: "#0073e6" }}>
         <Toolbar>

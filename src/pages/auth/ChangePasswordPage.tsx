@@ -39,7 +39,7 @@ const ChangePasswordPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ bgcolor: "#ffffff", width: "100vw", height: "100vh" }}>
+    <Box sx={{ bgcolor: "#ffffff", width: "100%", height: "100vh" }}>
       {/* Header */}
       <Paper
         elevation={0}

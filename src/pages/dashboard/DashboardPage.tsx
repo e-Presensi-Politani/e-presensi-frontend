@@ -57,7 +57,7 @@ const DashboardPage: React.FC = () => {
       sx={{
         bgcolor: "#f5f5f5",
         minHeight: "100vh",
-        width: "100vw",
+        width: "100%",
         padding: 0,
         margin: 0,
       }}
@@ -66,7 +66,7 @@ const DashboardPage: React.FC = () => {
       <Box
         sx={{
           bgcolor: "#0073e6",
-          width: "100vw",
+          width: "100%",
           color: "white",
           px: { xs: 2, sm: 3, md: 4 },
           py: { xs: 2, sm: 3 },

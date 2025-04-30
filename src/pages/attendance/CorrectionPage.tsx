@@ -73,7 +73,7 @@ const AttendanceCorrectionPage: React.FC = () => {
       sx={{
         bgcolor: "#f5f5f5",
         minHeight: "100vh",
-        width: "100vw",
+        width: "100%",
         display: "flex",
         flexDirection: "column",
       }}

@@ -28,6 +28,13 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  width: 100%; /* Ensure body takes full width */
+  overflow-x: hidden; /* Prevent horizontal scrolling at the body level */
+}
+
+#root {
+  width: 100%; /* Make root element take full width of body */
+  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 h1 {
@@ -65,4 +72,10 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Additional fix for horizontal scrolling */
+.MuiContainer-root {
+  max-width: 100%;
+  overflow-x: hidden;
 }

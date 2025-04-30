@@ -19,7 +19,7 @@ const RejectApplicationForm = () => {
     const navigate = useNavigate();
   
     const handleBack = () => {
-      navigate("/pengajuan-detail");
+      navigate("/persetujuan-detail");
     };
 
   const handleSubmit = () => {
@@ -31,7 +31,7 @@ const RejectApplicationForm = () => {
     <Box
       sx={{
         height: "100vh",
-        width: "100vw",
+        width: "100%",
         display: "flex",
         flexDirection: "column",
         bgcolor: "#f5f5f5",

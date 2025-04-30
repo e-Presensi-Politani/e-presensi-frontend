@@ -101,11 +101,12 @@ const HistoryPage: React.FC = () => {
     <Box
       sx={{
         bgcolor: "#f5f5f5",
-        width: "100vw",
-        height: "100vh",
-        // overflow: "hidden",
+        width: "100%", // Changed from 100vw to 100%
+        minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
+        overflowX: "hidden", // Added to prevent horizontal scrolling
+        pb: 8, // Add padding for bottom nav
       }}
     >
       {/* Header */}
@@ -145,7 +146,7 @@ const HistoryPage: React.FC = () => {
       </Container>
 
       {/* Attendance list */}
-      <Container maxWidth="sm">
+      <Container maxWidth="sm" sx={{ flex: 1, overflowY: "auto" }}>
         <List sx={{ p: 0 }}>
           {attendanceData.map((item, index) => (
             <Paper

@@ -52,7 +52,7 @@ const PersetujuanDetailPage: React.FC<CutiDetailProps> = () => {
   };
 
   return (
-    <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100vw", pb: 7 }}>
+    <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100%", pb: 7 }}>
       {/* Header */}
       <AppBar position="static" sx={{ bgcolor: "#0073e6" }}>
         <Toolbar>

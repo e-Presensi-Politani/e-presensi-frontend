@@ -160,7 +160,7 @@ const LeaveRequestFormPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ bgcolor: "#fff", minHeight: "100vh", width: "100vw", pb: 6 }}>
+    <Box sx={{ bgcolor: "#fff", minHeight: "100vh", width: "100%", pb: 6 }}>
       {/* Header */}
       <Box
         sx={{

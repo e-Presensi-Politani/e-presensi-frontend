@@ -56,7 +56,7 @@ const ProfilePage: React.FC = () => {
         bgcolor: "#f5f5f5",
         minHeight: "100vh",
         overflow: "hidden",
-        width: "100vw",
+        width: "100%",
         pb: 8,
       }}
     >

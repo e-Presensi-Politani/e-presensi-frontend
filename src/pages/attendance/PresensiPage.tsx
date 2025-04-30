@@ -129,7 +129,7 @@ const PresensiPage: React.FC = () => {
         display: "flex",
         flexDirection: "column",
         height: "100vh",
-        width: "100vw",
+        width: "100%",
         bgcolor: "#f5f5f5",
       }}
     >
