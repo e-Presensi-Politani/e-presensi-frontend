@@ -11,7 +11,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HelpIcon from "@mui/icons-material/Help";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import BottomNav from "../components/BottomNav";
+import BottomNav from "../../components/BottomNav";
 import { useNavigate } from "react-router-dom";
 
 interface LeaveRequestItemProps {

@@ -27,7 +27,7 @@ import {
   Tooltip,
 } from "recharts";
 import { useNavigate } from "react-router-dom";
-import BottomNav from "../components/BottomNav";
+import BottomNav from "../../components/BottomNav";
 
 // Sample attendance data (you would fetch this from an API)
 const attendanceData = [

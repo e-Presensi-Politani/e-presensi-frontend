@@ -13,7 +13,7 @@ import {
   Alert,
 } from "@mui/material";
 import { AccountCircle, Lock } from "@mui/icons-material";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 // Define types for login
@@ -126,7 +126,7 @@ const LoginPage: React.FC = () => {
         >
           <Box
             component="img"
-            src="/src/assets/login.svg"
+            src="/src/assets/images/login.svg"
             alt="Login Illustration"
             sx={{
               width: { xs: "80%", sm: "60%", md: "80%" },

@@ -26,7 +26,7 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
-import BottomNav from "../components/BottomNav";
+import BottomNav from "../../components/BottomNav";
 
 // Sample attendance data (you would fetch this from an API)
 const attendanceData = [

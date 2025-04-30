@@ -20,7 +20,7 @@ import {
   Close as CloseIcon,
   ReportProblem as WarningIcon,
 } from "@mui/icons-material";
-import BottomNav from "../components/BottomNav";
+import BottomNav from "../../components/BottomNav";
 
 const HistoryPage: React.FC = () => {
   const [month, setMonth] = useState("Januari 2025");
@@ -103,7 +103,7 @@ const HistoryPage: React.FC = () => {
         bgcolor: "#f5f5f5",
         width: "100vw",
         height: "100vh",
-        overflow: "hidden",
+        // overflow: "hidden",
         display: "flex",
         flexDirection: "column",
       }}

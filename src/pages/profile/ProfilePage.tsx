@@ -17,7 +17,7 @@ import {
 import LockIcon from "@mui/icons-material/Lock";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import { useNavigate } from "react-router-dom";
-import BottomNav from "../components/BottomNav";
+import BottomNav from "../../components/BottomNav";
 
 interface ProfileData {
   name: string;
@@ -55,6 +55,7 @@ const ProfilePage: React.FC = () => {
       sx={{
         bgcolor: "#f5f5f5",
         minHeight: "100vh",
+        overflow: "hidden",
         width: "100vw",
         pb: 8,
       }}
@@ -68,7 +69,7 @@ const ProfilePage: React.FC = () => {
 
       <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
         {/* Avatar */}
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt : 2 }}>
           <Avatar
             sx={{
               width: 100,

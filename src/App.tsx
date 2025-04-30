@@ -1,24 +1,24 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
-import PresensiPage from "./pages/PresensiPage";
-import PresensiHistoryPage from "./pages/HistoryPage";
-import NotFoundPage from "./pages/NotFoundPage";
-import UnderDevelopmentPage from "./pages/UnderDevelopmentPage";
-import LeaveRequestPage from "./pages/LeaveRequestPage";
-import ProfilePage from "./pages/ProfilePage";
-import AttendanceDetailPresent from "./pages/AttendanceDetailPresent";
-import AttendanceDetailAbsent from "./pages/AttendanceDetailAbsent";
-import AttendanceDetailProblem from "./pages/AttendanceDetailProblem";
-import AttendanceCorrection from "./pages/AttendanceCorrectionPage";
-import LeaveRequestFormPage from "./pages/LeaveRequestFormPage";
-import KajurDashboardPage from "./pages/KajurDashboardPage";
-import ChangePasswordPage from "./pages/ChangePasswordPage";
-import PersetujuanPage from "./pages/PersetujuanPage";
-import PersetujuanDetailPage from "./pages/PersetujuanDetailPage";
-import RejectApplicationForm from "./pages/RejectPengajuanPage";
+import LoginPage from "./pages/auth/LoginPage";
+import DashboardPage from "./pages/dashboard/DashboardPage";
+import PresensiPage from "./pages/attendance/PresensiPage";
+import PresensiHistoryPage from "./pages/attendance/HistoryPage";
+import NotFoundPage from "./pages/misc/NotFoundPage";
+import UnderDevelopmentPage from "./pages/misc/UnderDevelopmentPage";
+import LeaveRequestPage from "./pages/leave/LeaveRequestPage";
+import ProfilePage from "./pages/profile/ProfilePage";
+import AttendanceDetailPresent from "./pages/attendance/detail/PresentDetail";
+import AttendanceDetailAbsent from "./pages/attendance/detail/AbsentDetail";
+import AttendanceDetailProblem from "./pages/attendance/detail/ProblemDetail";
+import AttendanceCorrection from "./pages/attendance/CorrectionPage";
+import LeaveRequestFormPage from "./pages/leave/LeaveFormPage";
+import KajurDashboardPage from "./pages/dashboard/KajurDashboardPage";
+import ChangePasswordPage from "./pages/auth/ChangePasswordPage";
+import PersetujuanPage from "./pages/leave/PersetujuanPage";
+import PersetujuanDetailPage from "./pages/leave/PersetujuanDetailPage";
+import RejectApplicationForm from "./pages/leave/RejectPage";
 
 function App() {
   return (

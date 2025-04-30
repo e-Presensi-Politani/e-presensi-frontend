@@ -14,7 +14,7 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { useNavigate } from "react-router-dom";
-import BottomNav from "../components/BottomNav";
+import BottomNav from "../../../components/BottomNav";
 
 const AttendanceDetailPresent: React.FC = () => {
   const navigate = useNavigate();

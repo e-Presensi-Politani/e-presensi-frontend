@@ -19,7 +19,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditIcon from "@mui/icons-material/Edit";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import BottomNav from "../components/BottomNav";
+import BottomNav from "../../components/BottomNav";
 
 // Custom styled MenuItem for wrapping text
 const StyledMenuItem = styled(MenuItem)({

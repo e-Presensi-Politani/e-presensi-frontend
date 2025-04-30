@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import WarningIcon from "@mui/icons-material/Warning";
-import BottomNav from "../components/BottomNav";
+import BottomNav from "../../components/BottomNav";
 import { useNavigate } from "react-router-dom";
 
 const RejectApplicationForm = () => {

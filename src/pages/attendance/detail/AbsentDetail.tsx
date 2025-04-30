@@ -3,7 +3,7 @@ import { Box, Container, Typography, Paper, IconButton } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloseIcon from "@mui/icons-material/Close";
 import { useNavigate } from "react-router-dom";
-import BottomNav from "../components/BottomNav";
+import BottomNav from "../../../components/BottomNav";
 
 const AttendanceDetailAbsent: React.FC = () => {
   const navigate = useNavigate();

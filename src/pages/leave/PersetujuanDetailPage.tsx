@@ -15,7 +15,7 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import { useNavigate } from "react-router-dom";
-import BottomNav from "../components/BottomNav";
+import BottomNav from "../../components/BottomNav";
 
 interface CutiDetailProps {
   id?: string;
