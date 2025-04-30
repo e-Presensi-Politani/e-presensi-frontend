@@ -59,6 +59,7 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
       <Box
         sx={{
           bgcolor: "#FFC107",
+          height: "4vh",
           p: 2,
           color: "black",
           display: "flex",
@@ -68,7 +69,10 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
         <IconButton onClick={handleBack} sx={{ color: "black" }}>
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h6" sx={{ ml: 1 }}>
+        <Typography
+          variant="h6"
+          sx={{ flexGrow: 1, textAlign: "center", mr: 4 }}
+        >
           Detail Presensi
         </Typography>
       </Box>

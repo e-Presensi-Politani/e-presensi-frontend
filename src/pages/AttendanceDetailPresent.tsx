@@ -48,6 +48,7 @@ const AttendanceDetailPresent: React.FC = () => {
       <Box
         sx={{
           bgcolor: "#4CAF50",
+          height: "4vh",
           p: 2,
           color: "white",
           display: "flex",

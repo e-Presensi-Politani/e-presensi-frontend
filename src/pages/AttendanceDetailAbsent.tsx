@@ -28,6 +28,7 @@ const AttendanceDetailAbsent: React.FC = () => {
       <Box
         sx={{
           bgcolor: "#E5323E",
+          height: "4vh",
           p: 2,
           color: "white",
           display: "flex",
@@ -37,7 +38,12 @@ const AttendanceDetailAbsent: React.FC = () => {
         <IconButton color="inherit" onClick={handleBack} sx={{ mr: 1 }}>
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h6">Detail Presensi</Typography>
+        <Typography
+          variant="h6"
+          sx={{ flexGrow: 1, textAlign: "center", mr: 4 }}
+        >
+          Detail Presensi
+        </Typography>
       </Box>
 
       {/* Attendance Status Card */}

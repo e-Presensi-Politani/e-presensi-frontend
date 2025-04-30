@@ -61,17 +61,7 @@ const ProfilePage: React.FC = () => {
     >
       {/* Header */}
       <Box
-        sx={{
-          width: "100vw",
-          height: 60,
-          bgcolor: "#0073e6",
-          color: "white",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-          mb: 2,
-        }}
+        sx={{ bgcolor: "#1976D2", p: 2, color: "white", textAlign: "center" }}
       >
         <Typography variant="h6">Profile</Typography>
       </Box>

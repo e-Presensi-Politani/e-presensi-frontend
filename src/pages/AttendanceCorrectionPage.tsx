@@ -82,6 +82,7 @@ const AttendanceCorrectionPage: React.FC = () => {
       <Box
         sx={{
           bgcolor: "#0073e6",
+          height: "4vh",
           p: 2,
           color: "white",
           display: "flex",
@@ -96,7 +97,7 @@ const AttendanceCorrectionPage: React.FC = () => {
         </IconButton>
         <Typography
           variant="h6"
-          sx={{ ml: 1, fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
+          sx={{ flexGrow: 1, textAlign: "center", mr: 4 }}
         >
           Pengajuan Izin
         </Typography>
