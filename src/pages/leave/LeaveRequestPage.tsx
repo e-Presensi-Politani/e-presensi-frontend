@@ -18,12 +18,14 @@ interface LeaveRequestItemProps {
   type: string;
   date: string;
   status: "pending" | "approved" | "rejected";
+  onClick?: () => void;
 }
 
 const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
   type,
   date,
   status,
+  onClick,
 }) => {
   return (
     <Card
@@ -31,7 +33,9 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
         mb: 2,
         boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.1)",
         borderRadius: 2,
+        cursor: onClick ? "pointer" : "default",
       }}
+      onClick={onClick}
     >
       <CardContent
         sx={{
@@ -110,8 +114,20 @@ const LeaveRequestPage: React.FC = () => {
     navigate("/leave-request-form");
   };
 
+  const handleDetail = () => {
+    navigate("/pengajuan-detail");
+  };
+
   return (
-    <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100%", pb: 8, overflow: "hidden" }}>
+    <Box
+      sx={{
+        bgcolor: "#f5f5f5",
+        minHeight: "100vh",
+        width: "100%",
+        pb: 8,
+        overflow: "hidden",
+      }}
+    >
       {/* Header */}
       <Box
         sx={{
@@ -126,14 +142,25 @@ const LeaveRequestPage: React.FC = () => {
 
       {/* Content */}
       <Container sx={{ pt: 2, pb: 8 }}>
-        <LeaveRequestItem type="Cuti" date="10 Januari 2025" status="pending" />
+        <LeaveRequestItem
+          type="Cuti"
+          date="10 Januari 2025"
+          status="pending"
+          onClick={handleDetail}
+        />
 
-        <LeaveRequestItem type="WFH" date="09 Januari 2025" status="approved" />
+        <LeaveRequestItem
+          type="WFH"
+          date="09 Januari 2025"
+          status="approved"
+          onClick={handleDetail}
+        />
 
         <LeaveRequestItem
           type="Cuti"
           date="08 Januari 2025"
           status="rejected"
+          onClick={handleDetail}
         />
       </Container>
 
