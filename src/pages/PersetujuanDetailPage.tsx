@@ -21,7 +21,7 @@ interface CutiDetailProps {
   id?: string;
 }
 
-const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
+const PersetujuanDetailPage: React.FC<CutiDetailProps> = () => {
   const navigate = useNavigate();
 
   const handleBack = () => {
@@ -83,7 +83,7 @@ const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              bgcolor: "#ff5722",
+              bgcolor: "#fff",
               py: 3,
               position: "relative",
             }}
@@ -94,8 +94,8 @@ const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
               sx={{
                 width: 80,
                 height: 80,
-                bgcolor: "#fff",
-                border: "3px solid #fff",
+                bgcolor: "#ff5722",
+                border: "3px solid #ff5722",
               }}
             >
               <Typography sx={{ color: "#555", fontWeight: "bold" }}>
@@ -240,4 +240,4 @@ const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
   );
 };
 
-export default PengajuanDetailPage;
+export default PersetujuanDetailPage;

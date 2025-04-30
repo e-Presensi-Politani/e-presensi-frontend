@@ -17,7 +17,7 @@ import LeaveRequestFormPage from "./pages/LeaveRequestFormPage";
 import KajurDashboardPage from "./pages/KajurDashboardPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import PersetujuanPage from "./pages/PersetujuanPage";
-import PengajuanDetailPage from "./pages/PengajuanDetailPage";
+import PersetujuanDetailPage from "./pages/PersetujuanDetailPage";
 import RejectApplicationForm from "./pages/RejectPengajuanPage";
 
 function App() {
@@ -70,7 +70,7 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={["kajur"]} />}>
             <Route path="/kajur-dashboard" element={<KajurDashboardPage />} />
             <Route path="/persetujuan" element={<PersetujuanPage />} />
-            <Route path="/pengajuan-detail" element={<PengajuanDetailPage />} />
+            <Route path="/persetujuan-detail" element={<PersetujuanDetailPage />} />
             <Route
               path="/reject-pengajuan"
               element={<RejectApplicationForm />}

@@ -33,7 +33,7 @@ const PersetujuanPage: React.FC = () => {
   };
 
   const handleDetail = () => {
-    navigate("/pengajuan-detail");
+    navigate("/persetujuan-detail");
   };
 
   // Sample data based on the image
