@@ -1,8 +1,9 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AuthService from "../services/AuthService";
+import { ChangePasswordDto } from "../types/auth";
 
-interface User {
+export interface User {
   guid: string;
   fullName: string;
   email: string;
@@ -14,8 +15,16 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   loading: boolean;
+  error: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string
+  ) => Promise<void>;
+  registerUser?: (userData: any) => Promise<void>; // Admin only
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -33,6 +43,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (AuthService.isAuthenticated()) {
         try {
           const userData = AuthService.getUser();
+
+          // Validate stored user data by fetching fresh profile
+          await AuthService.getProfile(); // This will trigger token refresh if needed
+
           setUser(userData);
           setIsAuthenticated(true);
         } catch (error) {
@@ -48,6 +62,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const login = async (email: string, password: string) => {
     setLoading(true);
+    setError(null);
+
     try {
       const response = await AuthService.login(email, password);
       localStorage.setItem("access_token", response.access_token);
@@ -56,6 +72,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setUser(response.user);
       setIsAuthenticated(true);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || "Login failed";
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -65,14 +85,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     AuthService.logout();
     setUser(null);
     setIsAuthenticated(false);
+    setError(null);
+  };
+
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string
+  ) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const changePasswordDto: ChangePasswordDto = {
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      };
+
+      await AuthService.changePassword(changePasswordDto);
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Password change failed";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const registerUser = async (userData: any) => {
+    // Only available for admin users
+    if (!user || user.role !== "ADMIN") {
+      setError("Unauthorized: Only admins can register new users");
+      throw new Error("Unauthorized: Only admins can register new users");
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await AuthService.registerUser(userData);
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "User registration failed";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearError = () => {
+    setError(null);
   };
 
   const value = {
     isAuthenticated,
     user,
     loading,
+    error,
     login,
     logout,
+    changePassword,
+    registerUser: user?.role === "ADMIN" ? registerUser : undefined,
+    clearError,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

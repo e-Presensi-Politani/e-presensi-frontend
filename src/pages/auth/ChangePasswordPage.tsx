@@ -8,34 +8,111 @@ import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PersonIcon from "@mui/icons-material/Person";
+import CircularProgress from "@mui/material/CircularProgress";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
+import { useAuth } from "../../contexts/AuthContext";
 
 const ChangePasswordPage: React.FC = () => {
   const navigate = useNavigate();
-  const [oldPassword, setOldPassword] = useState("");
+  const { changePassword, loading } = useAuth();
+
+  // Form state
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // UI state
+  const [formErrors, setFormErrors] = useState<{
+    currentPassword?: string;
+    newPassword?: string;
+    confirmPassword?: string;
+  }>({});
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error" | "info" | "warning";
+  }>({
+    open: false,
+    message: "",
+    severity: "info",
+  });
 
   const handleBack = () => {
     navigate("/profile");
   };
 
-  const handleSave = () => {
-    // Validation
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      alert("Semua field harus diisi");
+  const validateForm = () => {
+    const errors: {
+      currentPassword?: string;
+      newPassword?: string;
+      confirmPassword?: string;
+    } = {};
+    let isValid = true;
+
+    // Check required fields
+    if (!currentPassword) {
+      errors.currentPassword = "Password lama harus diisi";
+      isValid = false;
+    }
+
+    if (!newPassword) {
+      errors.newPassword = "Password baru harus diisi";
+      isValid = false;
+    } else if (newPassword.length < 8) {
+      errors.newPassword = "Password minimal 8 karakter";
+      isValid = false;
+    }
+
+    if (!confirmPassword) {
+      errors.confirmPassword = "Konfirmasi password harus diisi";
+      isValid = false;
+    } else if (newPassword !== confirmPassword) {
+      errors.confirmPassword = "Password baru dan konfirmasi tidak cocok";
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      alert("Password baru dan konfirmasi password tidak cocok");
-      return;
-    }
+    try {
+      await changePassword(currentPassword, newPassword, confirmPassword);
 
-    // Here you would typically call an API to update the password
-    alert("Password berhasil diubah");
-    navigate("/profile");
+      // Show success message
+      setSnackbar({
+        open: true,
+        message: "Password berhasil diubah",
+        severity: "success",
+      });
+
+      // Reset form
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+
+      // Navigate back after a short delay
+      setTimeout(() => {
+        navigate("/profile");
+      }, 2000);
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error.message || "Gagal mengubah password",
+        severity: "error",
+      });
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   return (
@@ -65,7 +142,7 @@ const ChangePasswordPage: React.FC = () => {
       </Paper>
 
       <Box sx={{ flexGrow: 1, overflowY: "auto", p: 2 }}>
-        {/* Old Password Field */}
+        {/* Current Password Field */}
         <Typography variant="body1" sx={{ mb: 1, color: "black" }}>
           Password Lama
         </Typography>
@@ -73,8 +150,10 @@ const ChangePasswordPage: React.FC = () => {
           fullWidth
           type="password"
           placeholder="Masukkan Password Lama Anda"
-          value={oldPassword}
-          onChange={(e) => setOldPassword(e.target.value)}
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          error={!!formErrors.currentPassword}
+          helperText={formErrors.currentPassword}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -102,6 +181,8 @@ const ChangePasswordPage: React.FC = () => {
           placeholder="Masukkan Password Baru Anda"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
+          error={!!formErrors.newPassword}
+          helperText={formErrors.newPassword}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -129,6 +210,8 @@ const ChangePasswordPage: React.FC = () => {
           placeholder="Konfirmasi Password Baru Anda"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
+          error={!!formErrors.confirmPassword}
+          helperText={formErrors.confirmPassword}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -151,6 +234,7 @@ const ChangePasswordPage: React.FC = () => {
           variant="contained"
           fullWidth
           onClick={handleSave}
+          disabled={loading}
           sx={{
             bgcolor: "#1976D2",
             color: "white",
@@ -160,9 +244,25 @@ const ChangePasswordPage: React.FC = () => {
             fontSize: "1rem",
           }}
         >
-          Simpan
+          {loading ? <CircularProgress size={24} color="inherit" /> : "Simpan"}
         </Button>
       </Box>
+
+      {/* Snackbar for feedback */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       {/* Custom Bottom Navigation */}
       <BottomNav />
