@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UsersProvider } from "./contexts/UserContext";
+import { AttendanceProvider } from "./contexts/AttendanceContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/auth/LoginPage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
@@ -26,77 +27,85 @@ function App() {
   return (
     <AuthProvider>
       <UsersProvider>
-        <Router>
-          <Routes>
-            {/* Public route */}
-            <Route path="/" element={<LoginPage />} />
+        <AttendanceProvider>
+          <Router>
+            <Routes>
+              {/* Public route */}
+              <Route path="/" element={<LoginPage />} />
 
-            {/* Protected routes for all authenticated users */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/change-password" element={<ChangePasswordPage />} />
-            </Route>
+              {/* Protected routes for all authenticated users */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route
+                  path="/change-password"
+                  element={<ChangePasswordPage />}
+                />
+              </Route>
 
-            {/* Routes exclusively for dosen */}
-            <Route element={<ProtectedRoute allowedRoles={["dosen"]} />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-            </Route>
+              {/* Routes exclusively for dosen */}
+              <Route element={<ProtectedRoute allowedRoles={["dosen"]} />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+              </Route>
 
-            {/* Routes accessible by both dosen and kajur */}
-            <Route
-              element={<ProtectedRoute allowedRoles={["dosen", "kajur"]} />}
-            >
-              <Route path="/presensi" element={<PresensiPage />} />
-              <Route path="/history" element={<PresensiHistoryPage />} />
-              <Route path="/leave-request" element={<LeaveRequestPage />} />
+              {/* Routes accessible by both dosen and kajur */}
               <Route
-                path="/pengajuan-detail"
-                element={<PengajuanDetailPage />}
-              />
-              <Route
-                path="/attendance-present"
-                element={<AttendanceDetailPresent />}
-              />
-              <Route
-                path="/attendance-absent"
-                element={<AttendanceDetailAbsent />}
-              />
-              <Route
-                path="/attendance-problem"
-                element={<AttendanceDetailProblem />}
-              />
-              <Route
-                path="/attendance-correction"
-                element={<AttendanceCorrection />}
-              />
-              <Route
-                path="/leave-request-form"
-                element={<LeaveRequestFormPage />}
-              />
-            </Route>
+                element={<ProtectedRoute allowedRoles={["dosen", "kajur"]} />}
+              >
+                <Route path="/presensi" element={<PresensiPage />} />
+                <Route path="/history" element={<PresensiHistoryPage />} />
+                <Route path="/leave-request" element={<LeaveRequestPage />} />
+                <Route
+                  path="/pengajuan-detail"
+                  element={<PengajuanDetailPage />}
+                />
+                <Route
+                  path="/attendance-present"
+                  element={<AttendanceDetailPresent />}
+                />
+                <Route
+                  path="/attendance-absent"
+                  element={<AttendanceDetailAbsent />}
+                />
+                <Route
+                  path="/attendance-problem"
+                  element={<AttendanceDetailProblem />}
+                />
+                <Route
+                  path="/attendance-correction"
+                  element={<AttendanceCorrection />}
+                />
+                <Route
+                  path="/leave-request-form"
+                  element={<LeaveRequestFormPage />}
+                />
+              </Route>
 
-            {/* Protected routes for kajur (department head) only */}
-            <Route element={<ProtectedRoute allowedRoles={["kajur"]} />}>
-              <Route path="/kajur-dashboard" element={<KajurDashboardPage />} />
-              <Route path="/persetujuan" element={<PersetujuanPage />} />
-              <Route
-                path="/persetujuan-detail"
-                element={<PersetujuanDetailPage />}
-              />
-              <Route
-                path="/reject-pengajuan"
-                element={<RejectApplicationForm />}
-              />
-            </Route>
+              {/* Protected routes for kajur (department head) only */}
+              <Route element={<ProtectedRoute allowedRoles={["kajur"]} />}>
+                <Route
+                  path="/kajur-dashboard"
+                  element={<KajurDashboardPage />}
+                />
+                <Route path="/persetujuan" element={<PersetujuanPage />} />
+                <Route
+                  path="/persetujuan-detail"
+                  element={<PersetujuanDetailPage />}
+                />
+                <Route
+                  path="/reject-pengajuan"
+                  element={<RejectApplicationForm />}
+                />
+              </Route>
 
-            {/* Other routes */}
-            <Route
-              path="/under-development"
-              element={<UnderDevelopmentPage />}
-            />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Router>
+              {/* Other routes */}
+              <Route
+                path="/under-development"
+                element={<UnderDevelopmentPage />}
+              />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Router>
+        </AttendanceProvider>
       </UsersProvider>
     </AuthProvider>
   );
