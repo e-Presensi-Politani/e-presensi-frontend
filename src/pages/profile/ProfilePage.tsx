@@ -15,9 +15,11 @@ import {
   Divider,
 } from "@mui/material";
 import LockIcon from "@mui/icons-material/Lock";
+import LogoutIcon from "@mui/icons-material/Logout";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface ProfileData {
   name: string;
@@ -33,6 +35,7 @@ interface ProfileData {
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const [profileData] = useState<ProfileData>({
     name: "M. Ghozi Syah Putra",
@@ -49,6 +52,11 @@ const ProfilePage: React.FC = () => {
   const handleChangePassword = () => {
     navigate("/change-password");
   };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  }
 
   return (
     <Box
@@ -69,7 +77,7 @@ const ProfilePage: React.FC = () => {
 
       <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
         {/* Avatar */}
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt : 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt: 2 }}>
           <Avatar
             sx={{
               width: 100,
@@ -226,6 +234,26 @@ const ProfilePage: React.FC = () => {
             }}
           >
             Ganti Password
+          </Button>
+        </Box>
+
+        {/* Change Password Button */}
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{
+              width: { xs: "100%", sm: "80%" },
+              bgcolor:"#F44336",
+              py: 1.5,
+              textTransform: "none",
+              borderRadius: 1,
+              boxShadow: 2,
+            }}
+          >
+            Logout
           </Button>
         </Box>
       </Container>
