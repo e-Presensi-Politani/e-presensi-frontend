@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Typography,
@@ -13,6 +13,8 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import LockIcon from "@mui/icons-material/Lock";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -20,34 +22,33 @@ import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useAuth } from "../../contexts/AuthContext";
-
-interface ProfileData {
-  name: string;
-  nip: string;
-  email: string;
-  programStudi: string;
-  jurusan: string;
-  totalKehadiran: string;
-  rataJamKerja: string;
-  izinLupaAbsen: number;
-  presentaseKehadiran: number;
-}
+import { useUsers } from "../../contexts/UserContext";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user: authUser } = useAuth();
+  const { fetchUserByGuid, selectedUser, loading, error, clearError } =
+    useUsers();
 
-  const [profileData] = useState<ProfileData>({
-    name: "M. Ghozi Syah Putra",
-    nip: "21254323029",
-    email: "ghozi286@gmail.com",
-    programStudi: "Teknologi Rekayasa Komputer",
-    jurusan: "Rekayasa Pertanian dan Komputer",
+  // Stats data (to be replaced with actual API data in future)
+  const statsData = {
     totalKehadiran: "18/20 hari",
     rataJamKerja: "8.2 Jam",
     izinLupaAbsen: 2,
     presentaseKehadiran: 90,
-  });
+  };
+
+  // Fetch user details when component mounts
+  useEffect(() => {
+    if (authUser?.guid) {
+      fetchUserByGuid(authUser.guid);
+    }
+
+    // Clear any selected user data when component unmounts
+    return () => {
+      clearError();
+    };
+  }, [authUser?.guid]);
 
   const handleChangePassword = () => {
     navigate("/change-password");
@@ -56,6 +57,21 @@ const ProfilePage: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate("/");
+  };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
@@ -76,6 +92,13 @@ const ProfilePage: React.FC = () => {
       </Box>
 
       <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mt: 2, mb: 2 }} onClose={clearError}>
+            {error}
+          </Alert>
+        )}
+
         {/* Avatar */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt: 2 }}>
           <Avatar
@@ -86,9 +109,10 @@ const ProfilePage: React.FC = () => {
               border: "4px solid white",
               boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
             }}
-            alt={profileData.name}
+            alt={selectedUser?.fullName || "User"}
+            src={selectedUser?.profileImage}
           >
-            {profileData.name.charAt(0)}
+            {selectedUser?.fullName?.charAt(0) || "U"}
           </Avatar>
         </Box>
 
@@ -99,11 +123,11 @@ const ProfilePage: React.FC = () => {
         >
           <List disablePadding>
             {[
-              { label: "Nama", value: profileData.name },
-              { label: "NIP", value: profileData.nip },
-              { label: "Email", value: profileData.email },
-              { label: "Program Studi", value: profileData.programStudi },
-              { label: "Jurusan", value: profileData.jurusan },
+              { label: "Nama", value: selectedUser?.fullName || "N/A" },
+              { label: "NIP", value: selectedUser?.nip || "N/A" },
+              { label: "Email", value: selectedUser?.email || "N/A" },
+              { label: "Department", value: selectedUser?.department || "N/A" },
+              { label: "Position", value: selectedUser?.position || "N/A" },
             ].map((item, index) => (
               <React.Fragment key={index}>
                 <ListItem>
@@ -142,7 +166,7 @@ const ProfilePage: React.FC = () => {
                   Total Kehadiran
                 </Typography>
                 <Typography variant="h5" fontWeight="bold">
-                  {profileData.totalKehadiran}
+                  {statsData.totalKehadiran}
                 </Typography>
               </CardContent>
             </Card>
@@ -162,7 +186,7 @@ const ProfilePage: React.FC = () => {
                   Rata-rata Jam Kerja
                 </Typography>
                 <Typography variant="h5" fontWeight="bold">
-                  {profileData.rataJamKerja}
+                  {statsData.rataJamKerja}
                 </Typography>
               </CardContent>
             </Card>
@@ -182,7 +206,7 @@ const ProfilePage: React.FC = () => {
                   Izin/Lupa Absen
                 </Typography>
                 <Typography variant="h5" fontWeight="bold">
-                  {profileData.izinLupaAbsen}
+                  {statsData.izinLupaAbsen}
                 </Typography>
               </CardContent>
             </Card>
@@ -209,7 +233,7 @@ const ProfilePage: React.FC = () => {
                   Persentase Kehadiran
                 </Typography>
                 <Typography variant="h5" fontWeight="bold">
-                  {profileData.presentaseKehadiran}%
+                  {statsData.presentaseKehadiran}%
                 </Typography>
               </CardContent>
             </Card>
@@ -237,7 +261,7 @@ const ProfilePage: React.FC = () => {
           </Button>
         </Box>
 
-        {/* Change Password Button */}
+        {/* Logout Button */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
           <Button
             variant="contained"
@@ -246,7 +270,7 @@ const ProfilePage: React.FC = () => {
             onClick={handleLogout}
             sx={{
               width: { xs: "100%", sm: "80%" },
-              bgcolor:"#F44336",
+              bgcolor: "#F44336",
               py: 1.5,
               textTransform: "none",
               borderRadius: 1,
