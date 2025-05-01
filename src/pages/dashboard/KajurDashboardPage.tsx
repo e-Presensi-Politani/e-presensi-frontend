@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Container,
@@ -10,6 +10,8 @@ import {
   IconButton,
   useMediaQuery,
   Theme,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   CalendarToday,
@@ -28,6 +30,8 @@ import {
 } from "recharts";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
+import { useAuth } from "../../contexts/AuthContext";
+import { useUsers } from "../../contexts/UserContext";
 
 // Sample attendance data (you would fetch this from an API)
 const attendanceData = [
@@ -37,26 +41,46 @@ const attendanceData = [
   { name: "Terlambat", value: 14.2, color: "#F44336" },
 ];
 
-const DashboardPage: React.FC = () => {
+const KajurDashboardPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
-  const [userData, setUserData] = useState<any>(null);
+  const navigate = useNavigate();
+  const { user: authUser } = useAuth();
+  const { fetchUserByGuid, selectedUser, loading, error, clearError } =
+    useUsers();
 
-  // Get user data from localStorage (assuming it was stored during login)
+  // Fetch user details when component mounts
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUserData(JSON.parse(storedUser));
+    if (authUser?.guid) {
+      fetchUserByGuid(authUser.guid);
     }
-  }, []);
+
+    return () => {
+      clearError();
+    };
+  }, [authUser?.guid]);
 
   // For demo purposes only - normally this would come from your backend
   const checkInTime = "07:00";
   const checkOutTime = "17:00";
 
-  const navigate = useNavigate();
   const handlePersetujuan = () => {
     navigate("/persetujuan");
   };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -68,6 +92,13 @@ const DashboardPage: React.FC = () => {
         margin: 0,
       }}
     >
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ m: 2 }} onClose={clearError}>
+          {error}
+        </Alert>
+      )}
+
       {/* Header with user info */}
       <Box
         sx={{
@@ -85,16 +116,18 @@ const DashboardPage: React.FC = () => {
           <Box display="flex" alignItems="center" mb={2}>
             <Avatar
               sx={{ width: 60, height: 60, bgcolor: "#ff7043" }}
-              src={userData?.profileImage}
+              src={selectedUser?.profileImage}
             >
-              {userData?.fullName?.charAt(0) || "U"}
+              {selectedUser?.fullName?.charAt(0) || "U"}
             </Avatar>
             <Box ml={2}>
               <Typography variant="h5" fontWeight="bold">
-                {userData?.fullName}
+                {selectedUser?.fullName || "Loading..."}
               </Typography>
-              <Typography variant="body1">{userData?.role}</Typography>
-              <Typography variant="body2">{userData?.guid}</Typography>
+              <Typography variant="body1">
+                {selectedUser?.role || "User"}
+              </Typography>
+              <Typography variant="body2">{selectedUser?.nip || ""}</Typography>
             </Box>
           </Box>
 
@@ -274,4 +307,4 @@ const DashboardPage: React.FC = () => {
   );
 };
 
-export default DashboardPage;
+export default KajurDashboardPage;
