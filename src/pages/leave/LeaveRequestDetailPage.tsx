@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -16,8 +16,10 @@ import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import { useNavigate, useParams } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
+import { useUsers } from "../../contexts/UserContext";
 import { format } from "date-fns";
 import { LeaveRequestTypeLabels } from "../../types/leave-request-enums";
+import { User } from "../../types/users";
 
 interface LeaveRequestDetailPageProps {
   id?: string;
@@ -28,17 +30,27 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
   const { id } = useParams<{ id: string }>();
   const {
     selectedRequest,
-    loading,
-    error,
+    loading: leaveLoading,
+    error: leaveError,
     fetchLeaveRequestByGuid,
     getAttachmentDownloadUrl,
     clearSelectedRequest,
   } = useLeaveRequests();
 
+  const {
+    selectedUser,
+    loading: userLoading,
+    error: userError,
+    fetchUserByGuid,
+    clearSelectedUser,
+  } = useUsers();
+
+  const [userData, setUserData] = useState<User | null>(null);
+
   useEffect(() => {
     // Get the GUID from URL params or localStorage
     const guid = id || localStorage.getItem("selectedLeaveRequestGuid");
-    
+
     if (guid) {
       fetchLeaveRequestByGuid(guid);
     }
@@ -46,9 +58,24 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
     // Clean up when component unmounts
     return () => {
       clearSelectedRequest();
+      clearSelectedUser();
       localStorage.removeItem("selectedLeaveRequestGuid");
     };
   }, [id]);
+
+  // Fetch user data once we have the leave request
+  useEffect(() => {
+    if (selectedRequest?.userId) {
+      fetchUserByGuid(selectedRequest.userId);
+    }
+  }, [selectedRequest?.userId]);
+
+  // Update local user data state when selectedUser changes
+  useEffect(() => {
+    if (selectedUser) {
+      setUserData(selectedUser);
+    }
+  }, [selectedUser]);
 
   const handleBack = () => {
     navigate("/leave-request");
@@ -56,11 +83,15 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
 
   const handleDownloadAttachment = () => {
     if (selectedRequest?.attachmentId) {
-      window.open(getAttachmentDownloadUrl(selectedRequest.attachmentId), "_blank");
+      window.open(
+        getAttachmentDownloadUrl(selectedRequest.attachmentId),
+        "_blank"
+      );
     }
   };
 
   // Show loading state
+  const loading = leaveLoading || userLoading;
   if (loading) {
     return (
       <Box
@@ -77,6 +108,7 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
   }
 
   // Show error state
+  const error = leaveError || userError;
   if (error) {
     return (
       <Box
@@ -109,8 +141,27 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
   }
 
   // Format dates
-  const formattedStartDate = format(new Date(selectedRequest.startDate), "dd/MM/yyyy");
-  const formattedEndDate = format(new Date(selectedRequest.endDate), "dd/MM/yyyy");
+  const formattedStartDate = format(
+    new Date(selectedRequest.startDate),
+    "dd/MM/yyyy"
+  );
+  const formattedEndDate = format(
+    new Date(selectedRequest.endDate),
+    "dd/MM/yyyy"
+  );
+
+  // Get user information from either the userData or the selectedRequest
+  const userName = userData?.fullName || selectedRequest.userName || "User";
+  const userEmail = userData?.email || "";
+  const userNip = userData?.nip || selectedRequest.userId || "";
+  const userDepartment =
+    userData?.department || selectedRequest.departmentName || "Department";
+  const userPosition = userData?.position || "";
+
+  // Get avatar initial
+  const getInitial = (name: string) => {
+    return name ? name.charAt(0).toUpperCase() : "U";
+  };
 
   return (
     <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100%", pb: 7 }}>
@@ -135,7 +186,7 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
           Detail Pengajuan
         </Typography>
       </Box>
-      
+
       {/* Main Content */}
       <Container maxWidth="sm" sx={{ mt: 2 }}>
         <Paper
@@ -157,7 +208,7 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
             }}
           >
             <Avatar
-              src={undefined}
+              src={userData?.profileImage}
               alt="Profile"
               sx={{
                 width: 80,
@@ -166,8 +217,8 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
                 border: "3px solid #ff5722",
               }}
             >
-              <Typography sx={{ color: "#555", fontWeight: "bold" }}>
-                {selectedRequest.userName ? selectedRequest.userName.charAt(0) : "U"}
+              <Typography sx={{ color: "#fff", fontWeight: "bold" }}>
+                {getInitial(userName)}
               </Typography>
             </Avatar>
           </Box>
@@ -182,18 +233,36 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 0.5 }}>
-              {selectedRequest.userName || "User"}
+              {userName}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5 }}>
-              {selectedRequest.userId}
+              {userNip}
             </Typography>
+            {userEmail && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 0.5 }}
+              >
+                {userEmail}
+              </Typography>
+            )}
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ mb: 2, textAlign: "center" }}
+              sx={{ mb: 0.5, textAlign: "center" }}
             >
-              {selectedRequest.departmentName || "Department"}
+              {userDepartment}
             </Typography>
+            {userPosition && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 2, textAlign: "center" }}
+              >
+                {userPosition}
+              </Typography>
+            )}
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
@@ -203,7 +272,8 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
                 Jenis Pengajuan
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                {LeaveRequestTypeLabels[selectedRequest.type] || selectedRequest.type}
+                {LeaveRequestTypeLabels[selectedRequest.type] ||
+                  selectedRequest.type}
               </Typography>
             </Box>
 
@@ -214,7 +284,6 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
               container
               sx={{
                 width: "100%",
-                px: 2,
                 py: 1,
                 justifyContent: "space-between",
               }}
@@ -254,18 +323,23 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
               <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                 Status
               </Typography>
-              <Typography 
-                variant="body1" 
-                sx={{ 
+              <Typography
+                variant="body1"
+                sx={{
                   fontWeight: "bold",
-                  color: 
-                    selectedRequest.status === "APPROVED" ? "success.main" : 
-                    selectedRequest.status === "REJECTED" ? "error.main" : 
-                    "warning.main"
+                  color:
+                    selectedRequest.status === "APPROVED"
+                      ? "success.main"
+                      : selectedRequest.status === "REJECTED"
+                      ? "error.main"
+                      : "warning.main",
                 }}
               >
-                {selectedRequest.status === "APPROVED" ? "Disetujui" : 
-                 selectedRequest.status === "REJECTED" ? "Ditolak" : "Menunggu Persetujuan"}
+                {selectedRequest.status === "APPROVED"
+                  ? "Disetujui"
+                  : selectedRequest.status === "REJECTED"
+                  ? "Ditolak"
+                  : "Menunggu Persetujuan"}
               </Typography>
             </Box>
 
@@ -276,7 +350,9 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
                   <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                     Catatan Reviewer
                   </Typography>
-                  <Typography variant="body1">{selectedRequest.comments}</Typography>
+                  <Typography variant="body1">
+                    {selectedRequest.comments}
+                  </Typography>
                 </Box>
               </>
             )}
