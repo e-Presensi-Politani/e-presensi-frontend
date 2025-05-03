@@ -348,8 +348,7 @@ const PresensiPage: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           my: 2,
-          overflow: "auto",
-          pb: 5,
+          overflow: "auto"
         }}
       >
         {/* Attendance status message */}
@@ -374,7 +373,7 @@ const PresensiPage: React.FC = () => {
         <Paper
           elevation={2}
           sx={{
-            height: "30vh",
+            height: "40%",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -549,7 +548,6 @@ const PresensiPage: React.FC = () => {
             borderRadius: 6,
             py: 1.5,
             textTransform: "none",
-            mb: 2,
             "&:hover": { bgcolor: isCheckOut ? "#f57c00" : "#0066cc" },
             "&.Mui-disabled": {
               bgcolor: "#ccc",
@@ -569,29 +567,7 @@ const PresensiPage: React.FC = () => {
             "Take Photo"
           )}
         </Button>
-
-        {/* Status message */}
-        {userLocation && !isWithinRadius && (
-          <Typography
-            variant="body2"
-            color="error"
-            align="center"
-            sx={{ mb: 2 }}
-          >
-            You must be within {maxRadius}m of the office to{" "}
-            {isCheckOut ? "check out" : "check in"}.
-          </Typography>
-        )}
-
-        {todayAttendance?.checkInTime && todayAttendance?.checkOutTime && (
-          <Typography variant="body2" color="text.secondary" align="center">
-            You've completed your attendance for today.
-          </Typography>
-        )}
       </Container>
-
-      {/* Bottom Navigation */}
-      <BottomNav />
 
       {/* Notes Dialog */}
       <Dialog open={showNotesDialog} onClose={() => setShowNotesDialog(false)}>
