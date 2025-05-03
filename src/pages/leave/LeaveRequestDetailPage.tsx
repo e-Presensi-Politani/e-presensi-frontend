@@ -157,7 +157,7 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
             }}
           >
             <Avatar
-              src={selectedRequest.profileImage}
+              src={undefined}
               alt="Profile"
               sx={{
                 width: 80,
