@@ -24,7 +24,7 @@ import ChangePasswordPage from "./pages/auth/ChangePasswordPage";
 import PersetujuanPage from "./pages/leave/PersetujuanPage";
 import PersetujuanDetailPage from "./pages/leave/PersetujuanDetailPage";
 import RejectApplicationForm from "./pages/leave/RejectPage";
-import PengajuanDetailPage from "./pages/leave/PengajuanDetailPage";
+import PengajuanDetailPage from "./pages/leave/LeaveRequestDetailPage";
 
 function App() {
   return (

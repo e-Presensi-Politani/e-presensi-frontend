@@ -26,9 +26,8 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
 import { useAuth } from "../../contexts/AuthContext";
-import { useUsers } from "../../contexts/UserContext"; // Import useUsers for department info
+import { useDepartment } from "../../contexts/DepartmentContext"; // Import useDepartment instead
 import { LeaveRequestType } from "../../types/leave-requests";
-import { format } from "date-fns";
 
 interface FormData {
   leaveType: LeaveRequestType | "";
@@ -43,7 +42,7 @@ const LeaveRequestFormPage: React.FC = () => {
   const navigate = useNavigate();
   const { createLeaveRequest, loading, error, clearError } = useLeaveRequests();
   const { user: authUser } = useAuth();
-  const { selectedUser, fetchUserByGuid } = useUsers(); // Get users context
+  const { departments, fetchDepartmentsByMember } = useDepartment(); // Use department context
 
   const [formData, setFormData] = useState<FormData>({
     leaveType: "",
@@ -58,22 +57,23 @@ const LeaveRequestFormPage: React.FC = () => {
   const [fileName, setFileName] = useState<string>("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Fetch user details to get department when component mounts
+  // Fetch department details using the user's id
   useEffect(() => {
     if (authUser?.guid) {
-      fetchUserByGuid(authUser.guid);
+      fetchDepartmentsByMember(authUser.guid);
     }
-  }, [authUser, fetchUserByGuid]);
+  }, [authUser, fetchDepartmentsByMember]);
 
-  // Update department ID when user data is available from UserContext
+  // Update department ID when department data is loaded
   useEffect(() => {
-    if (selectedUser?.department) {
+    if (departments && departments.length > 0) {
+      // Use the first department's GUID
       setFormData((prev) => ({
         ...prev,
-        departmentId: selectedUser.department || "",
+        departmentId: departments[0].guid,
       }));
     }
-  }, [selectedUser]);
+  }, [departments]);
 
   const handleLeaveTypeChange = (event: SelectChangeEvent) => {
     setFormData({
@@ -191,7 +191,8 @@ const LeaveRequestFormPage: React.FC = () => {
           !formData.file ||
           !formData.startDate ||
           !formData.endDate ||
-          !formData.leaveType
+          !formData.leaveType ||
+          !formData.departmentId
         ) {
           return; // Validation should prevent this, but double-check
         }
@@ -226,6 +227,48 @@ const LeaveRequestFormPage: React.FC = () => {
 
   const handleCloseSnackbar = () => {
     clearError();
+  };
+
+  // Show department selection dropdown if user belongs to multiple departments
+  const renderDepartmentSelection = () => {
+    if (departments && departments.length > 1) {
+      return (
+        <FormControl fullWidth error={!!formErrors.departmentId} sx={{ mb: 3 }}>
+          <InputLabel id="department-label">Department</InputLabel>
+          <Select
+            labelId="department-label"
+            id="department"
+            value={formData.departmentId}
+            label="Department"
+            onChange={(event) => {
+              setFormData({
+                ...formData,
+                departmentId: event.target.value,
+              });
+              if (formErrors.departmentId) {
+                const { departmentId, ...rest } = formErrors;
+                setFormErrors(rest);
+              }
+            }}
+            sx={{
+              "& fieldset": {
+                borderRadius: 2,
+              },
+            }}
+          >
+            {departments.map((dept) => (
+              <MenuItem key={dept.guid} value={dept.guid}>
+                {dept.name}
+              </MenuItem>
+            ))}
+          </Select>
+          {formErrors.departmentId && (
+            <FormHelperText>{formErrors.departmentId}</FormHelperText>
+          )}
+        </FormControl>
+      );
+    }
+    return null;
   };
 
   return (
@@ -282,6 +325,9 @@ const LeaveRequestFormPage: React.FC = () => {
             mb: 2,
           }}
         >
+          {/* Department Selection (if multiple departments) */}
+          {renderDepartmentSelection()}
+
           <FormControl fullWidth error={!!formErrors.leaveType} sx={{ mb: 3 }}>
             <InputLabel id="leave-type-label">Jenis Pengajuan</InputLabel>
             <Select
@@ -417,9 +463,11 @@ const LeaveRequestFormPage: React.FC = () => {
             {loading ? <CircularProgress size={24} color="inherit" /> : "Kirim"}
           </Button>
 
-          {formErrors.departmentId && (
+          {/* Display info text if no departments found */}
+          {(!departments || departments.length === 0) && (
             <Alert severity="error" sx={{ mt: 2 }}>
-              {formErrors.departmentId} - Harap hubungi administrator.
+              Anda belum terdaftar di departemen manapun - Harap hubungi
+              administrator.
             </Alert>
           )}
         </Paper>
