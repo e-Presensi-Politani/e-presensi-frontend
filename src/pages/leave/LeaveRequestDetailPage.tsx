@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Container,
@@ -8,34 +8,109 @@ import {
   IconButton,
   Divider,
   Grid,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
+import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
+import { format } from "date-fns";
+import { LeaveRequestTypeLabels } from "../../types/leave-request-enums";
 
-interface CutiDetailProps {
+interface LeaveRequestDetailPageProps {
   id?: string;
 }
 
-const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
+const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const {
+    selectedRequest,
+    loading,
+    error,
+    fetchLeaveRequestByGuid,
+    getAttachmentDownloadUrl,
+    clearSelectedRequest,
+  } = useLeaveRequests();
+
+  useEffect(() => {
+    // Get the GUID from URL params or localStorage
+    const guid = id || localStorage.getItem("selectedLeaveRequestGuid");
+    
+    if (guid) {
+      fetchLeaveRequestByGuid(guid);
+    }
+
+    // Clean up when component unmounts
+    return () => {
+      clearSelectedRequest();
+      localStorage.removeItem("selectedLeaveRequestGuid");
+    };
+  }, [id]);
 
   const handleBack = () => {
     navigate("/leave-request");
   };
 
-
-  // Sample data for the detail page
-  const cutiDetail = {
-    name: "M. Ghozi Syah Putra",
-    employeeId: "2125432302",
-    department: "Rekayasa Pertanian dan Komputer",
-    startDate: "10/01/2025",
-    endDate: "12/01/2025",
-    description: "-",
-    attachmentFile: "surat_pengajuan_cuti.pdf",
+  const handleDownloadAttachment = () => {
+    if (selectedRequest?.attachmentId) {
+      window.open(getAttachmentDownloadUrl(selectedRequest.attachmentId), "_blank");
+    }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
+  // Show not found state
+  if (!selectedRequest) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <Alert severity="warning">Leave request not found</Alert>
+      </Box>
+    );
+  }
+
+  // Format dates
+  const formattedStartDate = format(new Date(selectedRequest.startDate), "dd/MM/yyyy");
+  const formattedEndDate = format(new Date(selectedRequest.endDate), "dd/MM/yyyy");
 
   return (
     <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100%", pb: 7 }}>
@@ -57,9 +132,10 @@ const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
           variant="h6"
           sx={{ flexGrow: 1, textAlign: "center", mr: 4 }}
         >
-          Pengajuan Detail Page
+          Detail Pengajuan
         </Typography>
       </Box>
+      
       {/* Main Content */}
       <Container maxWidth="sm" sx={{ mt: 2 }}>
         <Paper
@@ -81,7 +157,7 @@ const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
             }}
           >
             <Avatar
-              src="/path-to-avatar.jpg"
+              src={selectedRequest.profileImage}
               alt="Profile"
               sx={{
                 width: 80,
@@ -91,7 +167,7 @@ const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
               }}
             >
               <Typography sx={{ color: "#555", fontWeight: "bold" }}>
-                M
+                {selectedRequest.userName ? selectedRequest.userName.charAt(0) : "U"}
               </Typography>
             </Avatar>
           </Box>
@@ -106,18 +182,30 @@ const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 0.5 }}>
-              {cutiDetail.name}
+              {selectedRequest.userName || "User"}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5 }}>
-              {cutiDetail.employeeId}
+              {selectedRequest.userId}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ mb: 2, textAlign: "center" }}
             >
-              {cutiDetail.department}
+              {selectedRequest.departmentName || "Department"}
             </Typography>
+
+            <Divider sx={{ width: "100%", my: 1 }} />
+
+            {/* Request Type */}
+            <Box sx={{ width: "100%", px: 2, py: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: "medium" }}>
+                Jenis Pengajuan
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: "bold" }}>
+                {LeaveRequestTypeLabels[selectedRequest.type] || selectedRequest.type}
+              </Typography>
+            </Box>
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
@@ -136,7 +224,7 @@ const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
                   Mulai
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                  {cutiDetail.startDate}
+                  {formattedStartDate}
                 </Typography>
               </Grid>
               <Grid sx={{ textAlign: "right" }}>
@@ -144,47 +232,85 @@ const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
                   Selesai
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                  {cutiDetail.endDate}
+                  {formattedEndDate}
                 </Typography>
               </Grid>
             </Grid>
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
-            {/* Description */}
+            {/* Reason */}
             <Box sx={{ width: "100%", px: 2, py: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                 Keterangan
               </Typography>
-              <Typography variant="body1">{cutiDetail.description}</Typography>
+              <Typography variant="body1">{selectedRequest.reason}</Typography>
             </Box>
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
-            {/* Attachment */}
-            <Box
-              sx={{
-                width: "100%",
-                px: 2,
-                py: 1,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <Avatar
-                sx={{
-                  width: 36,
-                  height: 36,
-                  bgcolor: "#0073e6",
-                  mr: 1.5,
+            {/* Review Status */}
+            <Box sx={{ width: "100%", px: 2, py: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: "medium" }}>
+                Status
+              </Typography>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  fontWeight: "bold",
+                  color: 
+                    selectedRequest.status === "APPROVED" ? "success.main" : 
+                    selectedRequest.status === "REJECTED" ? "error.main" : 
+                    "warning.main"
                 }}
               >
-                <InsertDriveFileIcon fontSize="small" />
-              </Avatar>
-              <Typography variant="body2" sx={{ fontWeight: "medium" }}>
-                {cutiDetail.attachmentFile}
+                {selectedRequest.status === "APPROVED" ? "Disetujui" : 
+                 selectedRequest.status === "REJECTED" ? "Ditolak" : "Menunggu Persetujuan"}
               </Typography>
             </Box>
+
+            {selectedRequest.comments && (
+              <>
+                <Divider sx={{ width: "100%", my: 1 }} />
+                <Box sx={{ width: "100%", px: 2, py: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: "medium" }}>
+                    Catatan Reviewer
+                  </Typography>
+                  <Typography variant="body1">{selectedRequest.comments}</Typography>
+                </Box>
+              </>
+            )}
+
+            {selectedRequest.attachment && (
+              <>
+                <Divider sx={{ width: "100%", my: 1 }} />
+                <Box
+                  sx={{
+                    width: "100%",
+                    px: 2,
+                    py: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                  }}
+                  onClick={handleDownloadAttachment}
+                >
+                  <Avatar
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      bgcolor: "#0073e6",
+                      mr: 1.5,
+                    }}
+                  >
+                    <InsertDriveFileIcon fontSize="small" />
+                  </Avatar>
+                  <Typography variant="body2" sx={{ fontWeight: "medium" }}>
+                    {selectedRequest.attachment.originalName}
+                  </Typography>
+                </Box>
+              </>
+            )}
           </Box>
         </Paper>
       </Container>
@@ -195,4 +321,4 @@ const PengajuanDetailPage: React.FC<CutiDetailProps> = () => {
   );
 };
 
-export default PengajuanDetailPage;
+export default LeaveRequestDetailPage;
