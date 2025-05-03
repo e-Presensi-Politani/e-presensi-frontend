@@ -28,7 +28,6 @@ import {
 import { MapContainer, TileLayer, Circle, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import BottomNav from "../../components/BottomNav";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { CheckInDto, CheckOutDto } from "../../types/attendance";
 
