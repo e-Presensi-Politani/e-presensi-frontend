@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Typography,
@@ -6,6 +6,9 @@ import {
   Card,
   CardContent,
   Fab,
+  CircularProgress,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -13,20 +16,26 @@ import HelpIcon from "@mui/icons-material/Help";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import BottomNav from "../../components/BottomNav";
 import { useNavigate } from "react-router-dom";
+import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
+import { format } from "date-fns";
+import {
+  LeaveRequestStatus,
+  LeaveRequestTypeLabels,
+} from "../../types/leave-request-enums";
+import { LeaveRequest } from "../../types/leave-requests";
 
 interface LeaveRequestItemProps {
-  type: string;
-  date: string;
-  status: "pending" | "approved" | "rejected";
+  leaveRequest: LeaveRequest;
   onClick?: () => void;
 }
 
 const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
-  type,
-  date,
-  status,
+  leaveRequest,
   onClick,
 }) => {
+  const { type, startDate, status } = leaveRequest;
+  const formattedDate = format(new Date(startDate), "dd MMMM yyyy");
+
   return (
     <Card
       sx={{
@@ -51,13 +60,13 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
             component="div"
             sx={{ fontWeight: "medium" }}
           >
-            {type}
+            {LeaveRequestTypeLabels[type] || type}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {date}
+            {formattedDate}
           </Typography>
         </Box>
-        {status === "pending" && (
+        {status === LeaveRequestStatus.PENDING && (
           <Box
             sx={{
               bgcolor: "#FFEBBC",
@@ -72,7 +81,7 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
             <HelpIcon sx={{ color: "#F9A825" }} />
           </Box>
         )}
-        {status === "approved" && (
+        {status === LeaveRequestStatus.APPROVED && (
           <Box
             sx={{
               bgcolor: "#D7F5DB",
@@ -87,7 +96,7 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
             <CheckCircleIcon sx={{ color: "#4CAF50" }} />
           </Box>
         )}
-        {status === "rejected" && (
+        {status === LeaveRequestStatus.REJECTED && (
           <Box
             sx={{
               bgcolor: "#FEEBEE",
@@ -109,13 +118,19 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
 
 const LeaveRequestPage: React.FC = () => {
   const navigate = useNavigate();
+  const { myRequests, loading, error, fetchMyRequests, clearError } =
+    useLeaveRequests();
+
+  useEffect(() => {
+    fetchMyRequests();
+  }, []);
 
   const handleForm = () => {
     navigate("/leave-request-form");
   };
 
-  const handleDetail = () => {
-    navigate("/pengajuan-detail");
+  const handleDetail = (guid: string) => {
+    navigate(`/leave-request/${guid}`);
   };
 
   return (
@@ -142,26 +157,25 @@ const LeaveRequestPage: React.FC = () => {
 
       {/* Content */}
       <Container sx={{ pt: 2, pb: 8 }}>
-        <LeaveRequestItem
-          type="Cuti"
-          date="10 Januari 2025"
-          status="pending"
-          onClick={handleDetail}
-        />
-
-        <LeaveRequestItem
-          type="WFH"
-          date="09 Januari 2025"
-          status="approved"
-          onClick={handleDetail}
-        />
-
-        <LeaveRequestItem
-          type="Cuti"
-          date="08 Januari 2025"
-          status="rejected"
-          onClick={handleDetail}
-        />
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : myRequests.length > 0 ? (
+          myRequests.map((request) => (
+            <LeaveRequestItem
+              key={request.guid}
+              leaveRequest={request}
+              onClick={() => handleDetail(request.guid)}
+            />
+          ))
+        ) : (
+          <Box sx={{ mt: 4, textAlign: "center" }}>
+            <Typography color="textSecondary">
+              Belum ada pengajuan. Klik tombol + untuk membuat pengajuan baru.
+            </Typography>
+          </Box>
+        )}
       </Container>
 
       {/* Upload File Button*/}
@@ -178,6 +192,18 @@ const LeaveRequestPage: React.FC = () => {
       >
         <UploadFileIcon />
       </Fab>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={clearError}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert onClose={clearError} severity="error" sx={{ width: "100%" }}>
+          {error}
+        </Alert>
+      </Snackbar>
 
       {/* Bottom Navigation */}
       <BottomNav />
