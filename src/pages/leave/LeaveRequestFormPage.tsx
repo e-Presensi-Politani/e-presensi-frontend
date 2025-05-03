@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -13,6 +13,9 @@ import {
   IconButton,
   SelectChangeEvent,
   FormHelperText,
+  CircularProgress,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -21,37 +24,65 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
-
-type LeaveType = "Cuti" | "WFH" | "WFA" | "DL";
+import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { useUsers } from "../../contexts/UserContext"; // Import useUsers for department info
+import { LeaveRequestType } from "../../types/leave-requests";
+import { format } from "date-fns";
 
 interface FormData {
-  leaveType: LeaveType | "";
+  leaveType: LeaveRequestType | "";
   startDate: Date | null;
   endDate: Date | null;
   file: File | null;
   notes: string;
+  departmentId: string;
 }
 
 const LeaveRequestFormPage: React.FC = () => {
   const navigate = useNavigate();
+  const { createLeaveRequest, loading, error, clearError } = useLeaveRequests();
+  const { user: authUser } = useAuth();
+  const { selectedUser, fetchUserByGuid } = useUsers(); // Get users context
+
   const [formData, setFormData] = useState<FormData>({
     leaveType: "",
     startDate: null,
     endDate: null,
     file: null,
     notes: "",
+    departmentId: "",
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [fileName, setFileName] = useState<string>("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Fetch user details to get department when component mounts
+  useEffect(() => {
+    if (authUser?.guid) {
+      fetchUserByGuid(authUser.guid);
+    }
+  }, [authUser, fetchUserByGuid]);
+
+  // Update department ID when user data is available from UserContext
+  useEffect(() => {
+    if (selectedUser?.department) {
+      setFormData((prev) => ({
+        ...prev,
+        departmentId: selectedUser.department || "",
+      }));
+    }
+  }, [selectedUser]);
 
   const handleLeaveTypeChange = (event: SelectChangeEvent) => {
     setFormData({
       ...formData,
-      leaveType: event.target.value as LeaveType,
+      leaveType: event.target.value as LeaveRequestType,
     });
-    if (errors.leaveType) {
-      const { leaveType, ...rest } = errors;
-      setErrors(rest);
+    if (formErrors.leaveType) {
+      const { leaveType, ...rest } = formErrors;
+      setFormErrors(rest);
     }
   };
 
@@ -60,9 +91,9 @@ const LeaveRequestFormPage: React.FC = () => {
       ...formData,
       startDate: date,
     });
-    if (errors.startDate) {
-      const { startDate, ...rest } = errors;
-      setErrors(rest);
+    if (formErrors.startDate) {
+      const { startDate, ...rest } = formErrors;
+      setFormErrors(rest);
     }
   };
 
@@ -71,9 +102,9 @@ const LeaveRequestFormPage: React.FC = () => {
       ...formData,
       endDate: date,
     });
-    if (errors.endDate) {
-      const { endDate, ...rest } = errors;
-      setErrors(rest);
+    if (formErrors.endDate) {
+      const { endDate, ...rest } = formErrors;
+      setFormErrors(rest);
     }
   };
 
@@ -83,8 +114,8 @@ const LeaveRequestFormPage: React.FC = () => {
       const selectedFile = files[0];
       // Check file size (2MB = 2 * 1024 * 1024 bytes)
       if (selectedFile.size > 2 * 1024 * 1024) {
-        setErrors({
-          ...errors,
+        setFormErrors({
+          ...formErrors,
           file: "File size exceeds 2MB limit",
         });
         return;
@@ -93,8 +124,8 @@ const LeaveRequestFormPage: React.FC = () => {
       // Check file type
       const validTypes = ["application/pdf", "image/jpeg", "image/jpg"];
       if (!validTypes.includes(selectedFile.type)) {
-        setErrors({
-          ...errors,
+        setFormErrors({
+          ...formErrors,
           file: "Only PDF, JPG, and JPEG files are allowed",
         });
         return;
@@ -106,9 +137,9 @@ const LeaveRequestFormPage: React.FC = () => {
       });
       setFileName(selectedFile.name);
 
-      if (errors.file) {
-        const { file, ...rest } = errors;
-        setErrors(rest);
+      if (formErrors.file) {
+        const { file, ...rest } = formErrors;
+        setFormErrors(rest);
       }
     }
   };
@@ -141,22 +172,60 @@ const LeaveRequestFormPage: React.FC = () => {
       newErrors.endDate = "Tanggal selesai tidak boleh sebelum tanggal mulai";
     }
 
-    setErrors(newErrors);
+    if (!formData.file) {
+      newErrors.file = "Berkas pendukung harus diunggah";
+    }
+
+    if (!formData.departmentId) {
+      newErrors.departmentId = "Department information is missing";
+    }
+
+    setFormErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
-      // Submit logic here - would normally send to an API
-      console.log("Form submitted:", formData);
+      try {
+        if (
+          !formData.file ||
+          !formData.startDate ||
+          !formData.endDate ||
+          !formData.leaveType
+        ) {
+          return; // Validation should prevent this, but double-check
+        }
 
-      // Navigate to the leave request list page after submission
-      navigate("/leave-request");
+        await createLeaveRequest(
+          {
+            departmentId: formData.departmentId,
+            type: formData.leaveType as LeaveRequestType,
+            startDate: formData.startDate,
+            endDate: formData.endDate,
+            reason: formData.notes,
+          },
+          formData.file
+        );
+
+        setSubmitSuccess(true);
+
+        // Reset form after successful submission
+        setTimeout(() => {
+          navigate("/leave-request");
+        }, 1500);
+      } catch (err) {
+        console.error("Failed to submit leave request:", err);
+        // Error will be handled by the context and displayed
+      }
     }
   };
 
   const handleBack = () => {
     navigate("/leave-request");
+  };
+
+  const handleCloseSnackbar = () => {
+    clearError();
   };
 
   return (
@@ -180,6 +249,29 @@ const LeaveRequestFormPage: React.FC = () => {
         </Typography>
       </Box>
 
+      {/* Error Snackbar */}
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
+          {error}
+        </Alert>
+      </Snackbar>
+
+      {/* Success Message */}
+      {submitSuccess && (
+        <Alert severity="success" sx={{ mt: 2 }}>
+          Pengajuan berhasil dikirim!
+        </Alert>
+      )}
+
       {/* Form Content */}
       <Container sx={{ py: 2 }}>
         <Paper
@@ -190,7 +282,7 @@ const LeaveRequestFormPage: React.FC = () => {
             mb: 2,
           }}
         >
-          <FormControl fullWidth error={!!errors.leaveType} sx={{ mb: 3 }}>
+          <FormControl fullWidth error={!!formErrors.leaveType} sx={{ mb: 3 }}>
             <InputLabel id="leave-type-label">Jenis Pengajuan</InputLabel>
             <Select
               labelId="leave-type-label"
@@ -204,13 +296,17 @@ const LeaveRequestFormPage: React.FC = () => {
                 },
               }}
             >
-              <MenuItem value="Cuti">Cuti</MenuItem>
-              <MenuItem value="WFH">Work From Home (WFH)</MenuItem>
-              <MenuItem value="WFA">Work From Anywhere (WFA)</MenuItem>
-              <MenuItem value="DL">Dinas Luar (DL)</MenuItem>
+              <MenuItem value={LeaveRequestType.LEAVE}>Cuti</MenuItem>
+              <MenuItem value={LeaveRequestType.WFH}>
+                Work From Home (WFH)
+              </MenuItem>
+              <MenuItem value={LeaveRequestType.WFA}>
+                Work From Anywhere (WFA)
+              </MenuItem>
+              <MenuItem value={LeaveRequestType.DL}>Dinas Luar (DL)</MenuItem>
             </Select>
-            {errors.leaveType && (
-              <FormHelperText>{errors.leaveType}</FormHelperText>
+            {formErrors.leaveType && (
+              <FormHelperText>{formErrors.leaveType}</FormHelperText>
             )}
           </FormControl>
 
@@ -223,8 +319,8 @@ const LeaveRequestFormPage: React.FC = () => {
                 slotProps={{
                   textField: {
                     fullWidth: true,
-                    error: !!errors.startDate,
-                    helperText: errors.startDate,
+                    error: !!formErrors.startDate,
+                    helperText: formErrors.startDate,
                   },
                 }}
                 sx={{
@@ -243,8 +339,8 @@ const LeaveRequestFormPage: React.FC = () => {
                 slotProps={{
                   textField: {
                     fullWidth: true,
-                    error: !!errors.endDate,
-                    helperText: errors.endDate,
+                    error: !!formErrors.endDate,
+                    helperText: formErrors.endDate,
                   },
                 }}
                 sx={{
@@ -270,8 +366,8 @@ const LeaveRequestFormPage: React.FC = () => {
                 textTransform: "none",
                 py: 1.5,
                 borderRadius: 2,
-                border: errors.file ? "1px solid #f44336" : undefined,
-                color: errors.file ? "#f44336" : undefined,
+                border: formErrors.file ? "1px solid #f44336" : undefined,
+                color: formErrors.file ? "#f44336" : undefined,
               }}
             >
               {fileName || "File Upload (PDF/JPG, max 2MB)"}
@@ -282,8 +378,8 @@ const LeaveRequestFormPage: React.FC = () => {
                 onChange={handleFileChange}
               />
             </Button>
-            {errors.file && (
-              <FormHelperText error>{errors.file}</FormHelperText>
+            {formErrors.file && (
+              <FormHelperText error>{formErrors.file}</FormHelperText>
             )}
           </Box>
 
@@ -299,7 +395,7 @@ const LeaveRequestFormPage: React.FC = () => {
             sx={{ mb: 3 }}
             InputProps={{
               sx: {
-                borderRadius: 2, // Atau berapa pun radius yang kamu mau
+                borderRadius: 2,
               },
             }}
           />
@@ -310,6 +406,7 @@ const LeaveRequestFormPage: React.FC = () => {
             color="primary"
             size="large"
             onClick={handleSubmit}
+            disabled={loading}
             sx={{
               py: 1.5,
               borderRadius: 3,
@@ -317,8 +414,14 @@ const LeaveRequestFormPage: React.FC = () => {
               fontSize: 16,
             }}
           >
-            Kirim
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Kirim"}
           </Button>
+
+          {formErrors.departmentId && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {formErrors.departmentId} - Harap hubungi administrator.
+            </Alert>
+          )}
         </Paper>
       </Container>
 

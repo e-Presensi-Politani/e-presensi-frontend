@@ -18,7 +18,7 @@ import AttendanceDetailPresent from "./pages/attendance/detail/PresentDetail";
 import AttendanceDetailAbsent from "./pages/attendance/detail/AbsentDetail";
 import AttendanceDetailProblem from "./pages/attendance/detail/ProblemDetail";
 import AttendanceCorrection from "./pages/attendance/CorrectionPage";
-import LeaveRequestFormPage from "./pages/leave/LeaveFormPage";
+import LeaveRequestFormPage from "./pages/leave/LeaveRequestFormPage";
 import KajurDashboardPage from "./pages/dashboard/KajurDashboardPage";
 import ChangePasswordPage from "./pages/auth/ChangePasswordPage";
 import PersetujuanPage from "./pages/leave/PersetujuanPage";
