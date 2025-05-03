@@ -1,3 +1,4 @@
+// LeaveRequestDetailPage.tsx
 import React, { useEffect } from "react";
 import {
   Box,
@@ -19,11 +20,7 @@ import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
 import { format } from "date-fns";
 import { LeaveRequestTypeLabels } from "../../types/leave-request-enums";
 
-interface LeaveRequestDetailPageProps {
-  id?: string;
-}
-
-const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
+const LeaveRequestDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const {
@@ -36,19 +33,16 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
   } = useLeaveRequests();
 
   useEffect(() => {
-    // Get the GUID from URL params or localStorage
-    const guid = id || localStorage.getItem("selectedLeaveRequestGuid");
-    
-    if (guid) {
-      fetchLeaveRequestByGuid(guid);
+    console.log(`LeaveRequestDetailPage mounted with id: ${id}`); // Debug log
+    if (id) {
+      fetchLeaveRequestByGuid(id);
     }
 
-    // Clean up when component unmounts
     return () => {
+      console.log(`LeaveRequestDetailPage unmounted for id: ${id}`); // Debug log
       clearSelectedRequest();
-      localStorage.removeItem("selectedLeaveRequestGuid");
     };
-  }, [id]);
+  }, [id]); // Only depend on `id`
 
   const handleBack = () => {
     navigate("/leave-request");
@@ -56,11 +50,13 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
 
   const handleDownloadAttachment = () => {
     if (selectedRequest?.attachmentId) {
-      window.open(getAttachmentDownloadUrl(selectedRequest.attachmentId), "_blank");
+      window.open(
+        getAttachmentDownloadUrl(selectedRequest.attachmentId),
+        "_blank"
+      );
     }
   };
 
-  // Show loading state
   if (loading) {
     return (
       <Box
@@ -76,7 +72,6 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <Box
@@ -92,8 +87,7 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
     );
   }
 
-  // Show not found state
-  if (!selectedRequest) {
+  if (!id || !selectedRequest) {
     return (
       <Box
         sx={{
@@ -103,18 +97,22 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
           minHeight: "100vh",
         }}
       >
-        <Alert severity="warning">Leave request not found</Alert>
+        {/* <Alert severity="warning">Leave request not found or invalid ID</Alert> */}
       </Box>
     );
   }
 
-  // Format dates
-  const formattedStartDate = format(new Date(selectedRequest.startDate), "dd/MM/yyyy");
-  const formattedEndDate = format(new Date(selectedRequest.endDate), "dd/MM/yyyy");
+  const formattedStartDate = format(
+    new Date(selectedRequest.startDate),
+    "dd/MM/yyyy"
+  );
+  const formattedEndDate = format(
+    new Date(selectedRequest.endDate),
+    "dd/MM/yyyy"
+  );
 
   return (
     <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100%", pb: 7 }}>
-      {/* Header */}
       <Box
         sx={{
           bgcolor: "#1976d2",
@@ -135,17 +133,9 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
           Detail Pengajuan
         </Typography>
       </Box>
-      
-      {/* Main Content */}
+
       <Container maxWidth="sm" sx={{ mt: 2 }}>
-        <Paper
-          elevation={1}
-          sx={{
-            borderRadius: 2,
-            overflow: "hidden",
-          }}
-        >
-          {/* Profile Section */}
+        <Paper elevation={1} sx={{ borderRadius: 2, overflow: "hidden" }}>
           <Box
             sx={{
               display: "flex",
@@ -167,12 +157,13 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
               }}
             >
               <Typography sx={{ color: "#555", fontWeight: "bold" }}>
-                {selectedRequest.userName ? selectedRequest.userName.charAt(0) : "U"}
+                {selectedRequest.userName
+                  ? selectedRequest.userName.charAt(0)
+                  : "U"}
               </Typography>
             </Avatar>
           </Box>
 
-          {/* User Info */}
           <Box
             sx={{
               p: 2,
@@ -197,24 +188,22 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
-            {/* Request Type */}
             <Box sx={{ width: "100%", px: 2, py: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                 Jenis Pengajuan
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                {LeaveRequestTypeLabels[selectedRequest.type] || selectedRequest.type}
+                {LeaveRequestTypeLabels[selectedRequest.type] ||
+                  selectedRequest.type}
               </Typography>
             </Box>
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
-            {/* Date Range */}
             <Grid
               container
               sx={{
                 width: "100%",
-                px: 2,
                 py: 1,
                 justifyContent: "space-between",
               }}
@@ -239,7 +228,6 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
-            {/* Reason */}
             <Box sx={{ width: "100%", px: 2, py: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                 Keterangan
@@ -249,23 +237,27 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
-            {/* Review Status */}
             <Box sx={{ width: "100%", px: 2, py: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                 Status
               </Typography>
-              <Typography 
-                variant="body1" 
-                sx={{ 
+              <Typography
+                variant="body1"
+                sx={{
                   fontWeight: "bold",
-                  color: 
-                    selectedRequest.status === "APPROVED" ? "success.main" : 
-                    selectedRequest.status === "REJECTED" ? "error.main" : 
-                    "warning.main"
+                  color:
+                    selectedRequest.status === "APPROVED"
+                      ? "success.main"
+                      : selectedRequest.status === "REJECTED"
+                      ? "error.main"
+                      : "warning.main",
                 }}
               >
-                {selectedRequest.status === "APPROVED" ? "Disetujui" : 
-                 selectedRequest.status === "REJECTED" ? "Ditolak" : "Menunggu Persetujuan"}
+                {selectedRequest.status === "APPROVED"
+                  ? "Disetujui"
+                  : selectedRequest.status === "REJECTED"
+                  ? "Ditolak"
+                  : "Menunggu Persetujuan"}
               </Typography>
             </Box>
 
@@ -276,7 +268,9 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
                   <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                     Catatan Reviewer
                   </Typography>
-                  <Typography variant="body1">{selectedRequest.comments}</Typography>
+                  <Typography variant="body1">
+                    {selectedRequest.comments}
+                  </Typography>
                 </Box>
               </>
             )}
@@ -296,12 +290,7 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
                   onClick={handleDownloadAttachment}
                 >
                   <Avatar
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      bgcolor: "#0073e6",
-                      mr: 1.5,
-                    }}
+                    sx={{ width: 36, height: 36, bgcolor: "#0073e6", mr: 1.5 }}
                   >
                     <InsertDriveFileIcon fontSize="small" />
                   </Avatar>
@@ -315,7 +304,6 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
         </Paper>
       </Container>
 
-      {/* Bottom Navigation */}
       <BottomNav />
     </Box>
   );

@@ -1,3 +1,4 @@
+// LeaveRequestPage.tsx
 import React, { useEffect } from "react";
 import {
   Box,
@@ -130,9 +131,7 @@ const LeaveRequestPage: React.FC = () => {
   };
 
   const handleDetail = (guid: string) => {
-    // Save the selected leave request GUID to localStorage before navigating
-    localStorage.setItem("selectedLeaveRequestGuid", guid);
-    navigate(`/detail-request`);
+    navigate(`/detail-request/${guid}`); // Use dynamic route
   };
 
   return (
@@ -180,7 +179,7 @@ const LeaveRequestPage: React.FC = () => {
         )}
       </Container>
 
-      {/* Upload File Button*/}
+      {/* Upload File Button */}
       <Fab
         onClick={handleForm}
         color="primary"

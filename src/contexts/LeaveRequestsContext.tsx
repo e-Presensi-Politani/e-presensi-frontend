@@ -1,4 +1,4 @@
-// src/contexts/LeaveRequestsContext.tsx
+// LeaveRequestsContext.tsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import {
   LeaveRequest,
@@ -18,8 +18,6 @@ interface LeaveRequestsContextType {
   selectedRequest: LeaveRequest | null;
   loading: boolean;
   error: string | null;
-
-  // CRUD operations
   fetchLeaveRequests: (query?: QueryLeaveRequestsDto) => Promise<void>;
   fetchPendingRequests: (departmentId?: string) => Promise<void>;
   fetchMyRequests: () => Promise<void>;
@@ -38,8 +36,6 @@ interface LeaveRequestsContextType {
     guid: string,
     reviewData: ReviewLeaveRequestDto
   ) => Promise<void>;
-
-  // Helper functions
   clearSelectedRequest: () => void;
   clearError: () => void;
   getAttachmentDownloadUrl: (guid: string) => string;
@@ -60,16 +56,15 @@ export const LeaveRequestsProvider: React.FC<{ children: React.ReactNode }> = ({
   );
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
   const { user, isAuthenticated } = useAuth();
 
-  // Load data based on user role when authenticated
+  // Cache for recently fetched requests
+  const requestCache = new Map<string, LeaveRequest>();
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
   useEffect(() => {
     if (isAuthenticated && user) {
-      // Load my requests for all users
       fetchMyRequests();
-
-      // Load pending requests for department heads and admins
       if (user.role === UserRole.ADMIN || user.role === UserRole.KAJUR) {
         fetchPendingRequests();
       }
@@ -81,7 +76,6 @@ export const LeaveRequestsProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<void> => {
     setLoading(true);
     setError(null);
-
     try {
       const data = await LeaveRequestsService.getAllLeaveRequests(query);
       setLeaveRequests(data);
@@ -105,10 +99,8 @@ export const LeaveRequestsProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       return;
     }
-
     setLoading(true);
     setError(null);
-
     try {
       const data = await LeaveRequestsService.getPendingLeaveRequests(
         departmentId
@@ -128,10 +120,8 @@ export const LeaveRequestsProvider: React.FC<{ children: React.ReactNode }> = ({
       setError("You must be logged in to view your requests");
       return;
     }
-
     setLoading(true);
     setError(null);
-
     try {
       const data = await LeaveRequestsService.getMyLeaveRequests();
       setMyRequests(data);
@@ -145,12 +135,23 @@ export const LeaveRequestsProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const fetchLeaveRequestByGuid = async (guid: string): Promise<void> => {
+    console.log(`Fetching leave request for GUID: ${guid}`);
+    // Check cache first
+    const cachedRequest = requestCache.get(guid);
+    if (cachedRequest) {
+      setSelectedRequest(cachedRequest);
+      return;
+    }
+
     setLoading(true);
     setError(null);
-
     try {
       const data = await LeaveRequestsService.getLeaveRequestByGuid(guid);
       setSelectedRequest(data);
+      // Store in cache with timestamp
+      requestCache.set(guid, data);
+      // Clean up cache after duration
+      setTimeout(() => requestCache.delete(guid), CACHE_DURATION);
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || "Failed to fetch leave request details";
@@ -166,11 +167,8 @@ export const LeaveRequestsProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<void> => {
     setLoading(true);
     setError(null);
-
     try {
       await LeaveRequestsService.createLeaveRequest(data, attachmentFile);
-
-      // Refresh my requests after creating a new request
       await fetchMyRequests();
     } catch (err: any) {
       const errorMessage =
@@ -189,35 +187,26 @@ export const LeaveRequestsProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<void> => {
     setLoading(true);
     setError(null);
-
     try {
       const updatedRequest = await LeaveRequestsService.updateLeaveRequest(
         guid,
         data,
         attachmentFile
       );
-
-      // Update the selected request if it's the one being updated
       if (selectedRequest && selectedRequest.guid === guid) {
         setSelectedRequest(updatedRequest);
       }
-
-      // Update the request in the lists
       const updateRequestInList = (list: LeaveRequest[]) =>
         list.map((req) => (req.guid === guid ? updatedRequest : req));
-
       setLeaveRequests(updateRequestInList(leaveRequests));
       setMyRequests(updateRequestInList(myRequests));
-      setPendingRequests(
-        pendingRequests.filter((req) => req.guid !== guid) // Remove from pending if updated
-      );
-
-      // Refresh the relevant list based on context
+      setPendingRequests(pendingRequests.filter((req) => req.guid !== guid));
       await fetchMyRequests();
-
       if (user?.role === UserRole.ADMIN || user?.role === UserRole.KAJUR) {
         await fetchPendingRequests();
       }
+      // Update cache
+      requestCache.set(guid, updatedRequest);
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || "Failed to update leave request";
@@ -231,19 +220,16 @@ export const LeaveRequestsProvider: React.FC<{ children: React.ReactNode }> = ({
   const deleteLeaveRequest = async (guid: string): Promise<void> => {
     setLoading(true);
     setError(null);
-
     try {
       await LeaveRequestsService.deleteLeaveRequest(guid);
-
-      // Remove request from all lists
       setLeaveRequests(leaveRequests.filter((req) => req.guid !== guid));
       setMyRequests(myRequests.filter((req) => req.guid !== guid));
       setPendingRequests(pendingRequests.filter((req) => req.guid !== guid));
-
-      // Clear selected request if it's the one being deleted
       if (selectedRequest && selectedRequest.guid === guid) {
         setSelectedRequest(null);
       }
+      // Remove from cache
+      requestCache.delete(guid);
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || "Failed to delete leave request";
@@ -268,31 +254,24 @@ export const LeaveRequestsProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       return;
     }
-
     setLoading(true);
     setError(null);
-
     try {
       const updatedRequest = await LeaveRequestsService.reviewLeaveRequest(
         guid,
         reviewData
       );
-
-      // Update the selected request if it's the one being reviewed
       if (selectedRequest && selectedRequest.guid === guid) {
         setSelectedRequest(updatedRequest);
       }
-
-      // Update the request in the lists and remove from pending
       const updateRequestInList = (list: LeaveRequest[]) =>
         list.map((req) => (req.guid === guid ? updatedRequest : req));
-
       setLeaveRequests(updateRequestInList(leaveRequests));
       setMyRequests(updateRequestInList(myRequests));
       setPendingRequests(pendingRequests.filter((req) => req.guid !== guid));
-
-      // Refresh pending requests
       await fetchPendingRequests();
+      // Update cache
+      requestCache.set(guid, updatedRequest);
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || "Failed to review leave request";

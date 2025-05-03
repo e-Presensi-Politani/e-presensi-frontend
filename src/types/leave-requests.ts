@@ -1,5 +1,4 @@
 // src/types/leave-requests.ts
-import { UserRole } from "./enums";
 
 export enum LeaveRequestType {
   LEAVE = "LEAVE", // Cuti
