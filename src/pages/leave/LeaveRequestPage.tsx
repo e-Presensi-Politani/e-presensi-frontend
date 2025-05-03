@@ -130,9 +130,8 @@ const LeaveRequestPage: React.FC = () => {
   };
 
   const handleDetail = (guid: string) => {
-    // Save the selected leave request GUID to localStorage before navigating
-    localStorage.setItem("selectedLeaveRequestGuid", guid);
-    navigate(`/detail-request`);
+    // Navigasi langsung dengan parameter ID tanpa menyimpan di localStorage
+    navigate(`/detail-request/${guid}`);
   };
 
   return (

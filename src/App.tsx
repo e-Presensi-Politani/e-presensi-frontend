@@ -65,7 +65,7 @@ function App() {
                       element={<LeaveRequestPage />}
                     />
                     <Route
-                      path="/detail-request"
+                      path="/detail-request/:id"
                       element={<PengajuanDetailPage />}
                     />
                     <Route

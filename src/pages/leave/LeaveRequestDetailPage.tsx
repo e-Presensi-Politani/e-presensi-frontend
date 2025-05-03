@@ -21,11 +21,7 @@ import { format } from "date-fns";
 import { LeaveRequestTypeLabels } from "../../types/leave-request-enums";
 import { User } from "../../types/users";
 
-interface LeaveRequestDetailPageProps {
-  id?: string;
-}
-
-const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
+const LeaveRequestDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const {
@@ -46,29 +42,34 @@ const LeaveRequestDetailPage: React.FC<LeaveRequestDetailPageProps> = () => {
   } = useUsers();
 
   const [userData, setUserData] = useState<User | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+  // Fetch leave request only once on component mount
   useEffect(() => {
-    // Get the GUID from URL params or localStorage
-    const guid = id || localStorage.getItem("selectedLeaveRequestGuid");
-
-    if (guid) {
-      fetchLeaveRequestByGuid(guid);
+    if (id && isInitialLoad) {
+      fetchLeaveRequestByGuid(id);
+      setIsInitialLoad(false);
     }
 
     // Clean up when component unmounts
     return () => {
       clearSelectedRequest();
       clearSelectedUser();
-      localStorage.removeItem("selectedLeaveRequestGuid");
     };
-  }, [id]);
+  }, [
+    id,
+    isInitialLoad,
+    fetchLeaveRequestByGuid,
+    clearSelectedRequest,
+    clearSelectedUser,
+  ]);
 
-  // Fetch user data once we have the leave request
+  // Fetch user data once we have the leave request and only if userId changes
   useEffect(() => {
     if (selectedRequest?.userId) {
       fetchUserByGuid(selectedRequest.userId);
     }
-  }, [selectedRequest?.userId]);
+  }, [selectedRequest?.userId, fetchUserByGuid]);
 
   // Update local user data state when selectedUser changes
   useEffect(() => {
