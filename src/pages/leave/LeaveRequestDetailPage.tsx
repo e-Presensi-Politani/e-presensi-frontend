@@ -1,5 +1,5 @@
 // LeaveRequestDetailPage.tsx
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Box,
   Container,
@@ -41,23 +41,72 @@ const LeaveRequestDetailPage: React.FC = () => {
     clearSelectedUser,
   } = useUsers();
 
+  // Use refs to track whether we've already initiated fetches
+  const requestFetchedRef = useRef<boolean>(false);
+  const userFetchedRef = useRef<boolean>(false);
+
+  // For tracking current request ID to prevent duplicate fetches
+  const currentRequestIdRef = useRef<string | null>(null);
+  const currentUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    console.log(`LeaveRequestDetailPage mounted with id: ${id}`); // Debug log
-    if (id) {
-      fetchLeaveRequestByGuid(id);
+    console.log(`LeaveRequestDetailPage: processing id: ${id}`);
+
+    if (id && id !== currentRequestIdRef.current) {
+      // Update our ref to mark that we're fetching this request
+      currentRequestIdRef.current = id;
+
+      // Only fetch if we don't have the data or it's for a different request
+      if (!selectedRequest || selectedRequest.guid !== id) {
+        console.log(`LeaveRequestDetailPage: fetching request for id: ${id}`);
+        requestFetchedRef.current = true;
+        fetchLeaveRequestByGuid(id);
+      } else {
+        console.log(
+          `LeaveRequestDetailPage: request already loaded for id: ${id}`
+        );
+      }
     }
 
+    // Cleanup function
     return () => {
-      console.log(`LeaveRequestDetailPage unmounted for id: ${id}`); // Debug log
-      clearSelectedRequest();
-      clearSelectedUser();
+      // We only want to clear data if we're navigating away
+      // In case of StrictMode double-mounting, this will be called immediately
+      // so we don't want to clear data in that case
+      setTimeout(() => {
+        // If the component is truly unmounted, the current ID won't match
+        if (currentRequestIdRef.current !== id) {
+          console.log(`LeaveRequestDetailPage: cleaning up resources`);
+          clearSelectedRequest();
+          clearSelectedUser();
+          requestFetchedRef.current = false;
+          userFetchedRef.current = false;
+        }
+      }, 0); // Schedule this check for the next event loop
     };
-  }, [id]); // Only depend on `id`
+  }, [id]);
 
   // Fetch user data once we have the leave request
   useEffect(() => {
-    if (selectedRequest?.userId) {
-      fetchUserByGuid(selectedRequest.userId);
+    if (
+      selectedRequest?.userId &&
+      selectedRequest.userId !== currentUserIdRef.current
+    ) {
+      // Update our ref to track the current user ID
+      currentUserIdRef.current = selectedRequest.userId;
+
+      // Only fetch if we don't have this user or we have a different user
+      if (!selectedUser || selectedUser.guid !== selectedRequest.userId) {
+        console.log(
+          `LeaveRequestDetailPage: fetching user data for userId: ${selectedRequest.userId}`
+        );
+        userFetchedRef.current = true;
+        fetchUserByGuid(selectedRequest.userId);
+      } else {
+        console.log(
+          `LeaveRequestDetailPage: user data already loaded for userId: ${selectedRequest.userId}`
+        );
+      }
     }
   }, [selectedRequest?.userId]);
 
