@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
@@ -26,7 +26,7 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
 import { useAuth } from "../../contexts/AuthContext";
-import { useDepartment } from "../../contexts/DepartmentContext"; // Import useDepartment instead
+import { useDepartment } from "../../contexts/DepartmentContext";
 import { LeaveRequestType } from "../../types/leave-requests";
 
 interface FormData {
@@ -42,7 +42,11 @@ const LeaveRequestFormPage: React.FC = () => {
   const navigate = useNavigate();
   const { createLeaveRequest, loading, error, clearError } = useLeaveRequests();
   const { user: authUser } = useAuth();
-  const { departments, fetchDepartmentsByMember } = useDepartment(); // Use department context
+  const { departments, fetchDepartmentsByMember } = useDepartment();
+
+  // Create refs for the DatePickers to manage focus
+  const startDateRef = useRef<HTMLDivElement | null>(null);
+  const endDateRef = useRef<HTMLDivElement | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
     leaveType: "",
@@ -67,7 +71,6 @@ const LeaveRequestFormPage: React.FC = () => {
   // Update department ID when department data is loaded
   useEffect(() => {
     if (departments && departments.length > 0) {
-      // Use the first department's GUID
       setFormData((prev) => ({
         ...prev,
         departmentId: departments[0].guid,
@@ -84,6 +87,16 @@ const LeaveRequestFormPage: React.FC = () => {
       const { leaveType, ...rest } = formErrors;
       setFormErrors(rest);
     }
+
+    // Programmatically move focus to the "Tanggal Mulai" DatePicker
+    setTimeout(() => {
+      if (startDateRef.current) {
+        const input = startDateRef.current.querySelector("input");
+        if (input) {
+          input.focus();
+        }
+      }
+    }, 100); // Slight delay to ensure Select menu is closed
   };
 
   const handleStartDateChange = (date: Date | null) => {
@@ -112,7 +125,6 @@ const LeaveRequestFormPage: React.FC = () => {
     const files = event.target.files;
     if (files && files.length > 0) {
       const selectedFile = files[0];
-      // Check file size (2MB = 2 * 1024 * 1024 bytes)
       if (selectedFile.size > 2 * 1024 * 1024) {
         setFormErrors({
           ...formErrors,
@@ -121,7 +133,6 @@ const LeaveRequestFormPage: React.FC = () => {
         return;
       }
 
-      // Check file type
       const validTypes = ["application/pdf", "image/jpeg", "image/jpg"];
       if (!validTypes.includes(selectedFile.type)) {
         setFormErrors({
@@ -194,7 +205,7 @@ const LeaveRequestFormPage: React.FC = () => {
           !formData.leaveType ||
           !formData.departmentId
         ) {
-          return; // Validation should prevent this, but double-check
+          return;
         }
 
         await createLeaveRequest(
@@ -210,13 +221,11 @@ const LeaveRequestFormPage: React.FC = () => {
 
         setSubmitSuccess(true);
 
-        // Reset form after successful submission
         setTimeout(() => {
           navigate("/leave-request");
         }, 1500);
       } catch (err) {
         console.error("Failed to submit leave request:", err);
-        // Error will be handled by the context and displayed
       }
     }
   };
@@ -229,7 +238,6 @@ const LeaveRequestFormPage: React.FC = () => {
     clearError();
   };
 
-  // Show department selection dropdown if user belongs to multiple departments
   const renderDepartmentSelection = () => {
     if (departments && departments.length > 1) {
       return (
@@ -249,6 +257,9 @@ const LeaveRequestFormPage: React.FC = () => {
                 const { departmentId, ...rest } = formErrors;
                 setFormErrors(rest);
               }
+              setTimeout(() => {
+                document.getElementById("form-container")?.focus();
+              }, 10);
             }}
             sx={{
               "& fieldset": {
@@ -273,7 +284,6 @@ const LeaveRequestFormPage: React.FC = () => {
 
   return (
     <Box sx={{ bgcolor: "#fff", minHeight: "100vh", width: "100%", pb: 6 }}>
-      {/* Header */}
       <Box
         sx={{
           bgcolor: "#1976d2",
@@ -292,7 +302,6 @@ const LeaveRequestFormPage: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Error Snackbar */}
       <Snackbar
         open={!!error}
         autoHideDuration={6000}
@@ -308,14 +317,12 @@ const LeaveRequestFormPage: React.FC = () => {
         </Alert>
       </Snackbar>
 
-      {/* Success Message */}
       {submitSuccess && (
         <Alert severity="success" sx={{ mt: 2 }}>
           Pengajuan berhasil dikirim!
         </Alert>
       )}
 
-      {/* Form Content */}
       <Container sx={{ py: 2 }}>
         <Paper
           elevation={0}
@@ -324,8 +331,9 @@ const LeaveRequestFormPage: React.FC = () => {
             borderRadius: 2,
             mb: 2,
           }}
+          tabIndex={-1}
+          id="form-container"
         >
-          {/* Department Selection (if multiple departments) */}
           {renderDepartmentSelection()}
 
           <FormControl fullWidth error={!!formErrors.leaveType} sx={{ mb: 3 }}>
@@ -336,6 +344,20 @@ const LeaveRequestFormPage: React.FC = () => {
               value={formData.leaveType}
               label="Jenis Pengajuan"
               onChange={handleLeaveTypeChange}
+              MenuProps={{
+                disablePortal: false,
+                disableScrollLock: true,
+                onClose: () => {
+                  setTimeout(() => {
+                    if (startDateRef.current) {
+                      const input = startDateRef.current.querySelector("input");
+                      if (input) {
+                        input.focus();
+                      }
+                    }
+                  }, 100);
+                },
+              }}
               sx={{
                 "& fieldset": {
                   borderRadius: 2,
@@ -357,7 +379,7 @@ const LeaveRequestFormPage: React.FC = () => {
           </FormControl>
 
           <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 3 }} ref={startDateRef}>
               <DatePicker
                 label="Tanggal Mulai"
                 value={formData.startDate}
@@ -367,6 +389,18 @@ const LeaveRequestFormPage: React.FC = () => {
                     fullWidth: true,
                     error: !!formErrors.startDate,
                     helperText: formErrors.startDate,
+                    InputProps: {
+                      id: "startDate",
+                    },
+                  },
+                  popper: {
+                    disablePortal: false,
+                    modifiers: [
+                      {
+                        name: "preventOverflow",
+                        enabled: true,
+                      },
+                    ],
                   },
                 }}
                 sx={{
@@ -377,7 +411,7 @@ const LeaveRequestFormPage: React.FC = () => {
               />
             </Box>
 
-            <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 3 }} ref={endDateRef}>
               <DatePicker
                 label="Tanggal Selesai"
                 value={formData.endDate}
@@ -387,6 +421,18 @@ const LeaveRequestFormPage: React.FC = () => {
                     fullWidth: true,
                     error: !!formErrors.endDate,
                     helperText: formErrors.endDate,
+                    InputProps: {
+                      id: "endDate",
+                    },
+                  },
+                  popper: {
+                    disablePortal: false,
+                    modifiers: [
+                      {
+                        name: "preventOverflow",
+                        enabled: true,
+                      },
+                    ],
                   },
                 }}
                 sx={{
@@ -463,7 +509,6 @@ const LeaveRequestFormPage: React.FC = () => {
             {loading ? <CircularProgress size={24} color="inherit" /> : "Kirim"}
           </Button>
 
-          {/* Display info text if no departments found */}
           {(!departments || departments.length === 0) && (
             <Alert severity="error" sx={{ mt: 2 }}>
               Anda belum terdaftar di departemen manapun - Harap hubungi
@@ -473,7 +518,6 @@ const LeaveRequestFormPage: React.FC = () => {
         </Paper>
       </Container>
 
-      {/* Bottom Navigation */}
       <BottomNav />
     </Box>
   );
