@@ -17,6 +17,7 @@ import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import { useNavigate, useParams } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
+import { useUsers } from "../../contexts/UserContext";
 import { format } from "date-fns";
 import { LeaveRequestTypeLabels } from "../../types/leave-request-enums";
 
@@ -25,12 +26,20 @@ const LeaveRequestDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const {
     selectedRequest,
-    loading,
-    error,
+    loading: leaveLoading,
+    error: leaveError,
     fetchLeaveRequestByGuid,
     getAttachmentDownloadUrl,
     clearSelectedRequest,
   } = useLeaveRequests();
+
+  const {
+    selectedUser,
+    loading: userLoading,
+    error: userError,
+    fetchUserByGuid,
+    clearSelectedUser,
+  } = useUsers();
 
   useEffect(() => {
     console.log(`LeaveRequestDetailPage mounted with id: ${id}`); // Debug log
@@ -41,8 +50,16 @@ const LeaveRequestDetailPage: React.FC = () => {
     return () => {
       console.log(`LeaveRequestDetailPage unmounted for id: ${id}`); // Debug log
       clearSelectedRequest();
+      clearSelectedUser();
     };
   }, [id]); // Only depend on `id`
+
+  // Fetch user data once we have the leave request
+  useEffect(() => {
+    if (selectedRequest?.userId) {
+      fetchUserByGuid(selectedRequest.userId);
+    }
+  }, [selectedRequest?.userId]);
 
   const handleBack = () => {
     navigate("/leave-request");
@@ -56,6 +73,9 @@ const LeaveRequestDetailPage: React.FC = () => {
       );
     }
   };
+
+  const loading = leaveLoading || userLoading;
+  const error = leaveError || userError;
 
   if (loading) {
     return (
@@ -97,7 +117,7 @@ const LeaveRequestDetailPage: React.FC = () => {
           minHeight: "100vh",
         }}
       >
-        {/* <Alert severity="warning">Leave request not found or invalid ID</Alert> */}
+        <Alert severity="warning">Leave request not found or invalid ID</Alert>
       </Box>
     );
   }
@@ -110,6 +130,16 @@ const LeaveRequestDetailPage: React.FC = () => {
     new Date(selectedRequest.endDate),
     "dd/MM/yyyy"
   );
+
+  const userFullName =
+    selectedUser?.fullName || selectedRequest.userName || "User";
+  const userPosition = selectedUser?.position || "Position not available";
+  const userNip = selectedUser?.nip || "NIP not available";
+  const userDepartment =
+    selectedUser?.department || selectedRequest.departmentName || "Department";
+
+  // Get first letter for avatar
+  const userInitial = userFullName ? userFullName.charAt(0) : "U";
 
   return (
     <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100%", pb: 7 }}>
@@ -147,7 +177,7 @@ const LeaveRequestDetailPage: React.FC = () => {
             }}
           >
             <Avatar
-              src={undefined}
+              src={selectedUser?.profileImage}
               alt="Profile"
               sx={{
                 width: 80,
@@ -157,9 +187,7 @@ const LeaveRequestDetailPage: React.FC = () => {
               }}
             >
               <Typography sx={{ color: "#555", fontWeight: "bold" }}>
-                {selectedRequest.userName
-                  ? selectedRequest.userName.charAt(0)
-                  : "U"}
+                {userInitial}
               </Typography>
             </Avatar>
           </Box>
@@ -173,17 +201,20 @@ const LeaveRequestDetailPage: React.FC = () => {
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 0.5 }}>
-              {selectedRequest.userName || "User"}
+              {userFullName}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5 }}>
-              {selectedRequest.userId}
+              {userNip}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              {userPosition}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ mb: 2, textAlign: "center" }}
             >
-              {selectedRequest.departmentName || "Department"}
+              {userDepartment}
             </Typography>
 
             <Divider sx={{ width: "100%", my: 1 }} />
