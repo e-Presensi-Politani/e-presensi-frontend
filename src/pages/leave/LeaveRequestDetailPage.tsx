@@ -243,31 +243,13 @@ const LeaveRequestDetailPage: React.FC = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
               {userPosition}
             </Typography>
-            {userEmail && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 0.5 }}
-              >
-                {userEmail}
-              </Typography>
-            )}
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ mb: 0.5, textAlign: "center" }}
+              sx={{ mb: 2, textAlign: "center" }}
             >
               {userDepartment}
             </Typography>
-            {userPosition && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 2, textAlign: "center" }}
-              >
-                {userPosition}
-              </Typography>
-            )}
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
