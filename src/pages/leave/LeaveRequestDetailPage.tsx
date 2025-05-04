@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// LeaveRequestDetailPage.tsx
+import React, { useEffect, useRef } from "react";
 import {
   Box,
   Container,
@@ -19,7 +20,6 @@ import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
 import { useUsers } from "../../contexts/UserContext";
 import { format } from "date-fns";
 import { LeaveRequestTypeLabels } from "../../types/leave-request-enums";
-import { User } from "../../types/users";
 
 const LeaveRequestDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -41,42 +41,59 @@ const LeaveRequestDetailPage: React.FC = () => {
     clearSelectedUser,
   } = useUsers();
 
-  const [userData, setUserData] = useState<User | null>(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  // Use refs to track whether we've already initiated fetches
+  const requestFetchedRef = useRef<boolean>(false);
+  const userFetchedRef = useRef<boolean>(false);
 
-  // Fetch leave request only once on component mount
+  // For tracking current request ID to prevent duplicate fetches
+  const currentRequestIdRef = useRef<string | null>(null);
+  const currentUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (id && isInitialLoad) {
-      fetchLeaveRequestByGuid(id);
-      setIsInitialLoad(false);
+    if (id && id !== currentRequestIdRef.current) {
+      // Update our ref to mark that we're fetching this request
+      currentRequestIdRef.current = id;
+
+      // Only fetch if we don't have the data or it's for a different request
+      if (!selectedRequest || selectedRequest.guid !== id) {
+        requestFetchedRef.current = true;
+        fetchLeaveRequestByGuid(id);
+      }
     }
 
-    // Clean up when component unmounts
+    // Cleanup function
     return () => {
-      clearSelectedRequest();
-      clearSelectedUser();
+      // We only want to clear data if we're navigating away
+      // In case of StrictMode double-mounting, this will be called immediately
+      // so we don't want to clear data in that case
+      setTimeout(() => {
+        // If the component is truly unmounted, the current ID won't match
+        if (currentRequestIdRef.current !== id) {
+          clearSelectedRequest();
+          clearSelectedUser();
+          requestFetchedRef.current = false;
+          userFetchedRef.current = false;
+        }
+      }, 0); // Schedule this check for the next event loop
     };
-  }, [
-    id,
-    isInitialLoad,
-    fetchLeaveRequestByGuid,
-    clearSelectedRequest,
-    clearSelectedUser,
-  ]);
+  }, [id]);
 
-  // Fetch user data once we have the leave request and only if userId changes
+  // Modified useEffect for fetching user data - remove console.logs
   useEffect(() => {
-    if (selectedRequest?.userId) {
-      fetchUserByGuid(selectedRequest.userId);
-    }
-  }, [selectedRequest?.userId, fetchUserByGuid]);
+    if (
+      selectedRequest?.userId &&
+      selectedRequest.userId !== currentUserIdRef.current
+    ) {
+      // Update our ref to track the current user ID
+      currentUserIdRef.current = selectedRequest.userId;
 
-  // Update local user data state when selectedUser changes
-  useEffect(() => {
-    if (selectedUser) {
-      setUserData(selectedUser);
+      // Only fetch if we don't have this user or we have a different user
+      if (!selectedUser || selectedUser.guid !== selectedRequest.userId) {
+        userFetchedRef.current = true;
+        fetchUserByGuid(selectedRequest.userId);
+      }
     }
-  }, [selectedUser]);
+  }, [selectedRequest?.userId]);
 
   const handleBack = () => {
     navigate("/leave-request");
@@ -91,8 +108,9 @@ const LeaveRequestDetailPage: React.FC = () => {
     }
   };
 
-  // Show loading state
   const loading = leaveLoading || userLoading;
+  const error = leaveError || userError;
+
   if (loading) {
     return (
       <Box
@@ -108,8 +126,6 @@ const LeaveRequestDetailPage: React.FC = () => {
     );
   }
 
-  // Show error state
-  const error = leaveError || userError;
   if (error) {
     return (
       <Box
@@ -125,8 +141,7 @@ const LeaveRequestDetailPage: React.FC = () => {
     );
   }
 
-  // Show not found state
-  if (!selectedRequest) {
+  if (!id || !selectedRequest) {
     return (
       <Box
         sx={{
@@ -136,12 +151,11 @@ const LeaveRequestDetailPage: React.FC = () => {
           minHeight: "100vh",
         }}
       >
-        <Alert severity="warning">Leave request not found</Alert>
+        {/* <Alert severity="warning">Leave request not found or invalid ID</Alert> */}
       </Box>
     );
   }
 
-  // Format dates
   const formattedStartDate = format(
     new Date(selectedRequest.startDate),
     "dd/MM/yyyy"
@@ -151,22 +165,18 @@ const LeaveRequestDetailPage: React.FC = () => {
     "dd/MM/yyyy"
   );
 
-  // Get user information from either the userData or the selectedRequest
-  const userName = userData?.fullName || selectedRequest.userName || "User";
-  const userEmail = userData?.email || "";
-  const userNip = userData?.nip || selectedRequest.userId || "";
+  const userFullName =
+    selectedUser?.fullName || selectedRequest.userName || "User";
+  const userPosition = selectedUser?.position || "Position not available";
+  const userNip = selectedUser?.nip || "NIP not available";
   const userDepartment =
-    userData?.department || selectedRequest.departmentName || "Department";
-  const userPosition = userData?.position || "";
+    selectedUser?.department || selectedRequest.departmentName || "Department";
 
-  // Get avatar initial
-  const getInitial = (name: string) => {
-    return name ? name.charAt(0).toUpperCase() : "U";
-  };
+  // Get first letter for avatar
+  const userInitial = userFullName ? userFullName.charAt(0) : "U";
 
   return (
     <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100%", pb: 7 }}>
-      {/* Header */}
       <Box
         sx={{
           bgcolor: "#1976d2",
@@ -188,16 +198,8 @@ const LeaveRequestDetailPage: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Main Content */}
       <Container maxWidth="sm" sx={{ mt: 2 }}>
-        <Paper
-          elevation={1}
-          sx={{
-            borderRadius: 2,
-            overflow: "hidden",
-          }}
-        >
-          {/* Profile Section */}
+        <Paper elevation={1} sx={{ borderRadius: 2, overflow: "hidden" }}>
           <Box
             sx={{
               display: "flex",
@@ -209,7 +211,7 @@ const LeaveRequestDetailPage: React.FC = () => {
             }}
           >
             <Avatar
-              src={userData?.profileImage}
+              src={selectedUser?.profileImage}
               alt="Profile"
               sx={{
                 width: 80,
@@ -218,13 +220,12 @@ const LeaveRequestDetailPage: React.FC = () => {
                 border: "3px solid #ff5722",
               }}
             >
-              <Typography sx={{ color: "#fff", fontWeight: "bold" }}>
-                {getInitial(userName)}
+              <Typography sx={{ color: "#555", fontWeight: "bold" }}>
+                {userInitial}
               </Typography>
             </Avatar>
           </Box>
 
-          {/* User Info */}
           <Box
             sx={{
               p: 2,
@@ -234,10 +235,13 @@ const LeaveRequestDetailPage: React.FC = () => {
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 0.5 }}>
-              {userName}
+              {userFullName}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5 }}>
               {userNip}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              {userPosition}
             </Typography>
             {userEmail && (
               <Typography
@@ -267,7 +271,6 @@ const LeaveRequestDetailPage: React.FC = () => {
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
-            {/* Request Type */}
             <Box sx={{ width: "100%", px: 2, py: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                 Jenis Pengajuan
@@ -280,7 +283,6 @@ const LeaveRequestDetailPage: React.FC = () => {
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
-            {/* Date Range */}
             <Grid
               container
               sx={{
@@ -309,7 +311,6 @@ const LeaveRequestDetailPage: React.FC = () => {
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
-            {/* Reason */}
             <Box sx={{ width: "100%", px: 2, py: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                 Keterangan
@@ -319,7 +320,6 @@ const LeaveRequestDetailPage: React.FC = () => {
 
             <Divider sx={{ width: "100%", my: 1 }} />
 
-            {/* Review Status */}
             <Box sx={{ width: "100%", px: 2, py: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                 Status
@@ -373,12 +373,7 @@ const LeaveRequestDetailPage: React.FC = () => {
                   onClick={handleDownloadAttachment}
                 >
                   <Avatar
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      bgcolor: "#0073e6",
-                      mr: 1.5,
-                    }}
+                    sx={{ width: 36, height: 36, bgcolor: "#0073e6", mr: 1.5 }}
                   >
                     <InsertDriveFileIcon fontSize="small" />
                   </Avatar>
@@ -392,7 +387,6 @@ const LeaveRequestDetailPage: React.FC = () => {
         </Paper>
       </Container>
 
-      {/* Bottom Navigation */}
       <BottomNav />
     </Box>
   );

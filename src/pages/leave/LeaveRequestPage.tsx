@@ -1,3 +1,4 @@
+// LeaveRequestPage.tsx
 import React, { useEffect } from "react";
 import {
   Box,
@@ -130,8 +131,7 @@ const LeaveRequestPage: React.FC = () => {
   };
 
   const handleDetail = (guid: string) => {
-    // Navigasi langsung dengan parameter ID tanpa menyimpan di localStorage
-    navigate(`/detail-request/${guid}`);
+    navigate(`/detail-request/${guid}`); // Use dynamic route
   };
 
   return (
@@ -179,7 +179,7 @@ const LeaveRequestPage: React.FC = () => {
         )}
       </Container>
 
-      {/* Upload File Button*/}
+      {/* Upload File Button */}
       <Fab
         onClick={handleForm}
         color="primary"
