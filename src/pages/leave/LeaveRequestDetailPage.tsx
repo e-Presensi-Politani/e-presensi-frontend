@@ -50,21 +50,14 @@ const LeaveRequestDetailPage: React.FC = () => {
   const currentUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    console.log(`LeaveRequestDetailPage: processing id: ${id}`);
-
     if (id && id !== currentRequestIdRef.current) {
       // Update our ref to mark that we're fetching this request
       currentRequestIdRef.current = id;
 
       // Only fetch if we don't have the data or it's for a different request
       if (!selectedRequest || selectedRequest.guid !== id) {
-        console.log(`LeaveRequestDetailPage: fetching request for id: ${id}`);
         requestFetchedRef.current = true;
         fetchLeaveRequestByGuid(id);
-      } else {
-        console.log(
-          `LeaveRequestDetailPage: request already loaded for id: ${id}`
-        );
       }
     }
 
@@ -76,7 +69,6 @@ const LeaveRequestDetailPage: React.FC = () => {
       setTimeout(() => {
         // If the component is truly unmounted, the current ID won't match
         if (currentRequestIdRef.current !== id) {
-          console.log(`LeaveRequestDetailPage: cleaning up resources`);
           clearSelectedRequest();
           clearSelectedUser();
           requestFetchedRef.current = false;
@@ -86,7 +78,7 @@ const LeaveRequestDetailPage: React.FC = () => {
     };
   }, [id]);
 
-  // Fetch user data once we have the leave request
+  // Modified useEffect for fetching user data - remove console.logs
   useEffect(() => {
     if (
       selectedRequest?.userId &&
@@ -97,15 +89,8 @@ const LeaveRequestDetailPage: React.FC = () => {
 
       // Only fetch if we don't have this user or we have a different user
       if (!selectedUser || selectedUser.guid !== selectedRequest.userId) {
-        console.log(
-          `LeaveRequestDetailPage: fetching user data for userId: ${selectedRequest.userId}`
-        );
         userFetchedRef.current = true;
         fetchUserByGuid(selectedRequest.userId);
-      } else {
-        console.log(
-          `LeaveRequestDetailPage: user data already loaded for userId: ${selectedRequest.userId}`
-        );
       }
     }
   }, [selectedRequest?.userId]);
@@ -166,7 +151,7 @@ const LeaveRequestDetailPage: React.FC = () => {
           minHeight: "100vh",
         }}
       >
-        <Alert severity="warning">Leave request not found or invalid ID</Alert>
+        {/* <Alert severity="warning">Leave request not found or invalid ID</Alert> */}
       </Box>
     );
   }

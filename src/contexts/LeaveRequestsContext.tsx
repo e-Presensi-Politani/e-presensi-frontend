@@ -135,7 +135,6 @@ export const LeaveRequestsProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const fetchLeaveRequestByGuid = async (guid: string): Promise<void> => {
-    console.log(`Fetching leave request for GUID: ${guid}`);
     // Check cache first
     const cachedRequest = requestCache.get(guid);
     if (cachedRequest) {
