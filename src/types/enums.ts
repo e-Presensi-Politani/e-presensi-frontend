@@ -14,3 +14,16 @@ export enum WorkingStatus {
   ON_LEAVE = "on_leave",
   OFFICIAL_TRAVEL = "official_travel",
 }
+
+export enum ReportPeriod {
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+  MONTHLY = 'monthly',
+  CUSTOM = 'custom',
+}
+
+export enum ReportFormat {
+  EXCEL = 'excel',
+  PDF = 'pdf',
+  CSV = 'csv',
+}
