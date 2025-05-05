@@ -8,7 +8,6 @@ import {
   GenerateReportParams,
   ReportResponse,
 } from "../types/statistics";
-import { ReportPeriod } from "../types/enums";
 
 interface StatisticsContextType {
   statistics: StatisticsSummary | null;

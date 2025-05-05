@@ -23,32 +23,92 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
+import { useStatistics } from "../../contexts/StatisticsContext";
+import { ReportPeriod } from "../../types/enums";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { logout, user: authUser } = useAuth();
-  const { fetchUserByGuid, selectedUser, loading, error, clearError } =
-    useUsers();
+  const {
+    fetchUserByGuid,
+    selectedUser,
+    loading: userLoading,
+    error: userError,
+    clearError: clearUserError,
+  } = useUsers();
+  const {
+    statistics,
+    loading: statsLoading,
+    error: statsError,
+    getMyStatistics,
+    clearError: clearStatsError,
+  } = useStatistics();
 
-  // Stats data (to be replaced with actual API data in future)
-  const statsData = {
-    totalKehadiran: "18/20 hari",
-    rataJamKerja: "8.2 Jam",
-    izinLupaAbsen: 2,
-    presentaseKehadiran: 90,
+  // Get current date for default query params
+  const today = new Date();
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  // Format dates for API request
+  const formatDate = (date: Date): string => {
+    return date.toISOString().split("T")[0];
   };
 
   // Fetch user details when component mounts
   useEffect(() => {
     if (authUser?.guid) {
       fetchUserByGuid(authUser.guid);
+
+      // Fetch statistics for the current month
+      getMyStatistics({
+        period: ReportPeriod.MONTHLY,
+        startDate: formatDate(firstDayOfMonth),
+        endDate: formatDate(today),
+      });
     }
 
-    // Clear any selected user data when component unmounts
+    // Clear any selected user data and statistics when component unmounts
     return () => {
-      clearError();
+      clearUserError();
+      clearStatsError();
     };
   }, [authUser?.guid]);
+
+  // Format attendance data for display
+  const getFormattedStats = () => {
+    if (!statistics) {
+      return {
+        totalKehadiran: "0/0 hari",
+        rataJamKerja: "0 Jam",
+        izinLupaAbsen: 0,
+        presentaseKehadiran: 0,
+      };
+    }
+
+    const totalDays = statistics.totalDays || 0;
+    const present = statistics.present || 0;
+    const onLeave = statistics.onLeave || 0;
+    const officialTravel = statistics.officialTravel || 0;
+    const remoteWorking = statistics.remoteWorking || 0;
+
+    // Calculate total attendance (present + leave + travel + remote)
+    const totalAttendance = present + onLeave + officialTravel + remoteWorking;
+
+    // Calculate attendance percentage
+    const attendancePercentage =
+      totalDays > 0 ? Math.round((totalAttendance / totalDays) * 100) : 0;
+
+    // Calculate leave/absence requests
+    const leaveRequests = onLeave + officialTravel;
+
+    return {
+      totalKehadiran: `${totalAttendance}/${totalDays} hari`,
+      rataJamKerja: `${statistics.averageWorkHours?.toFixed(1) || "0"} Jam`,
+      izinLupaAbsen: leaveRequests,
+      presentaseKehadiran: attendancePercentage,
+    };
+  };
+
+  const statsData = getFormattedStats();
 
   const handleChangePassword = () => {
     navigate("/change-password");
@@ -59,7 +119,9 @@ const ProfilePage: React.FC = () => {
     navigate("/");
   };
 
-  if (loading) {
+  const isLoading = userLoading || statsLoading;
+
+  if (isLoading) {
     return (
       <Box
         sx={{
@@ -92,10 +154,24 @@ const ProfilePage: React.FC = () => {
       </Box>
 
       <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
-        {/* Error Alert */}
-        {error && (
-          <Alert severity="error" sx={{ mt: 2, mb: 2 }} onClose={clearError}>
-            {error}
+        {/* Error Alerts */}
+        {userError && (
+          <Alert
+            severity="error"
+            sx={{ mt: 2, mb: 2 }}
+            onClose={clearUserError}
+          >
+            {userError}
+          </Alert>
+        )}
+
+        {statsError && (
+          <Alert
+            severity="error"
+            sx={{ mt: 2, mb: 2 }}
+            onClose={clearStatsError}
+          >
+            {statsError}
           </Alert>
         )}
 
@@ -151,14 +227,20 @@ const ProfilePage: React.FC = () => {
         </Paper>
 
         {/* Stats */}
+        <Typography
+          variant="subtitle1"
+          sx={{ mb: 1, fontWeight: "medium", color: "text.secondary" }}
+        >
+          Statistik Bulan Ini
+        </Typography>
+
         <Grid container spacing={1} sx={{ mb: 2 }}>
-          <Grid>
+          <Grid >
             <Card
               sx={{
                 bgcolor: "#4CAF50",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
               }}
             >
               <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
@@ -172,13 +254,12 @@ const ProfilePage: React.FC = () => {
             </Card>
           </Grid>
 
-          <Grid>
+          <Grid >
             <Card
               sx={{
                 bgcolor: "#FFC107",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
               }}
             >
               <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
@@ -192,18 +273,17 @@ const ProfilePage: React.FC = () => {
             </Card>
           </Grid>
 
-          <Grid>
+          <Grid >
             <Card
               sx={{
                 bgcolor: "#F44336",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
               }}
             >
               <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
                 <Typography variant="body2" sx={{ mb: 1 }} noWrap>
-                  Izin/Lupa Absen
+                  Izin/Cuti
                 </Typography>
                 <Typography variant="h5" fontWeight="bold">
                   {statsData.izinLupaAbsen}
@@ -212,13 +292,12 @@ const ProfilePage: React.FC = () => {
             </Card>
           </Grid>
 
-          <Grid>
+          <Grid >
             <Card
               sx={{
                 bgcolor: "#00BCD4",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
               }}
             >
               <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
@@ -239,6 +318,23 @@ const ProfilePage: React.FC = () => {
             </Card>
           </Grid>
         </Grid>
+
+        {/* View Full Statistics Button */}
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={() => navigate("/statistics")}
+            sx={{
+              width: { xs: "100%", sm: "80%" },
+              mb: 2,
+              textTransform: "none",
+              borderRadius: 1,
+            }}
+          >
+            Lihat Statistik Lengkap
+          </Button>
+        </Box>
 
         {/* Change Password Button */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
