@@ -1,5 +1,5 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
   Container,
@@ -12,29 +12,32 @@ import {
   TableRow,
   Button,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import WarningIcon from "@mui/icons-material/Warning";
 import BottomNav from "../../../components/BottomNav";
+import { useAttendance } from "../../../contexts/AttendanceContext";
+import { format } from "date-fns";
+import { id } from "date-fns/locale/id";
 
-interface AttendanceDetailProps {
-  name?: string;
-  date?: string;
-  checkIn?: string;
-  checkOut?: string;
-  totalHours?: number;
-  status?: string;
-}
-
-const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
-  name = "M. Ghozi Syah Putra",
-  date = "Senin, 06 Januari 2025",
-  checkIn = "09:00",
-  checkOut = "16:00",
-  totalHours = 7,
-  status = "Jam Kerja Kurang",
-}) => {
+const AttendanceDetailProblem: React.FC = () => {
   const navigate = useNavigate();
+  const { guid } = useParams<{ guid: string }>();
+  const { fetchAttendanceById, selectedAttendance, loading, error } =
+    useAttendance();
+
+  useEffect(() => {
+    if (guid) {
+      let isMounted = true;
+      fetchAttendanceById(guid).catch(() => {
+        if (!isMounted) return;
+      });
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [guid, fetchAttendanceById]);
 
   const handleBack = () => {
     navigate(-1);
@@ -43,6 +46,43 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
   const handleRequestPermission = () => {
     navigate("/attendance-correction");
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Typography color="error" align="center" sx={{ mt: 4 }}>
+        {error}
+      </Typography>
+    );
+  }
+
+  if (!selectedAttendance) {
+    return (
+      <Typography align="center" sx={{ mt: 4 }}>
+        Data tidak ditemukan
+      </Typography>
+    );
+  }
+
+  const checkInTime = selectedAttendance.checkInTime
+    ? format(new Date(selectedAttendance.checkInTime), "HH:mm")
+    : "--:--";
+  const checkOutTime = selectedAttendance.checkOutTime
+    ? format(new Date(selectedAttendance.checkOutTime), "HH:mm")
+    : "--:--";
+  const totalHours = selectedAttendance.workHours || 0;
+  const attendanceDate = format(
+    new Date(selectedAttendance.date),
+    "EEEE, dd MMMM yyyy",
+    { locale: id }
+  );
 
   return (
     <Box
@@ -55,7 +95,6 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
         flexDirection: "column",
       }}
     >
-      {/* Header */}
       <Box
         sx={{
           bgcolor: "#FFC107",
@@ -76,8 +115,6 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
           Detail Presensi
         </Typography>
       </Box>
-
-      {/* Warning Banner */}
       <Container maxWidth="sm" sx={{ mt: 2, mb: 2, px: 1 }}>
         <Paper
           sx={{
@@ -108,15 +145,13 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
               Jam Kerja Kurang!
             </Typography>
             <Typography variant="body2">
-              {date}
+              {attendanceDate}
               <br />
               {totalHours} Jam
             </Typography>
           </Box>
         </Paper>
       </Container>
-
-      {/* Attendance Details */}
       <Container maxWidth="sm" sx={{ px: 1 }}>
         <Paper sx={{ borderRadius: 2, mb: 2 }}>
           <TableContainer>
@@ -130,7 +165,9 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
                   >
                     Nama
                   </TableCell>
-                  <TableCell align="right">{name}</TableCell>
+                  <TableCell align="right">
+                    {selectedAttendance.userId}
+                  </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell
@@ -140,7 +177,7 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
                   >
                     Absen Masuk
                   </TableCell>
-                  <TableCell align="right">{checkIn}</TableCell>
+                  <TableCell align="right">{checkInTime}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell
@@ -150,7 +187,7 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
                   >
                     Absen Keluar
                   </TableCell>
-                  <TableCell align="right">{checkOut}</TableCell>
+                  <TableCell align="right">{checkOutTime}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell
@@ -170,14 +207,14 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
                   >
                     Status
                   </TableCell>
-                  <TableCell align="right">{status}</TableCell>
+                  <TableCell align="right">
+                    {selectedAttendance.status}
+                  </TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </TableContainer>
         </Paper>
-
-        {/* Permission Request Button */}
         <Button
           fullWidth
           variant="contained"
@@ -188,17 +225,13 @@ const AttendanceDetailProblem: React.FC<AttendanceDetailProps> = ({
             borderRadius: 2,
             textTransform: "none",
             fontWeight: "bold",
-            "&:hover": {
-              bgcolor: "#e6ad00",
-            },
+            "&:hover": { bgcolor: "#e6ad00" },
           }}
           onClick={handleRequestPermission}
         >
           Ajukan Izin
         </Button>
       </Container>
-
-      {/* Bottom Navigation */}
       <Box sx={{ flexGrow: 1 }} />
       <BottomNav />
     </Box>
