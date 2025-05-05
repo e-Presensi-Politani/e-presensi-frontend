@@ -20,6 +20,7 @@ import {
   Check as CheckIcon,
   Close as CloseIcon,
   ReportProblem as WarningIcon,
+  HelpOutline as UnknownIcon,
 } from "@mui/icons-material";
 import BottomNav from "../../components/BottomNav";
 import { useAttendance } from "../../contexts/AttendanceContext";
@@ -38,19 +39,17 @@ interface MonthMapEntry {
 }
 
 const HistoryPage: React.FC = () => {
-  // Get current month and year to initialize the month selector
-  const currentDate = new Date();
-  const currentMonthYear = format(currentDate, "MMMM yyyy", { locale: id });
-  const [month, setMonth] = useState<string>(currentMonthYear);
+  const [month, setMonth] = useState<string>(
+    format(new Date(), "MMMM yyyy", { locale: id })
+  );
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
   const { attendanceRecords, fetchMyAttendanceRecords, loading, error } =
     useAttendance();
   const itemsPerPage = 5;
 
-  // Dynamically generate monthMap for the year 2025
-  const startDate = new Date(2025, 0, 1); // January 2025
-  const endDate = new Date(2025, 11, 31); // December 2025
+  const startDate = new Date(2025, 0, 1);
+  const endDate = new Date(2025, 11, 31);
   const monthsInYear = eachMonthOfInterval({ start: startDate, end: endDate });
   const monthMap: { [key: string]: MonthMapEntry } = monthsInYear.reduce(
     (acc, monthDate) => {
@@ -64,7 +63,6 @@ const HistoryPage: React.FC = () => {
     {} as { [key: string]: MonthMapEntry }
   );
 
-  // Fetch attendance records when month changes, with cleanup to prevent multiple requests
   useEffect(() => {
     const { startDate, endDate } = monthMap[month];
     let isMounted = true;
@@ -77,7 +75,6 @@ const HistoryPage: React.FC = () => {
 
     fetchRecords();
 
-    // Cleanup function to prevent updates after unmount
     return () => {
       isMounted = false;
     };
@@ -85,35 +82,36 @@ const HistoryPage: React.FC = () => {
 
   const handleMonthChange = (event: SelectChangeEvent) => {
     setMonth(event.target.value);
-    setPage(1); // Reset to first page when month changes
+    setPage(1);
   };
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 
-  // Handle navigation based on status
-  const handleDetailClick = (status: string) => {
+  const handleDetailClick = (status: string, guid: string) => {
     switch (status.toLowerCase()) {
       case "present":
-        navigate("/attendance-present");
+      case "ontime":
+        navigate(`/attendance-present/${guid}`);
         break;
       case "absent":
-        navigate("/attendance-absent");
+        navigate(`/attendance-absent/${guid}`);
         break;
       case "late":
       case "earlydeparture":
-        navigate("/attendance-problem");
+        navigate(`/attendance-problem/${guid}`);
         break;
       default:
-        navigate("/attendance-present");
+        navigate(`/attendance-present/${guid}`);
     }
   };
 
-  // Render status icon based on attendance status
   const renderStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
+    const normalizedStatus = status ? status.toLowerCase().trim() : "";
+    switch (normalizedStatus) {
       case "present":
+      case "ontime":
         return <CheckIcon style={{ color: "#4CAF50" }} />;
       case "absent":
         return <CloseIcon style={{ color: "#F44336" }} />;
@@ -121,11 +119,10 @@ const HistoryPage: React.FC = () => {
       case "earlydeparture":
         return <WarningIcon style={{ color: "#FFC107" }} />;
       default:
-        return null;
+        return <UnknownIcon style={{ color: "#757575" }} />;
     }
   };
 
-  // Format attendance data for display
   const formatAttendanceTime = (attendance: any) => {
     if (!attendance.checkInTime && !attendance.checkOutTime) return "--:--";
     const checkIn = attendance.checkInTime
@@ -137,7 +134,6 @@ const HistoryPage: React.FC = () => {
     return `${checkIn} - ${checkOut}`;
   };
 
-  // Calculate paginated data
   const totalPages = Math.ceil(attendanceRecords.length / itemsPerPage);
   const paginatedData = attendanceRecords.slice(
     (page - 1) * itemsPerPage,
@@ -156,14 +152,11 @@ const HistoryPage: React.FC = () => {
         pb: 8,
       }}
     >
-      {/* Header */}
       <Box
         sx={{ bgcolor: "#1976D2", p: 2, color: "white", textAlign: "center" }}
       >
         <Typography variant="h6">Riwayat Presensi</Typography>
       </Box>
-
-      {/* Month selector */}
       <Container maxWidth="sm" sx={{ mt: 2, mb: 2 }}>
         <FormControl fullWidth>
           <Select
@@ -193,8 +186,6 @@ const HistoryPage: React.FC = () => {
           </Select>
         </FormControl>
       </Container>
-
-      {/* Attendance list */}
       <Container maxWidth="sm" sx={{ flex: 1, overflowY: "auto" }}>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
@@ -205,10 +196,12 @@ const HistoryPage: React.FC = () => {
             {error}
           </Typography>
         ) : paginatedData.length === 0 ? (
-          <Typography align="center">Tidak ada data presensi</Typography>
+          <Typography align="center" sx={{ color: "black" }}>
+            Tidak ada data presensi
+          </Typography>
         ) : (
           <List sx={{ p: 0 }}>
-            {paginatedData.map((item, index) => (
+            {paginatedData.map((item) => (
               <Paper
                 key={item.guid}
                 elevation={1}
@@ -218,7 +211,7 @@ const HistoryPage: React.FC = () => {
                   overflow: "hidden",
                   cursor: "pointer",
                 }}
-                onClick={() => handleDetailClick(item.status)}
+                onClick={() => handleDetailClick(item.status, item.guid)}
               >
                 <ListItem sx={{ px: 2, py: 1.5 }}>
                   <ListItemIcon sx={{ minWidth: 40 }}>
@@ -236,8 +229,6 @@ const HistoryPage: React.FC = () => {
             ))}
           </List>
         )}
-
-        {/* Pagination */}
         {totalPages > 1 && (
           <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
             <Pagination
@@ -249,8 +240,6 @@ const HistoryPage: React.FC = () => {
           </Box>
         )}
       </Container>
-
-      {/* Bottom Navigation */}
       <BottomNav />
     </Box>
   );

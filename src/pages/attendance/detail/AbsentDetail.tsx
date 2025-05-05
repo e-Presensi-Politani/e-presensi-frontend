@@ -1,17 +1,74 @@
-import React from "react";
-import { Box, Container, Typography, Paper, IconButton } from "@mui/material";
+import React, { useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  Box,
+  Container,
+  Typography,
+  Paper,
+  IconButton,
+  CircularProgress,
+} from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloseIcon from "@mui/icons-material/Close";
-import { useNavigate } from "react-router-dom";
 import BottomNav from "../../../components/BottomNav";
+import { useAttendance } from "../../../contexts/AttendanceContext";
+import { format } from "date-fns";
+import { id } from "date-fns/locale/id";
 
 const AttendanceDetailAbsent: React.FC = () => {
   const navigate = useNavigate();
+  const { guid } = useParams<{ guid: string }>();
+  const { fetchAttendanceById, selectedAttendance, loading, error } =
+    useAttendance();
+
+  useEffect(() => {
+    if (guid) {
+      let isMounted = true;
+      fetchAttendanceById(guid).catch(() => {
+        if (!isMounted) return;
+      });
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [guid, fetchAttendanceById]);
 
   const handleBack = () => {
-    // Navigate back to the history page
     navigate("/history");
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Typography color="error" align="center" sx={{ mt: 4 }}>
+        {error}
+      </Typography>
+    );
+  }
+
+  if (!selectedAttendance) {
+    return (
+      <Typography align="center" sx={{ mt: 4 }}>
+        Data tidak ditemukan
+      </Typography>
+    );
+  }
+
+  const attendanceTime = selectedAttendance.checkInTime
+    ? format(new Date(selectedAttendance.checkInTime), "HH:mm")
+    : "--:--";
+  const attendanceDate = format(
+    new Date(selectedAttendance.date),
+    "EEEE, dd MMMM yyyy",
+    { locale: id }
+  );
 
   return (
     <Box
@@ -24,7 +81,6 @@ const AttendanceDetailAbsent: React.FC = () => {
         flexDirection: "column",
       }}
     >
-      {/* Header */}
       <Box
         sx={{
           bgcolor: "#E5323E",
@@ -45,8 +101,6 @@ const AttendanceDetailAbsent: React.FC = () => {
           Detail Presensi
         </Typography>
       </Box>
-
-      {/* Attendance Status Card */}
       <Container maxWidth="sm" sx={{ mt: 2 }}>
         <Paper
           sx={{
@@ -56,13 +110,7 @@ const AttendanceDetailAbsent: React.FC = () => {
             color: "white",
           }}
         >
-          <Box
-            sx={{
-              p: 3,
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
+          <Box sx={{ p: 3, display: "flex", alignItems: "center" }}>
             <Box
               sx={{
                 border: "2px solid white",
@@ -82,16 +130,12 @@ const AttendanceDetailAbsent: React.FC = () => {
               <Typography variant="h6" fontWeight="bold">
                 Tidak Hadir
               </Typography>
-              <Typography variant="body2">Selasa, 02 Januari 2025</Typography>
-              <Typography variant="body2">--:--</Typography>
+              <Typography variant="body2">{attendanceDate}</Typography>
+              <Typography variant="body2">{attendanceTime}</Typography>
             </Box>
           </Box>
         </Paper>
       </Container>
-
-      {/* You can add more details here if needed */}
-
-      {/* Bottom Navigation */}
       <Box sx={{ flexGrow: 1 }} />
       <BottomNav />
     </Box>

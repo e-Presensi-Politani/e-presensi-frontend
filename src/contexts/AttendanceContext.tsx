@@ -1,5 +1,11 @@
 // src/contexts/AttendanceContext.tsx
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import {
   Attendance,
   CheckInDto,
@@ -13,7 +19,6 @@ import { useAuth } from "./AuthContext";
 import { UserRole } from "../types/enums";
 
 interface AttendanceContextType {
-  // State
   todayAttendance: Attendance | null;
   attendanceRecords: Attendance[];
   selectedAttendance: Attendance | null;
@@ -21,7 +26,6 @@ interface AttendanceContextType {
   loading: boolean;
   error: string | null;
 
-  // Actions
   checkIn: (checkInData: CheckInDto, photo?: File) => Promise<void>;
   checkOut: (checkOutData: CheckOutDto, photo?: File) => Promise<void>;
   fetchTodayAttendance: () => Promise<void>;
@@ -53,7 +57,6 @@ const AttendanceContext = createContext<AttendanceContextType | undefined>(
 export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  // State variables
   const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(
     null
   );
@@ -64,10 +67,13 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
     useState<AttendanceSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  // Cache to store fetched attendance records by guid
+  const [attendanceCache, setAttendanceCache] = useState<{
+    [key: string]: Attendance;
+  }>({});
 
   const { user, isAuthenticated } = useAuth();
 
-  // Load today's attendance when user is authenticated
   useEffect(() => {
     if (isAuthenticated) {
       fetchTodayAttendance();
@@ -80,7 +86,6 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<void> => {
     setLoading(true);
     setError(null);
-
     try {
       const attendance = await AttendanceService.checkIn(checkInData, photo);
       setTodayAttendance(attendance);
@@ -99,7 +104,6 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<void> => {
     setLoading(true);
     setError(null);
-
     try {
       const attendance = await AttendanceService.checkOut(checkOutData, photo);
       setTodayAttendance(attendance);
@@ -115,7 +119,6 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
   const fetchTodayAttendance = async (): Promise<void> => {
     setLoading(true);
     setError(null);
-
     try {
       const attendance = await AttendanceService.getTodayAttendance();
       setTodayAttendance(attendance);
@@ -131,7 +134,6 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
   const fetchAttendanceRecords = async (
     params: AttendanceQueryParams
   ): Promise<void> => {
-    // Check if user has permission (admin or department head)
     if (
       !user ||
       (user.role !== UserRole.ADMIN && user.role !== UserRole.KAJUR)
@@ -141,10 +143,8 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       return;
     }
-
     setLoading(true);
     setError(null);
-
     try {
       const records = await AttendanceService.getAllAttendance(params);
       setAttendanceRecords(records);
@@ -176,27 +176,39 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
 
-  const fetchAttendanceById = async (guid: string): Promise<void> => {
-    setLoading(true);
-    setError(null);
+  const fetchAttendanceById = useCallback(
+    async (guid: string): Promise<void> => {
+      // Check if the attendance record is already in the cache
+      if (attendanceCache[guid]) {
+        setSelectedAttendance(attendanceCache[guid]);
+        return;
+      }
 
-    try {
-      const attendance = await AttendanceService.getAttendanceById(guid);
-      setSelectedAttendance(attendance);
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to fetch attendance details";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(true);
+      setError(null);
+      try {
+        const attendance = await AttendanceService.getAttendanceById(guid);
+        // Store the fetched attendance in the cache
+        setAttendanceCache((prevCache) => ({
+          ...prevCache,
+          [guid]: attendance,
+        }));
+        setSelectedAttendance(attendance);
+      } catch (err: any) {
+        const errorMessage =
+          err.response?.data?.message || "Failed to fetch attendance details";
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [attendanceCache]
+  );
 
   const verifyAttendance = async (
     guid: string,
     verifyData: VerifyAttendanceDto
   ): Promise<void> => {
-    // Check if user has permission (admin or department head)
     if (
       !user ||
       (user.role !== UserRole.ADMIN && user.role !== UserRole.KAJUR)
@@ -206,29 +218,26 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       return;
     }
-
     setLoading(true);
     setError(null);
-
     try {
       const updatedAttendance = await AttendanceService.verifyAttendance(
         guid,
         verifyData
       );
-
-      // Update selected attendance if it's the one being verified
+      // Update the cache
+      setAttendanceCache((prevCache) => ({
+        ...prevCache,
+        [guid]: updatedAttendance,
+      }));
       if (selectedAttendance && selectedAttendance.guid === guid) {
         setSelectedAttendance(updatedAttendance);
       }
-
-      // Update attendance in the records array
       setAttendanceRecords((prevRecords) =>
         prevRecords.map((record) =>
           record.guid === guid ? updatedAttendance : record
         )
       );
-
-      // Update today's attendance if it's the one being verified
       if (todayAttendance && todayAttendance.guid === guid) {
         setTodayAttendance(updatedAttendance);
       }
@@ -248,7 +257,6 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
     userId?: string,
     departmentId?: string
   ): Promise<void> => {
-    // Check if user has permission (admin or department head)
     if (
       !user ||
       (user.role !== UserRole.ADMIN && user.role !== UserRole.KAJUR)
@@ -258,10 +266,8 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       return;
     }
-
     setLoading(true);
     setError(null);
-
     try {
       const summary = await AttendanceService.getAttendanceSummary(
         startDate,
@@ -285,7 +291,6 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<void> => {
     setLoading(true);
     setError(null);
-
     try {
       const summary = await AttendanceService.getMyAttendanceSummary(
         startDate,
@@ -311,15 +316,12 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const value = {
-    // State
     todayAttendance,
     attendanceRecords,
     selectedAttendance,
     attendanceSummary,
     loading,
     error,
-
-    // Actions
     checkIn,
     checkOut,
     fetchTodayAttendance,

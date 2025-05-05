@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -10,28 +11,77 @@ import {
   TableRow,
   Container,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { useNavigate } from "react-router-dom";
 import BottomNav from "../../../components/BottomNav";
+import { useAttendance } from "../../../contexts/AttendanceContext";
+import { format } from "date-fns";
+import { id } from "date-fns/locale/id";
 
 const AttendanceDetailPresent: React.FC = () => {
   const navigate = useNavigate();
+  const { guid } = useParams<{ guid: string }>();
+  const { fetchAttendanceById, selectedAttendance, loading, error } =
+    useAttendance();
 
-  // Mock data
-  const attendanceData = {
-    date: "Senin, 01 Januari 2025",
-    checkIn: "07:00",
-    checkOut: "15:30",
-    total: "8 Jam, 30 Menit",
-    status: "Hadir",
-    name: "M. Ghozi Syah Putra",
-  };
+  useEffect(() => {
+    if (guid) {
+      let isMounted = true;
+      fetchAttendanceById(guid).catch(() => {
+        if (!isMounted) return;
+      });
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [guid, fetchAttendanceById]);
 
   const handleBack = () => {
     navigate("/history");
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Typography color="error" align="center" sx={{ mt: 4 }}>
+        {error}
+      </Typography>
+    );
+  }
+
+  if (!selectedAttendance) {
+    return (
+      <Typography align="center" sx={{ mt: 4 }}>
+        Data tidak ditemukan
+      </Typography>
+    );
+  }
+
+  const checkInTime = selectedAttendance.checkInTime
+    ? format(new Date(selectedAttendance.checkInTime), "HH:mm")
+    : "--:--";
+  const checkOutTime = selectedAttendance.checkOutTime
+    ? format(new Date(selectedAttendance.checkOutTime), "HH:mm")
+    : "--:--";
+  const totalHours = selectedAttendance.workHours
+    ? `${selectedAttendance.workHours} Jam${
+        selectedAttendance.workHours >= 1 ? ", 0 Menit" : ""
+      }`
+    : "0 Jam, 0 Menit";
+  const attendanceDate = format(
+    new Date(selectedAttendance.date),
+    "EEEE, dd MMMM yyyy",
+    { locale: id }
+  );
 
   return (
     <Box
@@ -44,7 +94,6 @@ const AttendanceDetailPresent: React.FC = () => {
         flexDirection: "column",
       }}
     >
-      {/* Header */}
       <Box
         sx={{
           bgcolor: "#4CAF50",
@@ -65,9 +114,7 @@ const AttendanceDetailPresent: React.FC = () => {
           Detail Presensi
         </Typography>
       </Box>
-
       <Container maxWidth="sm" sx={{ flex: 1, overflow: "auto", py: 2 }}>
-        {/* Success Banner */}
         <Paper
           elevation={2}
           sx={{
@@ -98,12 +145,10 @@ const AttendanceDetailPresent: React.FC = () => {
             <Typography variant="h6" fontWeight="bold">
               Absensi Berhasil
             </Typography>
-            <Typography variant="body2">Senin, 01 Januari 2025</Typography>
-            <Typography variant="body2">8 Jam, 30 Menit</Typography>
+            <Typography variant="body2">{attendanceDate}</Typography>
+            <Typography variant="body2">{totalHours}</Typography>
           </Box>
         </Paper>
-
-        {/* Attendance Details */}
         <Paper elevation={1} sx={{ borderRadius: 2, overflow: "hidden" }}>
           <TableContainer>
             <Table>
@@ -120,7 +165,7 @@ const AttendanceDetailPresent: React.FC = () => {
                     align="right"
                     sx={{ borderBottom: "1px solid #e0e0e0" }}
                   >
-                    {attendanceData.name}
+                    {selectedAttendance.userId}
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -135,7 +180,7 @@ const AttendanceDetailPresent: React.FC = () => {
                     align="right"
                     sx={{ borderBottom: "1px solid #e0e0e0" }}
                   >
-                    {attendanceData.checkIn}
+                    {checkInTime}
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -150,7 +195,7 @@ const AttendanceDetailPresent: React.FC = () => {
                     align="right"
                     sx={{ borderBottom: "1px solid #e0e0e0" }}
                   >
-                    {attendanceData.checkOut}
+                    {checkOutTime}
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -165,22 +210,22 @@ const AttendanceDetailPresent: React.FC = () => {
                     align="right"
                     sx={{ borderBottom: "1px solid #e0e0e0" }}
                   >
-                    {attendanceData.total}
+                    {totalHours}
                   </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell component="th" scope="row">
                     Status
                   </TableCell>
-                  <TableCell align="right">{attendanceData.status}</TableCell>
+                  <TableCell align="right">
+                    {selectedAttendance.status}
+                  </TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </TableContainer>
         </Paper>
       </Container>
-
-      {/* Bottom Navigation */}
       <BottomNav />
     </Box>
   );
