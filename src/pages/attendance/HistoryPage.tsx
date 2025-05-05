@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -14,109 +14,149 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  CircularProgress,
 } from "@mui/material";
 import {
   Check as CheckIcon,
   Close as CloseIcon,
   ReportProblem as WarningIcon,
+  HelpOutline as UnknownIcon,
 } from "@mui/icons-material";
 import BottomNav from "../../components/BottomNav";
+import { useAttendance } from "../../contexts/AttendanceContext";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachMonthOfInterval,
+} from "date-fns";
+import { id } from "date-fns/locale/id";
+
+// Define the type for monthMap entries
+interface MonthMapEntry {
+  startDate: string;
+  endDate: string;
+}
 
 const HistoryPage: React.FC = () => {
-  const [month, setMonth] = useState("Januari 2025");
+  const [month, setMonth] = useState<string>(
+    format(new Date(), "MMMM yyyy", { locale: id })
+  );
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
+  const { attendanceRecords, fetchMyAttendanceRecords, loading, error } =
+    useAttendance();
+  const itemsPerPage = 5;
+
+  const startDate = new Date(2025, 0, 1);
+  const endDate = new Date(2025, 11, 31);
+  const monthsInYear = eachMonthOfInterval({ start: startDate, end: endDate });
+  const monthMap: { [key: string]: MonthMapEntry } = monthsInYear.reduce(
+    (acc, monthDate) => {
+      const monthYear = format(monthDate, "MMMM yyyy", { locale: id });
+      acc[monthYear] = {
+        startDate: format(startOfMonth(monthDate), "yyyy-MM-dd"),
+        endDate: format(endOfMonth(monthDate), "yyyy-MM-dd"),
+      };
+      return acc;
+    },
+    {} as { [key: string]: MonthMapEntry }
+  );
+
+  useEffect(() => {
+    const { startDate, endDate } = monthMap[month];
+    let isMounted = true;
+
+    const fetchRecords = async () => {
+      if (isMounted) {
+        await fetchMyAttendanceRecords({ startDate, endDate });
+      }
+    };
+
+    fetchRecords();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [month, fetchMyAttendanceRecords]);
+
   const handleMonthChange = (event: SelectChangeEvent) => {
     setMonth(event.target.value);
+    setPage(1);
   };
 
-  const handlePageChange = (
-    _: React.ChangeEvent<unknown>,
-    value: number
-  ) => {
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 
-  // Updated function to handle navigation based on status
-  const handleDetailClick = (status: string) => {
-    switch (status) {
+  const handleDetailClick = (status: string, guid: string) => {
+    switch (status.toLowerCase()) {
       case "present":
-        navigate("/attendance-present");
+      case "ontime":
+        navigate(`/attendance-present/${guid}`);
         break;
       case "absent":
-        navigate("/attendance-absent");
+        navigate(`/attendance-absent/${guid}`);
         break;
-      case "warning":
-        navigate("/attendance-problem");
+      case "late":
+      case "earlydeparture":
+        navigate(`/attendance-problem/${guid}`);
         break;
       default:
-        navigate("/attendance-present");
+        navigate(`/attendance-present/${guid}`);
     }
   };
 
-  // Sample attendance data
-  const attendanceData = [
-    {
-      date: "Rabu, 01 Januari 2025",
-      time: "07:00 - 15:30",
-      status: "present",
-    },
-    {
-      date: "Kamis, 02 Januari 2025",
-      time: "--:--",
-      status: "absent",
-    },
-    {
-      date: "Jum'at, 03 Januari 2025",
-      time: "08:00 - 16:00",
-      status: "present",
-    },
-    {
-      date: "Senin, 06 Januari 2025",
-      time: "09:00 - 16:00",
-      status: "warning",
-    },
-    {
-      date: "Selasa, 07 Januari 2025",
-      time: "--:-- - 16:00",
-      status: "warning",
-    },
-  ];
-
-  // Function to render status icon
   const renderStatusIcon = (status: string) => {
-    switch (status) {
+    const normalizedStatus = status ? status.toLowerCase().trim() : "";
+    switch (normalizedStatus) {
       case "present":
+      case "ontime":
         return <CheckIcon style={{ color: "#4CAF50" }} />;
       case "absent":
         return <CloseIcon style={{ color: "#F44336" }} />;
-      case "warning":
+      case "late":
+      case "earlydeparture":
         return <WarningIcon style={{ color: "#FFC107" }} />;
       default:
-        return null;
+        return <UnknownIcon style={{ color: "#757575" }} />;
     }
   };
+
+  const formatAttendanceTime = (attendance: any) => {
+    if (!attendance.checkInTime && !attendance.checkOutTime) return "--:--";
+    const checkIn = attendance.checkInTime
+      ? format(new Date(attendance.checkInTime), "HH:mm")
+      : "--:--";
+    const checkOut = attendance.checkOutTime
+      ? format(new Date(attendance.checkOutTime), "HH:mm")
+      : "--:--";
+    return `${checkIn} - ${checkOut}`;
+  };
+
+  const totalPages = Math.ceil(attendanceRecords.length / itemsPerPage);
+  const paginatedData = attendanceRecords.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
 
   return (
     <Box
       sx={{
         bgcolor: "#f5f5f5",
-        width: "100%", // Changed from 100vw to 100%
+        width: "100%",
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        overflowX: "hidden", // Added to prevent horizontal scrolling
-        pb: 8, // Add padding for bottom nav
+        overflowX: "hidden",
+        pb: 8,
       }}
     >
-      {/* Header */}
       <Box
         sx={{ bgcolor: "#1976D2", p: 2, color: "white", textAlign: "center" }}
       >
         <Typography variant="h6">Riwayat Presensi</Typography>
       </Box>
-
-      {/* Month selector */}
       <Container maxWidth="sm" sx={{ mt: 2, mb: 2 }}>
         <FormControl fullWidth>
           <Select
@@ -138,54 +178,68 @@ const HistoryPage: React.FC = () => {
               ".MuiSvgIcon-root": { color: "white" },
             }}
           >
-            <MenuItem value="Januari 2025">Januari 2025</MenuItem>
-            <MenuItem value="Februari 2025">Februari 2025</MenuItem>
-            <MenuItem value="Maret 2025">Maret 2025</MenuItem>
+            {Object.keys(monthMap).map((monthYear) => (
+              <MenuItem key={monthYear} value={monthYear}>
+                {monthYear}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Container>
-
-      {/* Attendance list */}
       <Container maxWidth="sm" sx={{ flex: 1, overflowY: "auto" }}>
-        <List sx={{ p: 0 }}>
-          {attendanceData.map((item, index) => (
-            <Paper
-              key={index}
-              elevation={1}
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                overflow: "hidden",
-                cursor: "pointer",
-              }}
-              onClick={() => handleDetailClick(item.status)}
-            >
-              <ListItem sx={{ px: 2, py: 1.5 }}>
-                <ListItemIcon sx={{ minWidth: 40 }}>
-                  {renderStatusIcon(item.status)}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.date}
-                  secondary={item.time}
-                  primaryTypographyProps={{ fontWeight: "medium" }}
-                />
-              </ListItem>
-            </Paper>
-          ))}
-        </List>
-
-        {/* Pagination */}
-        <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
-          <Pagination
-            count={4}
-            page={page}
-            onChange={handlePageChange}
-            size="medium"
-          />
-        </Box>
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Typography color="error" align="center">
+            {error}
+          </Typography>
+        ) : paginatedData.length === 0 ? (
+          <Typography align="center" sx={{ color: "black" }}>
+            Tidak ada data presensi
+          </Typography>
+        ) : (
+          <List sx={{ p: 0 }}>
+            {paginatedData.map((item) => (
+              <Paper
+                key={item.guid}
+                elevation={1}
+                sx={{
+                  mb: 2,
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  cursor: "pointer",
+                }}
+                onClick={() => handleDetailClick(item.status, item.guid)}
+              >
+                <ListItem sx={{ px: 2, py: 1.5 }}>
+                  <ListItemIcon sx={{ minWidth: 40 }}>
+                    {renderStatusIcon(item.status)}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={format(new Date(item.date), "EEEE, dd MMMM yyyy", {
+                      locale: id,
+                    })}
+                    secondary={formatAttendanceTime(item)}
+                    primaryTypographyProps={{ fontWeight: "medium" }}
+                  />
+                </ListItem>
+              </Paper>
+            ))}
+          </List>
+        )}
+        {totalPages > 1 && (
+          <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              size="medium"
+            />
+          </Box>
+        )}
       </Container>
-
-      {/* Bottom Navigation */}
       <BottomNav />
     </Box>
   );
