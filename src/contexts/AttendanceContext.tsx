@@ -1,5 +1,5 @@
 // src/contexts/AttendanceContext.tsx
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   Attendance,
   CheckInDto,
@@ -157,24 +157,24 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const fetchMyAttendanceRecords = async (
-    params: AttendanceQueryParams
-  ): Promise<void> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const records = await AttendanceService.getMyAttendance(params);
-      setAttendanceRecords(records);
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message ||
-        "Failed to fetch your attendance records";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchMyAttendanceRecords = useCallback(
+    async (params: AttendanceQueryParams): Promise<void> => {
+      setLoading(true);
+      setError(null);
+      try {
+        const records = await AttendanceService.getMyAttendance(params);
+        setAttendanceRecords(records);
+      } catch (err: any) {
+        const errorMessage =
+          err.response?.data?.message ||
+          "Failed to fetch your attendance records";
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   const fetchAttendanceById = async (guid: string): Promise<void> => {
     setLoading(true);
