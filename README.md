@@ -1,54 +1,131 @@
-# React + TypeScript + Vite
+# 📌 e-Presensi Politani Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend aplikasi **e-Presensi Politani** berbasis **React + TypeScript** dengan Vite, dirancang untuk mendukung presensi berbasis lokasi (geo-fencing), manajemen kehadiran, pengajuan izin, dan dashboard kehadiran dosen serta ketua jurusan.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Teknologi yang Digunakan
 
-## Expanding the ESLint configuration
+- ⚛️ React + TypeScript
+- ⚡ Vite
+- 💅 Tailwind CSS
+- 🌐 React Router DOM
+- 📦 React Query
+- 📸 Kamera & Geolocation (HTML5 API)
+- 🧠 React Context API
+- 📊 Chart.js
+- 🗺️ Leaflet.js
+- 🧪 React Hook Form + Zod
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## 📂 Struktur Folder
+
+```
+.
+├── public/                 # Aset publik seperti favicon, ikon, dll
+├── src/
+│   ├── assets/            # Gambar dan logo
+│   ├── components/        # Komponen UI yang dapat digunakan ulang
+│   ├── contexts/          # Context API untuk global state (auth, user, absensi, dsb)
+│   ├── pages/             # Halaman-halaman utama
+│   │   ├── attendance/    # Halaman presensi, koreksi, detail kehadiran
+│   │   ├── auth/          # Login, ubah password
+│   │   ├── dashboard/     # Dashboard user dan kajur
+│   │   ├── leave/         # Pengajuan dan persetujuan cuti
+│   │   ├── misc/          # NotFound dan UnderDevelopment
+│   │   └── profile/       # Halaman profil pengguna
+│   ├── services/          # API service untuk komunikasi ke backend
+│   ├── types/             # Tipe-tipe TypeScript untuk entitas
+│   ├── App.tsx            # Entry utama aplikasi React
+│   ├── main.tsx           # Bootstrap aplikasi
+│   └── index.css          # Global styling
+├── index.html
+├── vite.config.ts
+├── tsconfig\*.json
+└── package.json
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## ⚙️ Instalasi & Menjalankan Project
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```bash
+# Clone repositori ini
+git clone https://github.com/e-Presensi-Politani/e-presensi-frontend.git
+cd e-presensi-frontend
+
+# Install dependencies
+npm install
+
+# Jalankan secara lokal
+npm run dev
+````
+
+Aplikasi akan berjalan di `http://localhost:5173`.
+
+---
+
+## 🌍 Konfigurasi Environment
+
+Buat file `.env` di root proyek jika dibutuhkan:
+
+```env
+VITE_API_URL=http://localhost:3000/api
 ```
+---
+## 📦 Build untuk Produksi
+
+```bash
+npm run build
+```
+
+Output akan berada di folder `dist/`.
+
+---
+
+## 🧩 Fitur Utama
+
+* ✅ Login dengan autentikasi JWT
+* 🧭 Presensi berbasis lokasi (Geo-fencing)
+* 🧾 Riwayat kehadiran harian
+* 📝 Pengajuan cuti, WFH, dinas luar, dll
+* ✅ Approval izin oleh Ketua Jurusan & Wadir 3
+* 📊 Dashboard kehadiran untuk user & kajur
+* 📍 Visualisasi lokasi dengan Leaflet
+* 🛡️ Route protection berbasis role
+* 👤 Manajemen profil & ubah password
+
+---
+
+## 📝 Contributing
+
+Kontribusi sangat terbuka! Ikuti langkah-langkah berikut:
+
+1. **Fork** repositori ini
+2. **Buat branch fitur baru**
+
+   ```bash
+   git checkout -b feature/nama-fitur-anda
+   ```
+3. **Commit** perubahan Anda
+
+   ```bash
+   git commit -m "Menambahkan fitur baru"
+   ```
+4. **Push** ke branch Anda
+
+   ```bash
+   git push origin feature/nama-fitur-anda
+   ```
+5. **Buka Pull Request** ke branch `main`
+
+---
+## 📫 Kontak
+
+> Email: [ghozi286@gmail.com](mailto:ghozi286@gmail.com)
+---
+
+## 📄 Lisensi
+
+MIT License © 2025
