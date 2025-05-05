@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -14,6 +14,8 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   Check as CheckIcon,
@@ -21,70 +23,130 @@ import {
   ReportProblem as WarningIcon,
 } from "@mui/icons-material";
 import BottomNav from "../../components/BottomNav";
+import { useAttendance } from "../../contexts/AttendanceContext";
+import { WorkingStatus } from "../../types/enums";
+import { format, parse, startOfMonth, endOfMonth } from "date-fns";
+import { id } from "date-fns/locale";
 
 const HistoryPage: React.FC = () => {
-  const [month, setMonth] = useState("Januari 2025");
+  const [selectedMonth, setSelectedMonth] = useState(
+    format(new Date(), "MMMM yyyy", { locale: id })
+  );
   const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
   const navigate = useNavigate();
-  const handleMonthChange = (event: SelectChangeEvent) => {
-    setMonth(event.target.value);
+
+  // Get attendance context
+  const {
+    attendanceRecords,
+    fetchMyAttendanceRecords,
+    loading,
+    error,
+    clearError,
+  } = useAttendance();
+
+  // Generate month options for the past year (12 months)
+  const generateMonthOptions = () => {
+    const options = [];
+    const currentDate = new Date();
+
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() - i,
+        1
+      );
+      options.push(format(date, "MMMM yyyy", { locale: id }));
+    }
+
+    return options;
   };
 
-  const handlePageChange = (
-    _: React.ChangeEvent<unknown>,
-    value: number
-  ) => {
+  const monthOptions = generateMonthOptions();
+
+  useEffect(() => {
+    // Parse the selected month string back into a Date object
+    const selectedDate = parse(selectedMonth, "MMMM yyyy", new Date(), {
+      locale: id,
+    });
+
+    // Calculate start and end of selected month
+    const start = format(startOfMonth(selectedDate), "yyyy-MM-dd");
+    const end = format(endOfMonth(selectedDate), "yyyy-MM-dd");
+
+    // Fetch attendance records for the selected month
+    fetchMyAttendanceRecords({
+      startDate: start,
+      endDate: end,
+    });
+  }, [selectedMonth, fetchMyAttendanceRecords]);
+
+  const handleMonthChange = (event: SelectChangeEvent) => {
+    setSelectedMonth(event.target.value);
+    setPage(1); // Reset to first page when changing month
+  };
+
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 
-  // Updated function to handle navigation based on status
-  const handleDetailClick = (status: string) => {
+  // Calculate total number of pages
+  const totalPages = Math.ceil(attendanceRecords.length / pageSize);
+
+  // Get records for current page
+  const currentRecords = attendanceRecords.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
+
+  // Map status from API to UI status
+  const mapStatusToUIStatus = (
+    status: string
+  ): "present" | "absent" | "warning" => {
     switch (status) {
-      case "present":
-        navigate("/attendance-present");
-        break;
-      case "absent":
-        navigate("/attendance-absent");
-        break;
-      case "warning":
-        navigate("/attendance-problem");
-        break;
+      case WorkingStatus.PRESENT:
+        return "present";
+      case WorkingStatus.ABSENT:
+        return "absent";
+      case WorkingStatus.LATE:
+      case WorkingStatus.EARLY_DEPARTURE:
+        return "warning";
+      case WorkingStatus.REMOTE_WORKING:
+      case WorkingStatus.ON_LEAVE:
+      case WorkingStatus.OFFICIAL_TRAVEL:
+        return "present"; // These are valid attendance statuses
       default:
-        navigate("/attendance-present");
+        return "warning";
     }
   };
 
-  // Sample attendance data
-  const attendanceData = [
-    {
-      date: "Rabu, 01 Januari 2025",
-      time: "07:00 - 15:30",
-      status: "present",
-    },
-    {
-      date: "Kamis, 02 Januari 2025",
-      time: "--:--",
-      status: "absent",
-    },
-    {
-      date: "Jum'at, 03 Januari 2025",
-      time: "08:00 - 16:00",
-      status: "present",
-    },
-    {
-      date: "Senin, 06 Januari 2025",
-      time: "09:00 - 16:00",
-      status: "warning",
-    },
-    {
-      date: "Selasa, 07 Januari 2025",
-      time: "--:-- - 16:00",
-      status: "warning",
-    },
-  ];
+  // Function to format time for display
+  const formatAttendanceTime = (record: any) => {
+    if (!record.checkInTime && !record.checkOutTime) {
+      return "--:--";
+    }
+
+    const checkIn = record.checkInTime
+      ? format(new Date(record.checkInTime), "HH:mm")
+      : "--:--";
+
+    const checkOut = record.checkOutTime
+      ? format(new Date(record.checkOutTime), "HH:mm")
+      : "--:--";
+
+    return `${checkIn} - ${checkOut}`;
+  };
+
+  // Updated function to handle navigation based on status
+  const handleDetailClick = (record: any) => {
+    const status = mapStatusToUIStatus(record.status);
+
+    // Store the selected attendance in context
+    navigate(`/attendance-detail/${record.guid}`);
+  };
 
   // Function to render status icon
-  const renderStatusIcon = (status: string) => {
+  const renderStatusIcon = (status: "present" | "absent" | "warning") => {
     switch (status) {
       case "present":
         return <CheckIcon style={{ color: "#4CAF50" }} />;
@@ -101,12 +163,12 @@ const HistoryPage: React.FC = () => {
     <Box
       sx={{
         bgcolor: "#f5f5f5",
-        width: "100%", // Changed from 100vw to 100%
+        width: "100%",
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        overflowX: "hidden", // Added to prevent horizontal scrolling
-        pb: 8, // Add padding for bottom nav
+        overflowX: "hidden",
+        pb: 8,
       }}
     >
       {/* Header */}
@@ -120,7 +182,7 @@ const HistoryPage: React.FC = () => {
       <Container maxWidth="sm" sx={{ mt: 2, mb: 2 }}>
         <FormControl fullWidth>
           <Select
-            value={month}
+            value={selectedMonth}
             onChange={handleMonthChange}
             sx={{
               bgcolor: "#1976D2",
@@ -138,52 +200,93 @@ const HistoryPage: React.FC = () => {
               ".MuiSvgIcon-root": { color: "white" },
             }}
           >
-            <MenuItem value="Januari 2025">Januari 2025</MenuItem>
-            <MenuItem value="Februari 2025">Februari 2025</MenuItem>
-            <MenuItem value="Maret 2025">Maret 2025</MenuItem>
+            {monthOptions.map((month) => (
+              <MenuItem key={month} value={month}>
+                {month}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Container>
 
-      {/* Attendance list */}
-      <Container maxWidth="sm" sx={{ flex: 1, overflowY: "auto" }}>
-        <List sx={{ p: 0 }}>
-          {attendanceData.map((item, index) => (
-            <Paper
-              key={index}
-              elevation={1}
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                overflow: "hidden",
-                cursor: "pointer",
-              }}
-              onClick={() => handleDetailClick(item.status)}
-            >
-              <ListItem sx={{ px: 2, py: 1.5 }}>
-                <ListItemIcon sx={{ minWidth: 40 }}>
-                  {renderStatusIcon(item.status)}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.date}
-                  secondary={item.time}
-                  primaryTypographyProps={{ fontWeight: "medium" }}
-                />
-              </ListItem>
-            </Paper>
-          ))}
-        </List>
+      {/* Error message */}
+      {error && (
+        <Container maxWidth="sm" sx={{ mt: 1, mb: 1 }}>
+          <Alert severity="error" onClose={clearError}>
+            {error}
+          </Alert>
+        </Container>
+      )}
 
-        {/* Pagination */}
-        <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
-          <Pagination
-            count={4}
-            page={page}
-            onChange={handlePageChange}
-            size="medium"
-          />
+      {/* Loading indicator */}
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
+          <CircularProgress />
         </Box>
-      </Container>
+      ) : (
+        <>
+          {/* Attendance list */}
+          <Container maxWidth="sm" sx={{ flex: 1, overflowY: "auto" }}>
+            {currentRecords.length > 0 ? (
+              <List sx={{ p: 0 }}>
+                {currentRecords.map((record, index) => {
+                  const uiStatus = mapStatusToUIStatus(record.status);
+                  const formattedDate = format(
+                    new Date(record.date),
+                    "EEEE, dd MMMM yyyy",
+                    { locale: id }
+                  );
+
+                  return (
+                    <Paper
+                      key={record.guid || index}
+                      elevation={1}
+                      sx={{
+                        mb: 2,
+                        borderRadius: 2,
+                        overflow: "hidden",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => handleDetailClick(record)}
+                    >
+                      <ListItem sx={{ px: 2, py: 1.5 }}>
+                        <ListItemIcon sx={{ minWidth: 40 }}>
+                          {renderStatusIcon(uiStatus)}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={formattedDate}
+                          secondary={formatAttendanceTime(record)}
+                          primaryTypographyProps={{ fontWeight: "medium" }}
+                        />
+                      </ListItem>
+                    </Paper>
+                  );
+                })}
+              </List>
+            ) : (
+              <Box sx={{ textAlign: "center", my: 4 }}>
+                <Typography>
+                  {attendanceRecords.length === 0
+                    ? "Tidak ada data absensi pada bulan ini"
+                    : "Tidak ada data untuk ditampilkan"}
+                </Typography>
+              </Box>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={handlePageChange}
+                  size="medium"
+                />
+              </Box>
+            )}
+          </Container>
+        </>
+      )}
 
       {/* Bottom Navigation */}
       <BottomNav />

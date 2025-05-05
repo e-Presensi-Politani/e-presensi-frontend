@@ -25,6 +25,7 @@ import PersetujuanPage from "./pages/leave/PersetujuanPage";
 import PersetujuanDetailPage from "./pages/leave/PersetujuanDetailPage";
 import RejectApplicationForm from "./pages/leave/RejectPage";
 import PengajuanDetailPage from "./pages/leave/LeaveRequestDetailPage";
+import AttendanceDetailPage from "./pages/attendance/AttendanceDetailPage";
 
 function App() {
   return (
@@ -60,6 +61,10 @@ function App() {
                   >
                     <Route path="/presensi" element={<PresensiPage />} />
                     <Route path="/history" element={<PresensiHistoryPage />} />
+                    <Route
+                      path="/attendance-detail/:id"
+                      element={<AttendanceDetailPage />}
+                    />
                     <Route
                       path="/leave-request"
                       element={<LeaveRequestPage />}
