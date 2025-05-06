@@ -234,13 +234,15 @@ const ProfilePage: React.FC = () => {
           Statistik Bulan Ini
         </Typography>
 
+        {/* Stats */}
         <Grid container spacing={1} sx={{ mb: 2 }}>
-          <Grid >
+          <Grid>
             <Card
               sx={{
                 bgcolor: "#4CAF50",
                 color: "white",
                 height: "12vh",
+                width: "44vw",
               }}
             >
               <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
@@ -254,12 +256,13 @@ const ProfilePage: React.FC = () => {
             </Card>
           </Grid>
 
-          <Grid >
+          <Grid>
             <Card
               sx={{
                 bgcolor: "#FFC107",
                 color: "white",
                 height: "12vh",
+                width: "44vw",
               }}
             >
               <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
@@ -273,17 +276,18 @@ const ProfilePage: React.FC = () => {
             </Card>
           </Grid>
 
-          <Grid >
+          <Grid>
             <Card
               sx={{
                 bgcolor: "#F44336",
                 color: "white",
                 height: "12vh",
+                width: "44vw",
               }}
             >
               <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
                 <Typography variant="body2" sx={{ mb: 1 }} noWrap>
-                  Izin/Cuti
+                  Izin/Lupa Absen
                 </Typography>
                 <Typography variant="h5" fontWeight="bold">
                   {statsData.izinLupaAbsen}
@@ -292,12 +296,13 @@ const ProfilePage: React.FC = () => {
             </Card>
           </Grid>
 
-          <Grid >
+          <Grid>
             <Card
               sx={{
                 bgcolor: "#00BCD4",
                 color: "white",
                 height: "12vh",
+                width: "44vw",
               }}
             >
               <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
@@ -320,7 +325,7 @@ const ProfilePage: React.FC = () => {
         </Grid>
 
         {/* View Full Statistics Button */}
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+        {/* <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
           <Button
             variant="outlined"
             color="primary"
@@ -334,7 +339,7 @@ const ProfilePage: React.FC = () => {
           >
             Lihat Statistik Lengkap
           </Button>
-        </Box>
+        </Box> */}
 
         {/* Change Password Button */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
