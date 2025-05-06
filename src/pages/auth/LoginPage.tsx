@@ -15,6 +15,7 @@ import {
 import { AccountCircle, Lock } from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import loginSvg from "../../assets/images/login.svg";
 
 // Define types for login
 interface LoginCredentials {
@@ -126,7 +127,7 @@ const LoginPage: React.FC = () => {
         >
           <Box
             component="img"
-            src="/src/assets/images/login.svg"
+            src={loginSvg}
             alt="Login Illustration"
             sx={{
               width: { xs: "80%", sm: "60%", md: "80%" },

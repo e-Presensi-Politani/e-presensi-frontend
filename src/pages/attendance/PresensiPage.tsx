@@ -79,7 +79,7 @@ const PresensiPage: React.FC = () => {
   const maxRadius = 450; // in meters
 
   useEffect(() => {
-    // Fetch today's attendance when component mounts
+    // Fetch today's attendance
     fetchTodayAttendance();
 
     // Get user's current location
@@ -113,28 +113,46 @@ const PresensiPage: React.FC = () => {
 
     // Initialize camera stream
     const getCameraStream = async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showNotification(
+          "Your browser does not support camera access.",
+          "error"
+        );
+        return;
+      }
+
+      console.log("Attempting to access camera...");
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
         });
+        console.log("Camera stream obtained:", stream);
         setVideoStream(stream);
         if (videoRef.current) {
+          console.log("Attaching stream to video element");
           videoRef.current.srcObject = stream;
+          videoRef.current.play().catch((error) => {
+            console.error("Error playing video:", error);
+            showNotification("Error playing camera stream.", "error");
+          });
         }
       } catch (error) {
         console.error("Error accessing the camera:", error);
         showNotification(
-          "Unable to access camera. Please check permissions.",
+          "Unable to access camera. Please allow camera permissions in your browser settings.",
           "error"
         );
       }
     };
 
-    getCameraStream();
+    if (videoRef.current) {
+      getCameraStream();
+    }
 
     // Cleanup function
     return () => {
       if (videoStream) {
+        console.log("Stopping camera stream");
         videoStream.getTracks().forEach((track) => track.stop());
       }
     };
@@ -347,7 +365,7 @@ const PresensiPage: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           my: 2,
-          overflow: "auto"
+          overflow: "auto",
         }}
       >
         {/* Attendance status message */}
@@ -409,19 +427,18 @@ const PresensiPage: React.FC = () => {
               </IconButton>
             </Box>
           ) : (
-            videoStream && (
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-            )
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
           )}
 
           {!capturedImage && (
@@ -460,7 +477,7 @@ const PresensiPage: React.FC = () => {
               zoomControl={false}
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <Circle
