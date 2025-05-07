@@ -83,7 +83,6 @@ const PresensiPage: React.FC = () => {
   // Stop the camera stream function
   const stopCameraStream = () => {
     if (videoStream) {
-      console.log("Stopping camera stream");
       videoStream.getTracks().forEach((track) => {
         if (track.readyState === "live") {
           track.stop();
@@ -99,7 +98,6 @@ const PresensiPage: React.FC = () => {
   // Initialize the camera
   const initializeCamera = async () => {
     if (!isMounted.current) {
-      console.log("Component unmounted, aborting camera initialization");
       return;
     }
 
@@ -109,28 +107,24 @@ const PresensiPage: React.FC = () => {
     }
 
     if (videoStream || isInitializing.current) {
-      console.log("Camera already initialized or initializing, skipping...");
       return;
     }
 
     isInitializing.current = true;
-    console.log("Attempting to access camera...");
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
       });
-      console.log("Camera stream obtained:", stream);
       setVideoStream(stream);
 
       if (videoRef.current && isMounted.current) {
-        console.log("Attaching stream to video element");
         videoRef.current.srcObject = stream;
         const playPromise = videoRef.current.play();
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
-              console.log("Video playback started successfully");
+              // Video playback started successfully
             })
             .catch((error) => {
               if (!(error.name === "AbortError")) {
@@ -140,7 +134,6 @@ const PresensiPage: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error("Error accessing the camera:", error);
       showNotification(
         "Unable to access camera. Please allow camera permissions in your browser settings.",
         "error"
@@ -172,8 +165,7 @@ const PresensiPage: React.FC = () => {
         setDistanceToOffice(distance);
         setIsWithinRadius(distance <= maxRadius);
       },
-      (error) => {
-        console.error("Error getting location:", error);
+      (_) => {
         showNotification(
           "Error accessing your location. Please enable location services.",
           "error"
@@ -187,7 +179,6 @@ const PresensiPage: React.FC = () => {
     }
 
     return () => {
-      console.log("Cleaning upd PresensiPage");
       isMounted.current = false;
       stopCameraStream();
     };
@@ -235,7 +226,6 @@ const PresensiPage: React.FC = () => {
   };
 
   const handleBackClick = () => {
-    console.log("Navigating back to dashboard");
     stopCameraStream();
     navigate("/dashboard");
   };
@@ -333,7 +323,7 @@ const PresensiPage: React.FC = () => {
         }
       }, 2000);
     } catch (error) {
-      console.error("Attendance action error:", error);
+      // Error handling
     } finally {
       setIsSubmitting(false);
     }
