@@ -46,15 +46,22 @@ const SelectDisplayText = styled(Typography)({
   lineHeight: "1.2",
 });
 
+// Define correction types mapping
+const CORRECTION_TYPES = {
+  BREAK_TIME_AS_WORK: "Penggunaan Jam Istirahat sebagai Jam Kerja",
+  EARLY_DEPARTURE: "Izin Cepat Pulang",
+  LATE_ARRIVAL: "Izin Terlambat Datang",
+  MISSED_CHECK_IN: "Lupa Absen Check-in",
+  MISSED_CHECK_OUT: "Lupa Absen Check-out",
+};
+
 const AttendanceCorrectionPage: React.FC = () => {
   const navigate = useNavigate();
   const { attendanceId } = useParams<{ attendanceId: string }>();
   const { createCorrection, loading, error, clearError } = useCorrections();
   const { selectedAttendance, fetchAttendanceById } = useAttendance();
 
-  const [type, setPermissionType] = useState<string>(
-    "Pengajuan Penggunaan Jam Istirahat sebagai Jam Kerja"
-  );
+  const [type, setPermissionType] = useState<string>("BREAK_TIME_AS_WORK");
   const [date, setRequestDate] = useState<string>(
     format(new Date(), "yyyy-MM-dd")
   );
@@ -75,7 +82,7 @@ const AttendanceCorrectionPage: React.FC = () => {
   }, [selectedAttendance]);
 
   const handleBack = () => {
-    navigate("/history");
+    navigate(-1);
   };
 
   const handleSubmit = async () => {
@@ -93,7 +100,7 @@ const AttendanceCorrectionPage: React.FC = () => {
 
     try {
       await createCorrection(correctionData);
-      navigate("/attendance-problem", {
+      navigate("/history", {
         state: {
           success: true,
           message: "Pengajuan izin berhasil dikirim",
@@ -112,7 +119,11 @@ const AttendanceCorrectionPage: React.FC = () => {
   // Function to shorten displayed text for mobile
   const getDisplayText = (text: string) => {
     // For mobile display, we'll use the styled component with ellipsis
-    return <SelectDisplayText>{text}</SelectDisplayText>;
+    return (
+      <SelectDisplayText>
+        {CORRECTION_TYPES[text as keyof typeof CORRECTION_TYPES] || text}
+      </SelectDisplayText>
+    );
   };
 
   return (
@@ -207,19 +218,19 @@ const AttendanceCorrectionPage: React.FC = () => {
               IconComponent={KeyboardArrowDownIcon}
             >
               <StyledMenuItem value="BREAK_TIME_AS_WORK">
-                Penggunaan Jam Istirahat sebagai Jam Kerja
+                {CORRECTION_TYPES.BREAK_TIME_AS_WORK}
               </StyledMenuItem>
               <StyledMenuItem value="EARLY_DEPARTURE">
-                Izin Cepat Pulang
+                {CORRECTION_TYPES.EARLY_DEPARTURE}
               </StyledMenuItem>
               <StyledMenuItem value="LATE_ARRIVAL">
-                Izin Terlambat Datang
+                {CORRECTION_TYPES.LATE_ARRIVAL}
               </StyledMenuItem>
               <StyledMenuItem value="MISSED_CHECK_IN">
-                Lupa Absen Check-in
+                {CORRECTION_TYPES.MISSED_CHECK_IN}
               </StyledMenuItem>
               <StyledMenuItem value="MISSED_CHECK_OUT">
-                Lupa Absen Check-out
+                {CORRECTION_TYPES.MISSED_CHECK_OUT}
               </StyledMenuItem>
             </Select>
           </FormControl>
