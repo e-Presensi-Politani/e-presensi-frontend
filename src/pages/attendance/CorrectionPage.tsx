@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Box,
   Container,
@@ -14,12 +14,18 @@ import {
   SelectChangeEvent,
   InputAdornment,
   styled,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditIcon from "@mui/icons-material/Edit";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import BottomNav from "../../components/BottomNav";
+import { useCorrections } from "../../contexts/CorrectionsContext";
+import { useAttendance } from "../../contexts/AttendanceContext";
+import { format } from "date-fns";
+import { CreateCorrectionDto } from "../../types/corrections";
 
 // Custom styled MenuItem for wrapping text
 const StyledMenuItem = styled(MenuItem)({
@@ -40,22 +46,70 @@ const SelectDisplayText = styled(Typography)({
   lineHeight: "1.2",
 });
 
+// Define correction types mapping
+const CORRECTION_TYPES = {
+  BREAK_TIME_AS_WORK: "Penggunaan Jam Istirahat sebagai Jam Kerja",
+  EARLY_DEPARTURE: "Izin Cepat Pulang",
+  LATE_ARRIVAL: "Izin Terlambat Datang",
+  MISSED_CHECK_IN: "Lupa Absen Check-in",
+  MISSED_CHECK_OUT: "Lupa Absen Check-out",
+};
+
 const AttendanceCorrectionPage: React.FC = () => {
   const navigate = useNavigate();
-  const [permissionType, setPermissionType] = useState<string>(
-    "Pengajuan Penggunaan Jam Istirahat sebagai Jam Kerja"
+  const { attendanceId } = useParams<{ attendanceId: string }>();
+  const { createCorrection, loading, error, clearError } = useCorrections();
+  const { selectedAttendance, fetchAttendanceById } = useAttendance();
+
+  const [type, setPermissionType] = useState<string>("BREAK_TIME_AS_WORK");
+  const [date, setRequestDate] = useState<string>(
+    format(new Date(), "yyyy-MM-dd")
   );
-  const [requestDate, setRequestDate] = useState<string>("2025-01-06");
-  const [description, setDescription] = useState<string>("");
+  const [reason, setDescription] = useState<string>("");
+
+  // Fetch attendance data if attendanceId is provided
+  useEffect(() => {
+    if (attendanceId) {
+      fetchAttendanceById(attendanceId);
+    }
+  }, [attendanceId, fetchAttendanceById]);
+
+  // Set request date based on selected attendance
+  useEffect(() => {
+    if (selectedAttendance) {
+      setRequestDate(format(new Date(selectedAttendance.date), "yyyy-MM-dd"));
+    }
+  }, [selectedAttendance]);
 
   const handleBack = () => {
-    navigate("/attendance-problem");
+    navigate(-1);
   };
 
-  const handleSubmit = () => {
-    // Handle form submission logic
-    console.log({ permissionType, requestDate, description });
-    navigate("/attendance-problem");
+  const handleSubmit = async () => {
+    if (!attendanceId) {
+      console.error("No attendance ID found");
+      return;
+    }
+
+    const correctionData: CreateCorrectionDto = {
+      attendanceId,
+      type: type,
+      date: new Date(date),
+      reason,
+    };
+
+    try {
+      await createCorrection(correctionData);
+      navigate("/history", {
+        state: {
+          success: true,
+          message: "Pengajuan izin berhasil dikirim",
+        },
+      });
+    } catch (err) {
+      console.error("Failed to submit correction request", err);
+      // Error is handled by the context and displayed in the UI
+    }
   };
 
   const handlePermissionTypeChange = (event: SelectChangeEvent) => {
@@ -65,7 +119,11 @@ const AttendanceCorrectionPage: React.FC = () => {
   // Function to shorten displayed text for mobile
   const getDisplayText = (text: string) => {
     // For mobile display, we'll use the styled component with ellipsis
-    return <SelectDisplayText>{text}</SelectDisplayText>;
+    return (
+      <SelectDisplayText>
+        {CORRECTION_TYPES[text as keyof typeof CORRECTION_TYPES] || text}
+      </SelectDisplayText>
+    );
   };
 
   return (
@@ -115,6 +173,12 @@ const AttendanceCorrectionPage: React.FC = () => {
           flexDirection: "column",
         }}
       >
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={clearError}>
+            {error}
+          </Alert>
+        )}
+
         {/* Permission Type */}
         <Box sx={{ mb: 3 }}>
           <Typography
@@ -126,7 +190,7 @@ const AttendanceCorrectionPage: React.FC = () => {
           </Typography>
           <FormControl fullWidth>
             <Select
-              value={permissionType}
+              value={type}
               onChange={handlePermissionTypeChange}
               displayEmpty
               variant="outlined"
@@ -153,20 +217,20 @@ const AttendanceCorrectionPage: React.FC = () => {
               }}
               IconComponent={KeyboardArrowDownIcon}
             >
-              <StyledMenuItem value="Pengajuan Penggunaan Jam Istirahat sebagai Jam Kerja">
-                Penggunaan Jam Istirahat sebagai Jam Kerja
+              <StyledMenuItem value="BREAK_TIME_AS_WORK">
+                {CORRECTION_TYPES.BREAK_TIME_AS_WORK}
               </StyledMenuItem>
-              <StyledMenuItem value="Izin Cepat Pulang">
-                Izin Cepat Pulang
+              <StyledMenuItem value="EARLY_DEPARTURE">
+                {CORRECTION_TYPES.EARLY_DEPARTURE}
               </StyledMenuItem>
-              <StyledMenuItem value="Izin Terlambat Datang">
-                Izin Terlambat Datang
+              <StyledMenuItem value="LATE_ARRIVAL">
+                {CORRECTION_TYPES.LATE_ARRIVAL}
               </StyledMenuItem>
-              <StyledMenuItem value="Lupa Absen Check-in">
-                Lupa Absen Check-in
+              <StyledMenuItem value="MISSED_CHECK_IN">
+                {CORRECTION_TYPES.MISSED_CHECK_IN}
               </StyledMenuItem>
-              <StyledMenuItem value="Lupa Absen Check-out">
-                Lupa Absen Check-out
+              <StyledMenuItem value="MISSED_CHECK_OUT">
+                {CORRECTION_TYPES.MISSED_CHECK_OUT}
               </StyledMenuItem>
             </Select>
           </FormControl>
@@ -184,7 +248,7 @@ const AttendanceCorrectionPage: React.FC = () => {
           <TextField
             fullWidth
             type="date"
-            value={requestDate}
+            value={date}
             onChange={(e) => setRequestDate(e.target.value)}
             sx={{
               bgcolor: "white",
@@ -223,7 +287,7 @@ const AttendanceCorrectionPage: React.FC = () => {
               fullWidth
               multiline
               rows={4}
-              value={description}
+              value={reason}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Masukan keterangan izin ..."
               sx={{
@@ -249,6 +313,7 @@ const AttendanceCorrectionPage: React.FC = () => {
         <Button
           fullWidth
           variant="contained"
+          disabled={loading}
           sx={{
             bgcolor: "#0073e6",
             color: "white",
@@ -265,7 +330,11 @@ const AttendanceCorrectionPage: React.FC = () => {
           }}
           onClick={handleSubmit}
         >
-          Kirim
+          {loading ? (
+            <CircularProgress size={24} sx={{ color: "white" }} />
+          ) : (
+            "Kirim"
+          )}
         </Button>
       </Container>
 
