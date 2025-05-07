@@ -70,6 +70,8 @@ const PresensiPage: React.FC = () => {
   const [showNotesDialog, setShowNotesDialog] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isCheckOut, setIsCheckOut] = useState<boolean>(false);
+  const [isCameraInitialized, setIsCameraInitialized] =
+    useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -111,52 +113,77 @@ const PresensiPage: React.FC = () => {
       }
     );
 
-    // Initialize camera stream
-    const getCameraStream = async () => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showNotification(
-          "Your browser does not support camera access.",
-          "error"
-        );
-        return;
-      }
-
-      console.log("Attempting to access camera...");
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
-        console.log("Camera stream obtained:", stream);
-        setVideoStream(stream);
-        if (videoRef.current) {
-          console.log("Attaching stream to video element");
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch((error) => {
-            console.error("Error playing video:", error);
-            showNotification("Error playing camera stream.", "error");
-          });
-        }
-      } catch (error) {
-        console.error("Error accessing the camera:", error);
-        showNotification(
-          "Unable to access camera. Please allow camera permissions in your browser settings.",
-          "error"
-        );
-      }
-    };
-
-    if (videoRef.current) {
-      getCameraStream();
+    // Initialize camera stream only once
+    if (!isCameraInitialized) {
+      initializeCamera();
     }
 
     // Cleanup function
     return () => {
-      if (videoStream) {
-        console.log("Stopping camera stream");
-        videoStream.getTracks().forEach((track) => track.stop());
-      }
+      stopCameraStream();
     };
   }, []);
+
+  // Initialize the camera
+  const initializeCamera = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showNotification("Your browser does not support camera access.", "error");
+      return;
+    }
+
+    if (isCameraInitialized) {
+      return; // Don't initialize twice
+    }
+
+    console.log("Attempting to access camera...");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+      });
+      console.log("Camera stream obtained:", stream);
+      setVideoStream(stream);
+      setIsCameraInitialized(true);
+
+      // Wait for the next render cycle before attaching the stream
+      setTimeout(() => {
+        if (videoRef.current) {
+          console.log("Attaching stream to video element");
+          videoRef.current.srcObject = stream;
+
+          // Use the play() method with proper error handling
+          const playPromise = videoRef.current.play();
+
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log("Video playback started successfully");
+              })
+              .catch((error) => {
+                if (!(error.name === "AbortError")) {
+                  showNotification("Error playing camera stream.", "error");
+                }
+              });
+          }
+        }
+      }, 0);
+    } catch (error) {
+      console.error("Error accessing the camera:", error);
+      showNotification(
+        "Unable to access camera. Please allow camera permissions in your browser settings.",
+        "error"
+      );
+    }
+  };
+
+  // Stop the camera stream
+  const stopCameraStream = () => {
+    if (videoStream) {
+      console.log("Stopping camera stream");
+      videoStream.getTracks().forEach((track) => track.stop());
+      setVideoStream(null);
+      setIsCameraInitialized(false);
+    }
+  };
 
   // Check if user has already checked in and set the mode
   useEffect(() => {
