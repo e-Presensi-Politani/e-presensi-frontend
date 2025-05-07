@@ -4,6 +4,7 @@ import { UsersProvider } from "./contexts/UserContext";
 import { AttendanceProvider } from "./contexts/AttendanceContext";
 import { DepartmentProvider } from "./contexts/DepartmentContext";
 import { LeaveRequestsProvider } from "./contexts/LeaveRequestsContext";
+import { CorrectionsProvider } from "./contexts/CorrectionsContext";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/auth/LoginPage";
@@ -25,7 +26,6 @@ import PersetujuanPage from "./pages/leave/PersetujuanPage";
 import PersetujuanDetailPage from "./pages/leave/PersetujuanDetailPage";
 import RejectApplicationForm from "./pages/leave/RejectPage";
 import PengajuanDetailPage from "./pages/leave/LeaveRequestDetailPage";
-// Removed unused import: AttendanceDetailPage
 
 function App() {
   return (
@@ -34,6 +34,7 @@ function App() {
         <LeaveRequestsProvider>
           <UsersProvider>
             <AttendanceProvider>
+              <CorrectionsProvider>
               <Router>
                 <Routes>
                   {/* Public route */}
@@ -116,6 +117,7 @@ function App() {
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Router>
+              </CorrectionsProvider>
             </AttendanceProvider>
           </UsersProvider>
         </LeaveRequestsProvider>
