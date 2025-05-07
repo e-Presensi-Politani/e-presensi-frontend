@@ -17,9 +17,9 @@ export interface Correction {
 
 export interface CreateCorrectionDto {
   attendanceId: string;
-  correctionType: string;
-  requestDate: Date | string;
-  description: string;
+  type: string;
+  date: Date | string;
+  reason: string;
 }
 
 export interface UpdateCorrectionDto {

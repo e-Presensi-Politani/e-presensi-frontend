@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Box,
   Container,
@@ -48,18 +48,17 @@ const SelectDisplayText = styled(Typography)({
 
 const AttendanceCorrectionPage: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { attendanceId } = useParams<{ attendanceId: string }>();
   const { createCorrection, loading, error, clearError } = useCorrections();
   const { selectedAttendance, fetchAttendanceById } = useAttendance();
 
-  const [permissionType, setPermissionType] = useState<string>(
+  const [type, setPermissionType] = useState<string>(
     "Pengajuan Penggunaan Jam Istirahat sebagai Jam Kerja"
   );
-  const [requestDate, setRequestDate] = useState<string>(
+  const [date, setRequestDate] = useState<string>(
     format(new Date(), "yyyy-MM-dd")
   );
-  const [description, setDescription] = useState<string>("");
+  const [reason, setDescription] = useState<string>("");
 
   // Fetch attendance data if attendanceId is provided
   useEffect(() => {
@@ -76,7 +75,7 @@ const AttendanceCorrectionPage: React.FC = () => {
   }, [selectedAttendance]);
 
   const handleBack = () => {
-    navigate(-1);
+    navigate("/history");
   };
 
   const handleSubmit = async () => {
@@ -87,9 +86,9 @@ const AttendanceCorrectionPage: React.FC = () => {
 
     const correctionData: CreateCorrectionDto = {
       attendanceId,
-      correctionType: permissionType,
-      requestDate: new Date(requestDate),
-      description,
+      type: type,
+      date: new Date(date),
+      reason,
     };
 
     try {
@@ -180,7 +179,7 @@ const AttendanceCorrectionPage: React.FC = () => {
           </Typography>
           <FormControl fullWidth>
             <Select
-              value={permissionType}
+              value={type}
               onChange={handlePermissionTypeChange}
               displayEmpty
               variant="outlined"
@@ -207,19 +206,19 @@ const AttendanceCorrectionPage: React.FC = () => {
               }}
               IconComponent={KeyboardArrowDownIcon}
             >
-              <StyledMenuItem value="Pengajuan Penggunaan Jam Istirahat sebagai Jam Kerja">
+              <StyledMenuItem value="BREAK_TIME_AS_WORK">
                 Penggunaan Jam Istirahat sebagai Jam Kerja
               </StyledMenuItem>
-              <StyledMenuItem value="Izin Cepat Pulang">
+              <StyledMenuItem value="EARLY_DEPARTURE">
                 Izin Cepat Pulang
               </StyledMenuItem>
-              <StyledMenuItem value="Izin Terlambat Datang">
+              <StyledMenuItem value="LATE_ARRIVAL">
                 Izin Terlambat Datang
               </StyledMenuItem>
-              <StyledMenuItem value="Lupa Absen Check-in">
+              <StyledMenuItem value="MISSED_CHECK_IN">
                 Lupa Absen Check-in
               </StyledMenuItem>
-              <StyledMenuItem value="Lupa Absen Check-out">
+              <StyledMenuItem value="MISSED_CHECK_OUT">
                 Lupa Absen Check-out
               </StyledMenuItem>
             </Select>
@@ -238,7 +237,7 @@ const AttendanceCorrectionPage: React.FC = () => {
           <TextField
             fullWidth
             type="date"
-            value={requestDate}
+            value={date}
             onChange={(e) => setRequestDate(e.target.value)}
             sx={{
               bgcolor: "white",
@@ -277,7 +276,7 @@ const AttendanceCorrectionPage: React.FC = () => {
               fullWidth
               multiline
               rows={4}
-              value={description}
+              value={reason}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Masukan keterangan izin ..."
               sx={{
