@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
   Container,
@@ -13,6 +13,8 @@ import {
   Button,
   IconButton,
   CircularProgress,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import WarningIcon from "@mui/icons-material/Warning";
@@ -23,9 +25,23 @@ import { id } from "date-fns/locale/id";
 
 const AttendanceDetailProblem: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { guid } = useParams<{ guid: string }>();
   const { fetchAttendanceById, selectedAttendance, loading, error } =
     useAttendance();
+
+  // Handle success message from correction submission
+  const [showSuccessMessage, setShowSuccessMessage] =
+    React.useState<boolean>(false);
+  const [successMessage, setSuccessMessage] = React.useState<string>("");
+
+  useEffect(() => {
+    // Check if there's a success message in the location state
+    if (location.state && location.state.success) {
+      setShowSuccessMessage(true);
+      setSuccessMessage(location.state.message || "Pengajuan berhasil");
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (guid) {
@@ -44,7 +60,15 @@ const AttendanceDetailProblem: React.FC = () => {
   };
 
   const handleRequestPermission = () => {
-    navigate("/attendance-correction");
+    if (guid) {
+      navigate(`/attendance-correction/${guid}`);
+    } else {
+      console.error("No attendance GUID available");
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setShowSuccessMessage(false);
   };
 
   if (loading) {
@@ -95,6 +119,22 @@ const AttendanceDetailProblem: React.FC = () => {
         flexDirection: "column",
       }}
     >
+      {/* Success Snackbar */}
+      <Snackbar
+        open={showSuccessMessage}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity="success"
+          sx={{ width: "100%" }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
+
       <Box
         sx={{
           bgcolor: "#FFC107",
