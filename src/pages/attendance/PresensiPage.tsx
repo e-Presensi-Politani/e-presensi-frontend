@@ -70,21 +70,92 @@ const PresensiPage: React.FC = () => {
   const [showNotesDialog, setShowNotesDialog] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isCheckOut, setIsCheckOut] = useState<boolean>(false);
-  const [isCameraInitialized, setIsCameraInitialized] =
-    useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const isMounted = useRef<boolean>(true);
+  const isInitializing = useRef<boolean>(false);
 
   const officeLocation: [number, number] = [
     -0.1693371254374395, 100.66447587819418,
   ];
   const maxRadius = 450; // in meters
 
-  useEffect(() => {
-    // Fetch today's attendance
-    fetchTodayAttendance();
+  // Stop the camera stream function
+  const stopCameraStream = () => {
+    if (videoStream) {
+      console.log("Stopping camera stream");
+      videoStream.getTracks().forEach((track) => {
+        if (track.readyState === "live") {
+          track.stop();
+        }
+      });
+      setVideoStream(null);
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    }
+  };
 
-    // Get user's current location
+  // Initialize the camera
+  const initializeCamera = async () => {
+    if (!isMounted.current) {
+      console.log("Component unmounted, aborting camera initialization");
+      return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showNotification("Your browser does not support camera access.", "error");
+      return;
+    }
+
+    if (videoStream || isInitializing.current) {
+      console.log("Camera already initialized or initializing, skipping...");
+      return;
+    }
+
+    isInitializing.current = true;
+    console.log("Attempting to access camera...");
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+      });
+      console.log("Camera stream obtained:", stream);
+      setVideoStream(stream);
+
+      if (videoRef.current && isMounted.current) {
+        console.log("Attaching stream to video element");
+        videoRef.current.srcObject = stream;
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log("Video playback started successfully");
+            })
+            .catch((error) => {
+              if (!(error.name === "AbortError")) {
+                showNotification("Error playing camera stream.", "error");
+              }
+            });
+        }
+      }
+    } catch (error) {
+      console.error("Error accessing the camera:", error);
+      showNotification(
+        "Unable to access camera. Please allow camera permissions in your browser settings.",
+        "error"
+      );
+    } finally {
+      isInitializing.current = false;
+    }
+  };
+
+  // Consolidated useEffect for initialization and cleanup
+  useEffect(() => {
+    isMounted.current = true;
+
+    // Fetch attendance and geolocation
+    fetchTodayAttendance();
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const userLoc: [number, number] = [
@@ -92,15 +163,12 @@ const PresensiPage: React.FC = () => {
           position.coords.longitude,
         ];
         setUserLocation(userLoc);
-
-        // Calculate distance to office
         const distance = calculateDistance(
           userLoc[0],
           userLoc[1],
           officeLocation[0],
           officeLocation[1]
         );
-
         setDistanceToOffice(distance);
         setIsWithinRadius(distance <= maxRadius);
       },
@@ -113,77 +181,17 @@ const PresensiPage: React.FC = () => {
       }
     );
 
-    // Initialize camera stream only once
-    if (!isCameraInitialized) {
+    // Initialize camera only if no captured image
+    if (!capturedImage) {
       initializeCamera();
     }
 
-    // Cleanup function
     return () => {
+      console.log("Cleaning upd PresensiPage");
+      isMounted.current = false;
       stopCameraStream();
     };
-  }, []);
-
-  // Initialize the camera
-  const initializeCamera = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showNotification("Your browser does not support camera access.", "error");
-      return;
-    }
-
-    if (isCameraInitialized) {
-      return; // Don't initialize twice
-    }
-
-    console.log("Attempting to access camera...");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-      });
-      console.log("Camera stream obtained:", stream);
-      setVideoStream(stream);
-      setIsCameraInitialized(true);
-
-      // Wait for the next render cycle before attaching the stream
-      setTimeout(() => {
-        if (videoRef.current) {
-          console.log("Attaching stream to video element");
-          videoRef.current.srcObject = stream;
-
-          // Use the play() method with proper error handling
-          const playPromise = videoRef.current.play();
-
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log("Video playback started successfully");
-              })
-              .catch((error) => {
-                if (!(error.name === "AbortError")) {
-                  showNotification("Error playing camera stream.", "error");
-                }
-              });
-          }
-        }
-      }, 0);
-    } catch (error) {
-      console.error("Error accessing the camera:", error);
-      showNotification(
-        "Unable to access camera. Please allow camera permissions in your browser settings.",
-        "error"
-      );
-    }
-  };
-
-  // Stop the camera stream
-  const stopCameraStream = () => {
-    if (videoStream) {
-      console.log("Stopping camera stream");
-      videoStream.getTracks().forEach((track) => track.stop());
-      setVideoStream(null);
-      setIsCameraInitialized(false);
-    }
-  };
+  }, [capturedImage]);
 
   // Check if user has already checked in and set the mode
   useEffect(() => {
@@ -213,12 +221,10 @@ const PresensiPage: React.FC = () => {
     const φ2 = (lat2 * Math.PI) / 180;
     const Δφ = ((lat2 - lat1) * Math.PI) / 180;
     const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-
     const a =
       Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
       Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
     return R * c; // Distance in meters
   };
 
@@ -229,6 +235,8 @@ const PresensiPage: React.FC = () => {
   };
 
   const handleBackClick = () => {
+    console.log("Navigating back to dashboard");
+    stopCameraStream();
     navigate("/dashboard");
   };
 
@@ -250,11 +258,9 @@ const PresensiPage: React.FC = () => {
     canvas.height = videoElement.videoHeight;
     context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
-    // Get image as URL and Blob
     const imageURL = canvas.toDataURL("image/jpeg");
     setCapturedImage(imageURL);
 
-    // Convert to file for upload
     canvas.toBlob(
       (blob) => {
         if (blob) {
@@ -267,11 +273,16 @@ const PresensiPage: React.FC = () => {
       "image/jpeg",
       0.8
     );
+
+    stopCameraStream();
   };
 
   const resetCamera = () => {
     setCapturedImage(null);
     setImageFile(null);
+    if (isMounted.current) {
+      initializeCamera();
+    }
   };
 
   const handleAttendanceAction = () => {
@@ -285,7 +296,6 @@ const PresensiPage: React.FC = () => {
       return;
     }
 
-    // Open notes dialog
     setShowNotesDialog(true);
   };
 
@@ -299,56 +309,43 @@ const PresensiPage: React.FC = () => {
 
     try {
       if (isCheckOut) {
-        // Handle check-out
         const checkOutData: CheckOutDto = {
           latitude: userLocation[0],
           longitude: userLocation[1],
           notes: notes,
         };
-
         await checkOut(checkOutData, imageFile);
         showNotification("Check-out successful!", "success");
       } else {
-        // Handle check-in
         const checkInData: CheckInDto = {
           latitude: userLocation[0],
           longitude: userLocation[1],
           notes: notes,
         };
-
         await checkIn(checkInData, imageFile);
         showNotification("Check-in successful!", "success");
       }
 
-      // Redirect to dashboard after short delay
       setTimeout(() => {
-        navigate("/dashboard");
+        if (isMounted.current) {
+          stopCameraStream();
+          navigate("/dashboard");
+        }
       }, 2000);
     } catch (error) {
       console.error("Attendance action error:", error);
-      // Error notifications are handled by useEffect watching attendanceError
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Determine check-in availability
   const canCheckIn =
     !todayAttendance?.checkInTime && userLocation && isWithinRadius !== null;
-
-  // Determine check-out availability
   const canCheckOut =
     todayAttendance?.checkInTime &&
     !todayAttendance?.checkOutTime &&
     userLocation &&
     isWithinRadius !== null;
-
-  // Button should be disabled if:
-  // - We're loading
-  // - Not within radius
-  // - No photo captured
-  // - Currently submitting
-  // - Can neither check in nor check out
   const actionButtonDisabled =
     attendanceLoading ||
     !capturedImage ||
@@ -395,7 +392,6 @@ const PresensiPage: React.FC = () => {
           overflow: "auto",
         }}
       >
-        {/* Attendance status message */}
         {todayAttendance?.checkInTime && !todayAttendance?.checkOutTime && (
           <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
             You checked in today at{" "}
@@ -413,7 +409,6 @@ const PresensiPage: React.FC = () => {
           </Alert>
         )}
 
-        {/* Camera view */}
         <Paper
           elevation={2}
           sx={{
@@ -484,7 +479,6 @@ const PresensiPage: React.FC = () => {
           )}
         </Paper>
 
-        {/* Map view */}
         <Paper
           elevation={2}
           sx={{
@@ -541,7 +535,6 @@ const PresensiPage: React.FC = () => {
             </Box>
           )}
 
-          {/* Location status indicator */}
           {isWithinRadius !== null && (
             <Box
               sx={{
@@ -570,7 +563,6 @@ const PresensiPage: React.FC = () => {
           )}
         </Paper>
 
-        {/* Action Button */}
         <Button
           variant="contained"
           startIcon={
@@ -592,10 +584,7 @@ const PresensiPage: React.FC = () => {
             py: 1.5,
             textTransform: "none",
             "&:hover": { bgcolor: isCheckOut ? "#f57c00" : "#0066cc" },
-            "&.Mui-disabled": {
-              bgcolor: "#ccc",
-              color: "#666",
-            },
+            "&.Mui-disabled": { bgcolor: "#ccc", color: "#666" },
           }}
         >
           {attendanceLoading ? (
@@ -612,8 +601,17 @@ const PresensiPage: React.FC = () => {
         </Button>
       </Container>
 
-      {/* Notes Dialog */}
-      <Dialog open={showNotesDialog} onClose={() => setShowNotesDialog(false)}>
+      <Dialog
+        open={showNotesDialog}
+        onClose={() => setShowNotesDialog(false)}
+        TransitionProps={{
+          onExited: () => {
+            if (!isSubmitting && isMounted.current) {
+              initializeCamera();
+            }
+          },
+        }}
+      >
         <DialogTitle>
           {isCheckOut ? "Add Check-out Notes" : "Add Check-in Notes"}
         </DialogTitle>
@@ -652,7 +650,6 @@ const PresensiPage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar for notifications */}
       <Snackbar
         open={showAlert}
         autoHideDuration={4000}
