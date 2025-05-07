@@ -239,6 +239,7 @@ const DashboardPage: React.FC = () => {
             borderRadius: 2,
             mt: 3,
             p: 3,
+            mb: { xs: 7, sm: 6},
             bgcolor: "white",
           }}
         >
