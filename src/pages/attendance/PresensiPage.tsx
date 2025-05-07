@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
-  AppBar,
-  Toolbar,
   IconButton,
   Typography,
   Paper,
@@ -353,25 +351,26 @@ const PresensiPage: React.FC = () => {
         bgcolor: "#f5f5f5",
       }}
     >
-      <AppBar position="static" sx={{ bgcolor: "#0073e6" }}>
-        <Toolbar>
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="back"
-            onClick={handleBackClick}
-          >
-            <ArrowBack />
-          </IconButton>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ flexGrow: 1, textAlign: "center" }}
-          >
-            Presensi
-          </Typography>
-        </Toolbar>
-      </AppBar>
+      <Box
+        sx={{
+          bgcolor: "#1976d2",
+          height: "5vh",
+          p: 2,
+          color: "white",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <IconButton color="inherit" onClick={handleBackClick}>
+          <ArrowBack />
+        </IconButton>
+        <Typography
+          variant="h6"
+          sx={{ flexGrow: 1, textAlign: "center", mr: 4 }}
+        >
+          Presensi
+        </Typography>
+      </Box>
 
       <Container
         sx={{
