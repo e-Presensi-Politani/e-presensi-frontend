@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Box,
   Container,
@@ -14,12 +14,18 @@ import {
   SelectChangeEvent,
   InputAdornment,
   styled,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditIcon from "@mui/icons-material/Edit";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import BottomNav from "../../components/BottomNav";
+import { useCorrections } from "../../contexts/CorrectionsContext";
+import { useAttendance } from "../../contexts/AttendanceContext";
+import { format } from "date-fns";
+import { CreateCorrectionDto } from "../../types/corrections";
 
 // Custom styled MenuItem for wrapping text
 const StyledMenuItem = styled(MenuItem)({
@@ -42,20 +48,62 @@ const SelectDisplayText = styled(Typography)({
 
 const AttendanceCorrectionPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { attendanceId } = useParams<{ attendanceId: string }>();
+  const { createCorrection, loading, error, clearError } = useCorrections();
+  const { selectedAttendance, fetchAttendanceById } = useAttendance();
+
   const [permissionType, setPermissionType] = useState<string>(
     "Pengajuan Penggunaan Jam Istirahat sebagai Jam Kerja"
   );
-  const [requestDate, setRequestDate] = useState<string>("2025-01-06");
+  const [requestDate, setRequestDate] = useState<string>(
+    format(new Date(), "yyyy-MM-dd")
+  );
   const [description, setDescription] = useState<string>("");
 
+  // Fetch attendance data if attendanceId is provided
+  useEffect(() => {
+    if (attendanceId) {
+      fetchAttendanceById(attendanceId);
+    }
+  }, [attendanceId, fetchAttendanceById]);
+
+  // Set request date based on selected attendance
+  useEffect(() => {
+    if (selectedAttendance) {
+      setRequestDate(format(new Date(selectedAttendance.date), "yyyy-MM-dd"));
+    }
+  }, [selectedAttendance]);
+
   const handleBack = () => {
-    navigate("/attendance-problem");
+    navigate(-1);
   };
 
-  const handleSubmit = () => {
-    // Handle form submission logic
-    console.log({ permissionType, requestDate, description });
-    navigate("/attendance-problem");
+  const handleSubmit = async () => {
+    if (!attendanceId) {
+      console.error("No attendance ID found");
+      return;
+    }
+
+    const correctionData: CreateCorrectionDto = {
+      attendanceId,
+      correctionType: permissionType,
+      requestDate: new Date(requestDate),
+      description,
+    };
+
+    try {
+      await createCorrection(correctionData);
+      navigate("/attendance-problem", {
+        state: {
+          success: true,
+          message: "Pengajuan izin berhasil dikirim",
+        },
+      });
+    } catch (err) {
+      console.error("Failed to submit correction request", err);
+      // Error is handled by the context and displayed in the UI
+    }
   };
 
   const handlePermissionTypeChange = (event: SelectChangeEvent) => {
@@ -115,6 +163,12 @@ const AttendanceCorrectionPage: React.FC = () => {
           flexDirection: "column",
         }}
       >
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={clearError}>
+            {error}
+          </Alert>
+        )}
+
         {/* Permission Type */}
         <Box sx={{ mb: 3 }}>
           <Typography
@@ -249,6 +303,7 @@ const AttendanceCorrectionPage: React.FC = () => {
         <Button
           fullWidth
           variant="contained"
+          disabled={loading}
           sx={{
             bgcolor: "#0073e6",
             color: "white",
@@ -265,7 +320,11 @@ const AttendanceCorrectionPage: React.FC = () => {
           }}
           onClick={handleSubmit}
         >
-          Kirim
+          {loading ? (
+            <CircularProgress size={24} sx={{ color: "white" }} />
+          ) : (
+            "Kirim"
+          )}
         </Button>
       </Container>
 

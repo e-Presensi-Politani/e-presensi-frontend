@@ -1,58 +1,52 @@
 // src/types/corrections.ts
-export enum CorrectionType {
-  BREAK_TIME_AS_WORK = "BREAK_TIME_AS_WORK",
-  EARLY_DEPARTURE = "EARLY_DEPARTURE",
-  LATE_ARRIVAL = "LATE_ARRIVAL",
-  MISSED_CHECK_IN = "MISSED_CHECK_IN",
-  MISSED_CHECK_OUT = "MISSED_CHECK_OUT",
-}
-
-export enum CorrectionStatus {
-  PENDING = "PENDING",
-  APPROVED = "APPROVED",
-  REJECTED = "REJECTED",
-}
-
 export interface Correction {
   guid: string;
   userId: string;
   departmentId: string;
-  type: CorrectionType;
-  date: string;
-  reason: string;
-  status: CorrectionStatus;
+  attendanceId: string;
+  correctionType: string;
+  requestDate: Date | string;
+  description: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  reviewNote?: string;
   reviewedBy?: string;
-  reviewedAt?: string;
-  rejectionReason?: string;
-  attendanceId?: string;
-  proposedTime?: string;
-  createdAt: string;
-  updatedAt: string;
+  reviewedAt?: Date | string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 export interface CreateCorrectionDto {
-  type: CorrectionType;
-  date: string;
-  reason: string;
-  proposedTime?: string;
-  attendanceId?: string;
+  attendanceId: string;
+  correctionType: string;
+  requestDate: Date | string;
+  description: string;
 }
 
 export interface UpdateCorrectionDto {
-  status: CorrectionStatus;
-  rejectionReason?: string;
+  status: "APPROVED" | "REJECTED";
+  reviewNote?: string;
 }
 
 export interface CorrectionQueryParams {
-  startDate?: string;
-  endDate?: string;
   userId?: string;
   departmentId?: string;
-  status?: CorrectionStatus;
-  type?: CorrectionType;
+  status?: "PENDING" | "APPROVED" | "REJECTED";
+  startDate?: Date | string;
+  endDate?: Date | string;
+  page?: number;
+  limit?: number;
 }
 
 export interface MonthlyUsage {
+  month: number;
+  year: number;
+  total: number;
   used: number;
-  limit: number;
+  remaining: number;
+  corrections: {
+    guid: string;
+    correctionType: string;
+    requestDate: Date | string;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+  }[];
 }
