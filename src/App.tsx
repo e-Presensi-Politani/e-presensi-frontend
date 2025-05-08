@@ -110,7 +110,7 @@ function App() {
                         element={<PersetujuanPage />}
                       />
                       <Route
-                        path="/persetujuan-detail"
+                        path="/persetujuan-detail/:guid"
                         element={<PersetujuanDetailPage />}
                       />
                       <Route

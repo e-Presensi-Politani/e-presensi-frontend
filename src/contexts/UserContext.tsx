@@ -37,7 +37,7 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [isAuthenticated, currentUser]);
 
   const fetchUsers = async (): Promise<void> => {
-    if (!isAuthenticated || currentUser?.role !== "ADMIN") {
+    if (!isAuthenticated) {
       setError("Unauthorized: Only admins can view all users");
       return;
     }

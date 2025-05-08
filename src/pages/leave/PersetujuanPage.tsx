@@ -1,4 +1,5 @@
-import React from "react";
+// src/pages/leave/PersetujuanPage.tsx
+import React, { useEffect } from "react";
 import {
   Box,
   Container,
@@ -11,97 +12,111 @@ import {
   ListItem,
   AppBar,
   Toolbar,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
-
-// Define types for our approval items
-interface ApprovalItem {
-  id: number;
-  name: string;
-  employeeId: string;
-  startDate: string;
-  endDate: string;
-  status: "Cuti" | "WFH" | "DL" | "WFA";
-}
+import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
+import { useUsers } from "../../contexts/UserContext"; // Import UserContext
+import { LeaveRequest, LeaveRequestType } from "../../types/leave-requests";
+import { format } from "date-fns";
 
 const PersetujuanPage: React.FC = () => {
   const navigate = useNavigate();
+  const {
+    pendingRequests,
+    loading: leaveLoading,
+    error: leaveError,
+    fetchPendingRequests,
+    clearError: clearLeaveError,
+  } = useLeaveRequests();
+  const {
+    users,
+    loading: usersLoading,
+    error: usersError,
+    fetchUsers,
+    clearError: clearUsersError,
+  } = useUsers(); // Use UserContext
+
+  // Track the loading state for both data sources
+  const loading = leaveLoading || usersLoading;
+  // Combine error messages from both contexts
+  const error = leaveError || usersError;
+
+  // Format dates for display
+  const formatDate = (date: Date) => {
+    return format(new Date(date), "dd MMMM yyyy");
+  };
+
+  useEffect(() => {
+    // Fetch both pending requests and users when component mounts
+    fetchPendingRequests();
+    fetchUsers();
+  }, []);
+
   const handleBack = () => {
     navigate("/kajur-dashboard");
   };
 
-  const handleDetail = () => {
-    navigate("/persetujuan-detail");
+  const handleDetail = (guid: string) => {
+    navigate(`/persetujuan-detail/${guid}`);
   };
 
-  // Sample data based on the image
-  const approvalItems: ApprovalItem[] = [
-    {
-      id: 1,
-      name: "M. Ghozi Syah Putra",
-      employeeId: "2124323029",
-      startDate: "10 Januari 2025",
-      endDate: "12 Januari 2025",
-      status: "Cuti",
-    },
-    {
-      id: 2,
-      name: "M. Ghozi Syah Putra",
-      employeeId: "2124323029",
-      startDate: "10 Januari 2025",
-      endDate: "12 Januari 2025",
-      status: "WFH",
-    },
-    {
-      id: 3,
-      name: "M. Ghozi Syah Putra",
-      employeeId: "2124323029",
-      startDate: "10 Januari 2025",
-      endDate: "12 Januari 2025",
-      status: "DL",
-    },
-    {
-      id: 4,
-      name: "M. Ghozi Syah Putra",
-      employeeId: "2124323029",
-      startDate: "10 Januari 2025",
-      endDate: "12 Januari 2025",
-      status: "WFA",
-    },
-    {
-      id: 5,
-      name: "M. Ghozi Syah Putra",
-      employeeId: "2124323029",
-      startDate: "10 Januari 2025",
-      endDate: "12 Januari 2025",
-      status: "Cuti",
-    },
-    {
-      id: 6,
-      name: "M. Ghozi Syah Putra",
-      employeeId: "2124323029",
-      startDate: "10 Januari 2025",
-      endDate: "12 Mei 2025",
-      status: "Cuti",
-    },
-  ];
+  // Function to get user name by ID
+  const getUserName = (userId: string) => {
+    const user = users.find((user) => user.guid === userId);
+    return user ? user.fullName : "Nama tidak tersedia";
+  };
 
-  // Get status color based on status type
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Cuti":
-        return "#0073e6"; // Blue
-      case "WFH":
-        return "#4CAF50"; // Green
-      case "DL":
-        return "#F44336"; // Red
-      case "WFA":
-        return "#FFC107"; // Yellow/Amber
+  // Function to get user name by ID
+  const getUserNIP = (userId: string) => {
+    const user = users.find((user) => user.guid === userId);
+    return user ? user.nip : "NIP tidak tersedia";
+  };
+
+  // Get status color based on leave request type
+  const getStatusColor = (type: LeaveRequestType) => {
+    switch (type) {
+      case LeaveRequestType.LEAVE:
+        return "#0073e6"; // Blue for Cuti
+      case LeaveRequestType.WFH:
+        return "#4CAF50"; // Green for Work From Home
+      case LeaveRequestType.DL:
+        return "#F44336"; // Red for Dinas Luar
+      case LeaveRequestType.WFA:
+        return "#FFC107"; // Yellow/Amber for Work From Anywhere
       default:
         return "#0073e6"; // Default blue
     }
+  };
+
+  // Convert LeaveRequestType to display text
+  const getTypeLabel = (type: LeaveRequestType) => {
+    switch (type) {
+      case LeaveRequestType.LEAVE:
+        return "Cuti";
+      case LeaveRequestType.WFH:
+        return "WFH";
+      case LeaveRequestType.DL:
+        return "DL";
+      case LeaveRequestType.WFA:
+        return "WFA";
+      default:
+        return type;
+    }
+  };
+
+  // Get initial for avatar
+  const getInitial = (name: string) => {
+    return name ? name.charAt(0).toUpperCase() : "U";
+  };
+
+  // Clear errors from both contexts
+  const handleClearError = () => {
+    clearLeaveError();
+    clearUsersError();
   };
 
   return (
@@ -121,72 +136,104 @@ const PersetujuanPage: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Approval Items List */}
+      {/* Content */}
       <Container maxWidth="sm" sx={{ mt: 2 }}>
-        <List sx={{ p: 0 }}>
-          {approvalItems.map((item) => (
-            <Paper
-              onClick={handleDetail}
-              key={item.id}
-              elevation={1}
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                overflow: "hidden",
-              }}
-            >
-              <ListItem
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  py: 1.5,
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Avatar
-                    src="/path-to-avatar.jpg"
+        {error && (
+          <Alert severity="error" onClose={handleClearError} sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : pendingRequests.length === 0 ? (
+          <Paper
+            elevation={1}
+            sx={{
+              p: 3,
+              borderRadius: 2,
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="body1">
+              Tidak ada permohonan yang perlu disetujui saat ini.
+            </Typography>
+          </Paper>
+        ) : (
+          <List sx={{ p: 0 }}>
+            {pendingRequests.map((request: LeaveRequest) => {
+              // Get user name from users array
+              const userName = getUserName(request.userId);
+              const nip = getUserNIP(request.userId);
+
+              return (
+                <Paper
+                  onClick={() => handleDetail(request.guid)}
+                  key={request.guid}
+                  elevation={1}
+                  sx={{
+                    mb: 2,
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    cursor: "pointer",
+                  }}
+                >
+                  <ListItem
                     sx={{
-                      width: 40,
-                      height: 40,
-                      bgcolor: "#ff7043",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      py: 1.5,
                     }}
                   >
-                    M
-                  </Avatar>
-                  <Box sx={{ ml: 2 }}>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{ fontWeight: "medium" }}
-                    >
-                      {item.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {item.employeeId}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {item.startDate} - {item.endDate}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ display: "fix", alignItems: "right", ml: -5 }}>
-                  <Chip
-                    label={item.status}
-                    sx={{
-                      bgcolor: getStatusColor(item.status),
-                      borderRadius: 2,
-                      color: "white",
-                      fontWeight: "bold",
-                      minWidth: 60,
-                      mb: 4,
-                      mr: "-2px",
-                    }}
-                  />
-                </Box>
-              </ListItem>
-            </Paper>
-          ))}
-        </List>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Avatar
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          bgcolor: "#ff7043",
+                        }}
+                      >
+                        {getInitial(userName)}
+                      </Avatar>
+                      <Box sx={{ ml: 2 }}>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: "medium" }}
+                        >
+                          {userName}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {nip}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatDate(request.startDate)} -{" "}
+                          {formatDate(request.endDate)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: "fix", alignItems: "right", ml: -5 }}>
+                      <Chip
+                        label={getTypeLabel(request.type)}
+                        sx={{
+                          bgcolor: getStatusColor(request.type),
+                          borderRadius: 2,
+                          color: "white",
+                          fontWeight: "bold",
+                          minWidth: 60,
+                          mb: 4,
+                          mr: "-2px",
+                        }}
+                      />
+                    </Box>
+                  </ListItem>
+                </Paper>
+              );
+            })}
+          </List>
+        )}
       </Container>
 
       {/* Bottom Navigation */}
