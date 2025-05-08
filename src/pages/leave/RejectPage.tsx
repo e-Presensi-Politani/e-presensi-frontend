@@ -1,115 +1,176 @@
-import { useState } from "react";
+// src/pages/leave/RejectPage.tsx
+import React, { useEffect, useState } from "react";
 import {
   Box,
-  Paper,
+  Container,
   Typography,
+  Paper,
   TextField,
   Button,
   IconButton,
   AppBar,
   Toolbar,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import WarningIcon from "@mui/icons-material/Warning";
+import { useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
-import { useNavigate } from "react-router-dom";
+import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
+import { LeaveRequestStatus } from "../../types/leave-requests";
 
-const RejectApplicationForm = () => {
-  const [reason, setReason] = useState("");
-    const navigate = useNavigate();
-  
-    const handleBack = () => {
-      navigate("/persetujuan-detail");
-    };
+// Helper function to get URL parameters
+const useQuery = () => {
+  return new URLSearchParams(useLocation().search);
+};
 
-  const handleSubmit = () => {
-    console.log("Rejection reason:", reason);
-    // Add form submission logic here
+const RejectApplicationForm: React.FC = () => {
+  const navigate = useNavigate();
+  const query = useQuery();
+  const requestId = query.get("id");
+
+  const [reason, setReason] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const {
+    selectedRequest,
+    loading,
+    error: fetchError,
+    fetchLeaveRequestByGuid,
+    reviewLeaveRequest,
+  } = useLeaveRequests();
+
+  useEffect(() => {
+    // Fetch the leave request data when component mounts
+    if (requestId) {
+      fetchLeaveRequestByGuid(requestId);
+    }
+  }, [requestId]);
+
+  const handleBack = () => {
+    // Navigate back to the previous page
+    navigate(-1);
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!requestId) {
+      setError("Request ID not found");
+      return;
+    }
+
+    if (!reason.trim()) {
+      setError("Alasan penolakan harus diisi");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      await reviewLeaveRequest(requestId, {
+        status: LeaveRequestStatus.REJECTED,
+        comments: reason,
+      });
+
+      // Navigate back to dashboard on success
+      navigate("/kajur-dashboard");
+    } catch (err: any) {
+      setError(err.message || "Failed to reject request");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Combine loading states
+  const isLoading = loading || isSubmitting;
+
   return (
-    <Box
-      sx={{
-        height: "100vh",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        bgcolor: "#f5f5f5",
-      }}
-    >
+    <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", pb: 7 }}>
       {/* Header */}
-      <AppBar position="static" sx={{ bgcolor: "#e53935" }}>
+      <AppBar position="static" sx={{ bgcolor: "#0073e6" }}>
         <Toolbar>
           <IconButton
             edge="start"
             color="inherit"
-            aria-label="back"
             onClick={handleBack}
-            sx={{ mr: 1 }}
+            disabled={isLoading}
           >
             <ArrowBackIcon />
           </IconButton>
           <Typography
             variant="h6"
-            component="div"
             sx={{ flexGrow: 1, textAlign: "center", mr: 4 }}
           >
-            Tolak Pengajuan
+            Alasan Penolakan
           </Typography>
         </Toolbar>
       </AppBar>
 
       {/* Content */}
-      <Box sx={{ p: 2, flex: 1 }}>
-        <Typography variant="body1" sx={{ mb: 1, fontWeight: 500, color: "#000" }}>
-          Alasan Penolakan Pengajuan
-        </Typography>
+      <Container maxWidth="sm" sx={{ mt: 2 }}>
+        {(fetchError || error) && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            {fetchError || error}
+          </Alert>
+        )}
 
-        <Paper
-          elevation={1}
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            mb: 2,
-            display: "flex",
-            alignItems: "flex-start",
-          }}
-        >
-          <WarningIcon color="error" sx={{ mr: 1, mt: 1 }} />
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            placeholder="Masukan Alasan Penolakan..."
-            variant="standard"
-            InputProps={{ disableUnderline: true }}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-        </Paper>
+        {isLoading && !fetchError ? (
+          <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : !selectedRequest && !isSubmitting ? (
+          <Paper sx={{ p: 3, textAlign: "center" }}>
+            <Typography>Pengajuan tidak ditemukan</Typography>
+          </Paper>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <Paper
+              elevation={1}
+              sx={{
+                p: 3,
+                borderRadius: 2,
+              }}
+            >
+              <Typography variant="body1" sx={{ mb: 3, fontWeight: "medium" }}>
+                Mohon berikan alasan mengapa pengajuan ini ditolak:
+              </Typography>
 
-        <Button
-          variant="contained"
-          fullWidth
-          sx={{
-            bgcolor: "#e53935",
-            color: "white",
-            py: 1.5,
-            borderRadius: 8,
-            textTransform: "none",
-            fontSize: "16px",
-            "&:hover": {
-              bgcolor: "#c62828",
-            },
-          }}
-          onClick={handleSubmit}
-        >
-          Tolak
-        </Button>
-      </Box>
+              <TextField
+                multiline
+                rows={6}
+                fullWidth
+                placeholder="Tulis alasan penolakan di sini..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                sx={{ mb: 3 }}
+                required
+                disabled={isSubmitting}
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                sx={{
+                  bgcolor: "#f44336",
+                  "&:hover": { bgcolor: "#d32f2f" },
+                  py: 1.5,
+                  borderRadius: 1,
+                }}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Memproses..." : "Kirim Penolakan"}
+              </Button>
+            </Paper>
+          </form>
+        )}
+      </Container>
 
       {/* Bottom Navigation */}
-     <BottomNav />
+      <BottomNav />
     </Box>
   );
 };
