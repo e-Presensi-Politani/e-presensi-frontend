@@ -1,5 +1,5 @@
 // src/pages/leave/PersetujuanPage.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Container,
@@ -19,13 +19,31 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
+import { useUsers } from "../../contexts/UserContext"; // Import UserContext
 import { LeaveRequest, LeaveRequestType } from "../../types/leave-requests";
 import { format } from "date-fns";
 
 const PersetujuanPage: React.FC = () => {
   const navigate = useNavigate();
-  const { pendingRequests, loading, error, fetchPendingRequests, clearError } =
-    useLeaveRequests();
+  const {
+    pendingRequests,
+    loading: leaveLoading,
+    error: leaveError,
+    fetchPendingRequests,
+    clearError: clearLeaveError,
+  } = useLeaveRequests();
+  const {
+    users,
+    loading: usersLoading,
+    error: usersError,
+    fetchUsers,
+    clearError: clearUsersError,
+  } = useUsers(); // Use UserContext
+
+  // Track the loading state for both data sources
+  const loading = leaveLoading || usersLoading;
+  // Combine error messages from both contexts
+  const error = leaveError || usersError;
 
   // Format dates for display
   const formatDate = (date: Date) => {
@@ -33,8 +51,9 @@ const PersetujuanPage: React.FC = () => {
   };
 
   useEffect(() => {
-    // Fetch pending requests when component mounts
+    // Fetch both pending requests and users when component mounts
     fetchPendingRequests();
+    fetchUsers();
   }, []);
 
   const handleBack = () => {
@@ -43,6 +62,12 @@ const PersetujuanPage: React.FC = () => {
 
   const handleDetail = (guid: string) => {
     navigate(`/persetujuan-detail/${guid}`);
+  };
+
+  // Function to get user name by ID
+  const getUserName = (userId: string) => {
+    const user = users.find((user) => user.guid === userId);
+    return user ? user.fullName : "Nama tidak tersedia";
   };
 
   // Get status color based on leave request type
@@ -82,6 +107,12 @@ const PersetujuanPage: React.FC = () => {
     return name ? name.charAt(0).toUpperCase() : "U";
   };
 
+  // Clear errors from both contexts
+  const handleClearError = () => {
+    clearLeaveError();
+    clearUsersError();
+  };
+
   return (
     <Box sx={{ bgcolor: "#f5f5f5", width: "100%", minHeight: "100vh", pb: 7 }}>
       {/* Header */}
@@ -102,7 +133,7 @@ const PersetujuanPage: React.FC = () => {
       {/* Content */}
       <Container maxWidth="sm" sx={{ mt: 2 }}>
         {error && (
-          <Alert severity="error" onClose={clearError} sx={{ mb: 2 }}>
+          <Alert severity="error" onClose={handleClearError} sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
@@ -126,69 +157,74 @@ const PersetujuanPage: React.FC = () => {
           </Paper>
         ) : (
           <List sx={{ p: 0 }}>
-            {pendingRequests.map((request: LeaveRequest) => (
-              <Paper
-                onClick={() => handleDetail(request.guid)}
-                key={request.guid}
-                elevation={1}
-                sx={{
-                  mb: 2,
-                  borderRadius: 2,
-                  overflow: "hidden",
-                  cursor: "pointer",
-                }}
-              >
-                <ListItem
+            {pendingRequests.map((request: LeaveRequest) => {
+              // Get user name from users array
+              const userName = getUserName(request.userId);
+
+              return (
+                <Paper
+                  onClick={() => handleDetail(request.guid)}
+                  key={request.guid}
+                  elevation={1}
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    py: 1.5,
+                    mb: 2,
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    cursor: "pointer",
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Avatar
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        bgcolor: "#ff7043",
-                      }}
-                    >
-                      {getInitial(request.userName || "")}
-                    </Avatar>
-                    <Box sx={{ ml: 2 }}>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: "medium" }}
+                  <ListItem
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      py: 1.5,
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Avatar
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          bgcolor: "#ff7043",
+                        }}
                       >
-                        {request.userName || "Nama tidak tersedia"}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {request.userId}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {formatDate(request.startDate)} -{" "}
-                        {formatDate(request.endDate)}
-                      </Typography>
+                        {getInitial(userName)}
+                      </Avatar>
+                      <Box sx={{ ml: 2 }}>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: "medium" }}
+                        >
+                          {userName}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {request.userId}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatDate(request.startDate)} -{" "}
+                          {formatDate(request.endDate)}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                  <Box sx={{ display: "fix", alignItems: "right", ml: -5 }}>
-                    <Chip
-                      label={getTypeLabel(request.type)}
-                      sx={{
-                        bgcolor: getStatusColor(request.type),
-                        borderRadius: 2,
-                        color: "white",
-                        fontWeight: "bold",
-                        minWidth: 60,
-                        mb: 4,
-                        mr: "-2px",
-                      }}
-                    />
-                  </Box>
-                </ListItem>
-              </Paper>
-            ))}
+                    <Box sx={{ display: "fix", alignItems: "right", ml: -5 }}>
+                      <Chip
+                        label={getTypeLabel(request.type)}
+                        sx={{
+                          bgcolor: getStatusColor(request.type),
+                          borderRadius: 2,
+                          color: "white",
+                          fontWeight: "bold",
+                          minWidth: 60,
+                          mb: 4,
+                          mr: "-2px",
+                        }}
+                      />
+                    </Box>
+                  </ListItem>
+                </Paper>
+              );
+            })}
           </List>
         )}
       </Container>
