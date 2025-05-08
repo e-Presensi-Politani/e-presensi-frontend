@@ -44,9 +44,10 @@ const LeaveRequestFormPage: React.FC = () => {
   const { user: authUser } = useAuth();
   const { departments, fetchDepartmentsByMember } = useDepartment();
 
-  // Create refs for the DatePickers to manage focus
   const startDateRef = useRef<HTMLDivElement | null>(null);
   const endDateRef = useRef<HTMLDivElement | null>(null);
+
+  const departmentsFetchedRef = useRef<boolean>(false);
 
   const [formData, setFormData] = useState<FormData>({
     leaveType: "",
@@ -61,22 +62,21 @@ const LeaveRequestFormPage: React.FC = () => {
   const [fileName, setFileName] = useState<string>("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Fetch department details using the user's id
   useEffect(() => {
-    if (authUser?.guid) {
+    if (authUser?.guid && !departmentsFetchedRef.current) {
+      departmentsFetchedRef.current = true;
       fetchDepartmentsByMember(authUser.guid);
     }
   }, [authUser, fetchDepartmentsByMember]);
 
-  // Update department ID when department data is loaded
   useEffect(() => {
-    if (departments && departments.length > 0) {
+    if (departments && departments.length > 0 && !formData.departmentId) {
       setFormData((prev) => ({
         ...prev,
         departmentId: departments[0].guid,
       }));
     }
-  }, [departments]);
+  }, [departments, formData.departmentId]);
 
   const handleLeaveTypeChange = (event: SelectChangeEvent) => {
     setFormData({
@@ -88,7 +88,6 @@ const LeaveRequestFormPage: React.FC = () => {
       setFormErrors(rest);
     }
 
-    // Programmatically move focus to the "Tanggal Mulai" DatePicker
     setTimeout(() => {
       if (startDateRef.current) {
         const input = startDateRef.current.querySelector("input");
@@ -96,7 +95,7 @@ const LeaveRequestFormPage: React.FC = () => {
           input.focus();
         }
       }
-    }, 100); // Slight delay to ensure Select menu is closed
+    }, 100);
   };
 
   const handleStartDateChange = (date: Date | null) => {
@@ -384,6 +383,7 @@ const LeaveRequestFormPage: React.FC = () => {
                 label="Tanggal Mulai"
                 value={formData.startDate}
                 onChange={handleStartDateChange}
+                format="dd-MM-yyyy"
                 slotProps={{
                   textField: {
                     fullWidth: true,
@@ -416,6 +416,7 @@ const LeaveRequestFormPage: React.FC = () => {
                 label="Tanggal Selesai"
                 value={formData.endDate}
                 onChange={handleEndDateChange}
+                format="dd-MM-yyyy"
                 slotProps={{
                   textField: {
                     fullWidth: true,
@@ -423,7 +424,7 @@ const LeaveRequestFormPage: React.FC = () => {
                     helperText: formErrors.endDate,
                     InputProps: {
                       id: "endDate",
-                    },
+                    }
                   },
                   popper: {
                     disablePortal: false,
