@@ -70,6 +70,12 @@ const PersetujuanPage: React.FC = () => {
     return user ? user.fullName : "Nama tidak tersedia";
   };
 
+  // Function to get user name by ID
+  const getUserNIP = (userId: string) => {
+    const user = users.find((user) => user.guid === userId);
+    return user ? user.nip : "NIP tidak tersedia";
+  };
+
   // Get status color based on leave request type
   const getStatusColor = (type: LeaveRequestType) => {
     switch (type) {
@@ -160,6 +166,7 @@ const PersetujuanPage: React.FC = () => {
             {pendingRequests.map((request: LeaveRequest) => {
               // Get user name from users array
               const userName = getUserName(request.userId);
+              const nip = getUserNIP(request.userId);
 
               return (
                 <Paper
@@ -199,7 +206,7 @@ const PersetujuanPage: React.FC = () => {
                           {userName}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {request.userId}
+                          {nip}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           {formatDate(request.startDate)} -{" "}
