@@ -93,6 +93,24 @@ const DashboardPage: React.FC = () => {
     navigate("/presensi");
   };
 
+  // Handle Quick Access icon clicks
+  const handleProfile = () => {
+    navigate("/profile");
+  };
+
+  const handleHistory = () => {
+    navigate("/history");
+  };
+
+  const handleCuti = () => {
+    navigate("/leave-request");
+  };
+
+  const handleLokasi = () => {
+    navigate("/under-development");
+  };
+
+
   // Determine button states based on today's attendance
   const hasCheckedIn = !!todayAttendance?.checkInTime;
   const hasCheckedOut = !!todayAttendance?.checkOutTime;
@@ -180,7 +198,7 @@ const DashboardPage: React.FC = () => {
           >
             <Grid container spacing={1} justifyContent="space-around">
               <Grid sx={{ textAlign: "center" }}>
-                <IconButton color="primary">
+                <IconButton color="primary" onClick={handleProfile}>
                   <Person />
                 </IconButton>
                 <Typography variant="body2" color="textSecondary">
@@ -188,7 +206,7 @@ const DashboardPage: React.FC = () => {
                 </Typography>
               </Grid>
               <Grid sx={{ textAlign: "center" }}>
-                <IconButton color="error">
+                <IconButton color="error" onClick={handleCuti}>
                   <CalendarToday />
                 </IconButton>
                 <Typography variant="body2" color="textSecondary">
@@ -196,7 +214,7 @@ const DashboardPage: React.FC = () => {
                 </Typography>
               </Grid>
               <Grid sx={{ textAlign: "center" }}>
-                <IconButton color="warning">
+                <IconButton color="warning" onClick={handleHistory}>
                   <Description />
                 </IconButton>
                 <Typography variant="body2" color="textSecondary">
@@ -204,7 +222,7 @@ const DashboardPage: React.FC = () => {
                 </Typography>
               </Grid>
               <Grid sx={{ textAlign: "center" }}>
-                <IconButton color="info">
+                <IconButton color="info" onClick={handleLokasi}>
                   <LocationOn />
                 </IconButton>
                 <Typography variant="body2" color="textSecondary">
