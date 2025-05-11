@@ -37,9 +37,11 @@ import { useAttendance } from "../../contexts/AttendanceContext";
 // Sample attendance data (you would fetch this from an API)
 const attendanceData = [
   { name: "Hadir", value: 42.9, color: "#4CAF50" },
-  { name: "Sakit", value: 25.8, color: "#FFC107" },
-  { name: "Izin", value: 17.2, color: "#03A9F4" },
-  { name: "Terlambat", value: 14.2, color: "#F44336" },
+  { name: "Cuti", value: 25.8, color: "#FFC107" },
+  { name: "DL", value: 17.2, color: "#03A9F4" },
+  { name: "Tanpa Keterangan", value: 9.1, color: "#F44336" },
+  { name: "Other", value: 5.1, color: "#9E9E9E" },
+  
 ];
 
 const DashboardPage: React.FC = () => {
