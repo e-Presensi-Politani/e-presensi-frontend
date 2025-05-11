@@ -28,9 +28,11 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
+import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
+import { useAttendance } from "../../contexts/AttendanceContext";
 
 // Sample attendance data (you would fetch this from an API)
 const attendanceData = [
@@ -43,23 +45,64 @@ const attendanceData = [
 const DashboardPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
   const { user: authUser } = useAuth();
-  const { fetchUserByGuid, selectedUser, loading, error, clearError } =
-    useUsers();
+  const {
+    fetchUserByGuid,
+    selectedUser,
+    loading: loadingUser,
+    error: userError,
+    clearError,
+  } = useUsers();
+  const {
+    todayAttendance,
+    fetchTodayAttendance,
+    loading: loadingAttendance,
+    error: attendanceError,
+  } = useAttendance();
+  const navigate = useNavigate();
 
-  // Fetch user details when component mounts
+  // Fetch user details and today's attendance when component mounts
   useEffect(() => {
     if (authUser?.guid) {
       fetchUserByGuid(authUser.guid);
     }
+    fetchTodayAttendance();
 
     return () => {
       clearError();
     };
   }, [authUser?.guid]);
 
-  // For demo purposes only - normally this would come from your backend
-  const checkInTime = "07:00";
-  const checkOutTime = "17:00";
+  // Format time function
+  const formatTime = (dateTime: Date | string | undefined): string => {
+    if (!dateTime) return "--:--";
+
+    try {
+      const date = typeof dateTime === "string" ? new Date(dateTime) : dateTime;
+      return date.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return "--:--";
+    }
+  };
+
+  // Handle attendance button clicks
+  const handleAttendanceClick = () => {
+    navigate("/presensi");
+  };
+
+  // Determine button states based on today's attendance
+  const hasCheckedIn = !!todayAttendance?.checkInTime;
+  const hasCheckedOut = !!todayAttendance?.checkOutTime;
+
+  // Get check-in and check-out times
+  const checkInTime = formatTime(todayAttendance?.checkInTime);
+  const checkOutTime = formatTime(todayAttendance?.checkOutTime);
+
+  const loading = loadingUser || loadingAttendance;
+  const error = userError || attendanceError;
 
   if (loading) {
     return (
@@ -178,21 +221,27 @@ const DashboardPage: React.FC = () => {
           <Grid>
             <Button
               variant="contained"
-              startIcon={<AssignmentTurnedIn />}
+              startIcon={<AssignmentTurnedIn sx={{ ml: 2, scale: 1.5 }} />}
+              onClick={handleAttendanceClick}
+              disabled={hasCheckedIn || hasCheckedOut}
               sx={{
                 width: "43vw",
-                bgcolor: "#4CAF50",
+                bgcolor: hasCheckedIn ? "#9E9E9E" : "#4CAF50",
                 color: "white",
                 p: 2,
                 borderRadius: 2,
                 textTransform: "none",
                 justifyContent: "flex-start",
                 "&:hover": {
-                  bgcolor: "#388E3C",
+                  bgcolor: hasCheckedIn ? "#9E9E9E" : "#388E3C",
+                },
+                "&.Mui-disabled": {
+                  bgcolor: "#9E9E9E",
+                  color: "white",
                 },
               }}
             >
-              <Box>
+              <Box width="100%">
                 <Typography variant="body1" fontWeight="bold" align="center">
                   Masuk
                 </Typography>
@@ -204,27 +253,33 @@ const DashboardPage: React.FC = () => {
           </Grid>
           <Grid>
             <Button
-              fullWidth
               variant="contained"
-              startIcon={<AssignmentTurnedIn />}
+              startIcon={<AssignmentTurnedIn sx={{ ml: 2, scale: 1.5 }} />}
+              onClick={handleAttendanceClick}
+              disabled={!hasCheckedIn || hasCheckedOut}
               sx={{
                 width: "43vw",
-                bgcolor: "#F44336",
+                bgcolor: !hasCheckedIn || hasCheckedOut ? "#9E9E9E" : "#F44336",
                 color: "white",
                 p: 2,
                 borderRadius: 2,
                 textTransform: "none",
                 justifyContent: "flex-start",
                 "&:hover": {
-                  bgcolor: "#D32F2F",
+                  bgcolor:
+                    !hasCheckedIn || hasCheckedOut ? "#9E9E9E" : "#D32F2F",
+                },
+                "&.Mui-disabled": {
+                  bgcolor: "#9E9E9E",
+                  color: "white",
                 },
               }}
             >
-              <Box>
-                <Typography variant="body1" fontWeight="bold" align="left">
+              <Box width="100%">
+                <Typography variant="body1" fontWeight="bold" align="center">
                   Pulang
                 </Typography>
-                <Typography variant="body2" align="left">
+                <Typography variant="body2" align="center">
                   {checkOutTime}
                 </Typography>
               </Box>
@@ -239,7 +294,7 @@ const DashboardPage: React.FC = () => {
             borderRadius: 2,
             mt: 3,
             p: 3,
-            mb: { xs: 7, sm: 6},
+            mb: { xs: 7, sm: 6 },
             bgcolor: "white",
           }}
         >
