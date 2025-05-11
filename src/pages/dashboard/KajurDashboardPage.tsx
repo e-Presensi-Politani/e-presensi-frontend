@@ -33,6 +33,7 @@ import BottomNav from "../../components/BottomNav";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
 import { useAttendance } from "../../contexts/AttendanceContext";
+import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
 
 // Sample attendance data (you would fetch this from an API)
 const attendanceData = [
@@ -58,14 +59,21 @@ const KajurDashboardPage: React.FC = () => {
     loading: loadingAttendance,
     error: attendanceError,
   } = useAttendance();
+  const {
+    pendingRequests,
+    fetchPendingRequests,
+    loading: loadingLeaveRequests,
+    error: leaveRequestsError,
+  } = useLeaveRequests();
   const navigate = useNavigate();
 
-  // Fetch user details and today's attendance when component mounts
+  // Fetch user details, today's attendance, and pending leave requests when component mounts
   useEffect(() => {
     if (authUser?.guid) {
       fetchUserByGuid(authUser.guid);
     }
     fetchTodayAttendance();
+    fetchPendingRequests();
 
     return () => {
       clearError();
@@ -118,8 +126,11 @@ const KajurDashboardPage: React.FC = () => {
   const checkInTime = formatTime(todayAttendance?.checkInTime);
   const checkOutTime = formatTime(todayAttendance?.checkOutTime);
 
-  const loading = loadingUser || loadingAttendance;
-  const error = userError || attendanceError;
+  // Determine count of pending approval requests
+  const pendingApprovalCount = pendingRequests?.length || 0;
+
+  const loading = loadingUser || loadingAttendance || loadingLeaveRequests;
+  const error = userError || attendanceError || leaveRequestsError;
 
   if (loading) {
     return (
@@ -225,24 +236,26 @@ const KajurDashboardPage: React.FC = () => {
                   <IconButton color="info" onClick={handlePersetujuan}>
                     <CheckBox />
                   </IconButton>
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 0,
-                      right: 0,
-                      bgcolor: "error.main",
-                      color: "white",
-                      borderRadius: "50%",
-                      width: 16,
-                      height: 16,
-                      fontSize: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    5
-                  </Box>
+                  {pendingApprovalCount > 0 && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        bgcolor: "error.main",
+                        color: "white",
+                        borderRadius: "50%",
+                        width: 16,
+                        height: 16,
+                        fontSize: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {pendingApprovalCount > 99 ? "99+" : pendingApprovalCount}
+                    </Box>
+                  )}
                 </Box>
                 <Typography variant="body2" color="textSecondary">
                   Approval
@@ -323,7 +336,7 @@ const KajurDashboardPage: React.FC = () => {
             </Button>
           </Grid>
         </Grid>
-        
+
         {/* Attendance chart */}
         <Paper
           elevation={1}
