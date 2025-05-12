@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import {
   CalendarToday,
-  Description,
+  Task,
   Person,
   AssignmentTurnedIn,
   CheckBox,
@@ -32,40 +32,135 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
+import { useAttendance } from "../../contexts/AttendanceContext";
+import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
 
 // Sample attendance data (you would fetch this from an API)
 const attendanceData = [
   { name: "Hadir", value: 42.9, color: "#4CAF50" },
-  { name: "Sakit", value: 25.8, color: "#FFC107" },
-  { name: "Izin", value: 17.2, color: "#03A9F4" },
-  { name: "Terlambat", value: 14.2, color: "#F44336" },
+  { name: "Cuti", value: 25.8, color: "#FFC107" },
+  { name: "DL", value: 17.2, color: "#03A9F4" },
+  { name: "Tanpa Keterangan", value: 9.1, color: "#F44336" },
+  { name: "Other", value: 5.1, color: "#9E9E9E" },
 ];
 
 const KajurDashboardPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
-  const navigate = useNavigate();
+  const [currentDateTime, setCurrentDateTime] = useState<Date>(new Date());
   const { user: authUser } = useAuth();
-  const { fetchUserByGuid, selectedUser, loading, error, clearError } =
-    useUsers();
+  const {
+    fetchUserByGuid,
+    selectedUser,
+    loading: loadingUser,
+    error: userError,
+    clearError,
+  } = useUsers();
+  const {
+    todayAttendance,
+    fetchTodayAttendance,
+    loading: loadingAttendance,
+    error: attendanceError,
+  } = useAttendance();
+  const {
+    pendingRequests,
+    fetchPendingRequests,
+    loading: loadingLeaveRequests,
+    error: leaveRequestsError,
+  } = useLeaveRequests();
+  const navigate = useNavigate();
 
-  // Fetch user details when component mounts
+  // Fetch user details, today's attendance, and pending leave requests when component mounts
   useEffect(() => {
     if (authUser?.guid) {
       fetchUserByGuid(authUser.guid);
     }
+    fetchTodayAttendance();
+    fetchPendingRequests();
 
     return () => {
       clearError();
     };
   }, [authUser?.guid]);
 
-  // For demo purposes only - normally this would come from your backend
-  const checkInTime = "07:00";
-  const checkOutTime = "17:00";
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
+  const formatDate = (date: Date): string => {
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return date.toLocaleDateString("id-ID", options);
+  };
+
+  const formatCurrentTime = (date: Date): string => {
+    return date.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
+  // Format time function
+  const formatTime = (dateTime: Date | string | undefined): string => {
+    if (!dateTime) return "--:--";
+
+    try {
+      const date = typeof dateTime === "string" ? new Date(dateTime) : dateTime;
+      return date.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return "--:--";
+    }
+  };
+
+  // Handle attendance button clicks
+  const handleAttendanceClick = () => {
+    navigate("/presensi");
+  };
+
+  // Handle Quick Access icon clicks
+  const handleProfile = () => {
+    navigate("/profile");
+  };
+
+  const handleKoreksi = () => {
+    navigate("/under-development");
+  };
+
+  const handleCuti = () => {
+    navigate("/leave-request");
+  };
 
   const handlePersetujuan = () => {
     navigate("/persetujuan");
   };
+
+  // Determine button states based on today's attendance
+  const hasCheckedIn = !!todayAttendance?.checkInTime;
+  const hasCheckedOut = !!todayAttendance?.checkOutTime;
+
+  // Get check-in and check-out times
+  const checkInTime = formatTime(todayAttendance?.checkInTime);
+  const checkOutTime = formatTime(todayAttendance?.checkOutTime);
+
+  // Determine count of pending approval requests
+  const pendingApprovalCount = pendingRequests?.length || 0;
+
+  const loading = loadingUser || loadingAttendance || loadingLeaveRequests;
+  const error = userError || attendanceError || leaveRequestsError;
 
   if (loading) {
     return (
@@ -143,7 +238,7 @@ const KajurDashboardPage: React.FC = () => {
           >
             <Grid container spacing={1} justifyContent="space-around">
               <Grid sx={{ textAlign: "center" }}>
-                <IconButton color="primary">
+                <IconButton color="primary" onClick={handleProfile}>
                   <Person />
                 </IconButton>
                 <Typography variant="body2" color="textSecondary">
@@ -151,7 +246,7 @@ const KajurDashboardPage: React.FC = () => {
                 </Typography>
               </Grid>
               <Grid sx={{ textAlign: "center" }}>
-                <IconButton color="error">
+                <IconButton color="error" onClick={handleCuti}>
                   <CalendarToday />
                 </IconButton>
                 <Typography variant="body2" color="textSecondary">
@@ -159,11 +254,11 @@ const KajurDashboardPage: React.FC = () => {
                 </Typography>
               </Grid>
               <Grid sx={{ textAlign: "center" }}>
-                <IconButton color="warning">
-                  <Description />
+                <IconButton color="warning" onClick={handleKoreksi}>
+                  <Task />
                 </IconButton>
                 <Typography variant="body2" color="textSecondary">
-                  Histori
+                  Koreksi
                 </Typography>
               </Grid>
               <Grid sx={{ textAlign: "center", position: "relative" }}>
@@ -171,24 +266,26 @@ const KajurDashboardPage: React.FC = () => {
                   <IconButton color="info" onClick={handlePersetujuan}>
                     <CheckBox />
                   </IconButton>
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 0,
-                      right: 0,
-                      bgcolor: "error.main",
-                      color: "white",
-                      borderRadius: "50%",
-                      width: 16,
-                      height: 16,
-                      fontSize: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    5
-                  </Box>
+                  {pendingApprovalCount > 0 && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        bgcolor: "error.main",
+                        color: "white",
+                        borderRadius: "50%",
+                        width: 16,
+                        height: 16,
+                        fontSize: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {pendingApprovalCount > 99 ? "99+" : pendingApprovalCount}
+                    </Box>
+                  )}
                 </Box>
                 <Typography variant="body2" color="textSecondary">
                   Approval
@@ -199,26 +296,61 @@ const KajurDashboardPage: React.FC = () => {
         </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ mt: 3, mb: 4 }}>
+      <Container maxWidth="lg" sx={{ mt: 2, mb: 4 }}>
+        <Paper
+          elevation={1}
+          sx={{
+            borderRadius: 2,
+            p: 1,
+            mb: 2,
+            bgcolor: "white",
+            textAlign: "center",
+          }}
+        >
+          <Typography variant="subtitle1" component="span">
+            <Box
+              component="span"
+              sx={{ fontWeight: "medium", color: "text.primary" }}
+            >
+              {formatDate(currentDateTime)}
+            </Box>
+            <Box component="span" sx={{ mx: 1 }}>
+              -{" "}
+            </Box>
+            <Box
+              component="span"
+              sx={{ fontWeight: "bold", color: "primary.main" }}
+            >
+              {formatCurrentTime(currentDateTime)}
+            </Box>
+          </Typography>
+        </Paper>
+
         <Grid container spacing={2} justifyContent="center" alignItems="center">
           <Grid>
             <Button
               variant="contained"
-              startIcon={<AssignmentTurnedIn />}
+              startIcon={<AssignmentTurnedIn sx={{ ml: 2, scale: 1.5 }} />}
+              onClick={handleAttendanceClick}
+              disabled={hasCheckedIn || hasCheckedOut}
               sx={{
                 width: "43vw",
-                bgcolor: "#4CAF50",
+                bgcolor: hasCheckedIn ? "#9E9E9E" : "#4CAF50",
                 color: "white",
                 p: 2,
                 borderRadius: 2,
                 textTransform: "none",
                 justifyContent: "flex-start",
                 "&:hover": {
-                  bgcolor: "#388E3C",
+                  bgcolor: hasCheckedIn ? "#9E9E9E" : "#388E3C",
+                },
+                "&.Mui-disabled": {
+                  bgcolor: "#9E9E9E",
+                  color: "white",
                 },
               }}
             >
-              <Box>
+              <Box width="100%">
                 <Typography variant="body1" fontWeight="bold" align="center">
                   Masuk
                 </Typography>
@@ -230,27 +362,33 @@ const KajurDashboardPage: React.FC = () => {
           </Grid>
           <Grid>
             <Button
-              fullWidth
               variant="contained"
-              startIcon={<AssignmentTurnedIn />}
+              startIcon={<AssignmentTurnedIn sx={{ ml: 2, scale: 1.5 }} />}
+              onClick={handleAttendanceClick}
+              disabled={!hasCheckedIn || hasCheckedOut}
               sx={{
                 width: "43vw",
-                bgcolor: "#F44336",
+                bgcolor: !hasCheckedIn || hasCheckedOut ? "#9E9E9E" : "#F44336",
                 color: "white",
                 p: 2,
                 borderRadius: 2,
                 textTransform: "none",
                 justifyContent: "flex-start",
                 "&:hover": {
-                  bgcolor: "#D32F2F",
+                  bgcolor:
+                    !hasCheckedIn || hasCheckedOut ? "#9E9E9E" : "#D32F2F",
+                },
+                "&.Mui-disabled": {
+                  bgcolor: "#9E9E9E",
+                  color: "white",
                 },
               }}
             >
-              <Box>
-                <Typography variant="body1" fontWeight="bold" align="left">
+              <Box width="100%">
+                <Typography variant="body1" fontWeight="bold" align="center">
                   Pulang
                 </Typography>
-                <Typography variant="body2" align="left">
+                <Typography variant="body2" align="center">
                   {checkOutTime}
                 </Typography>
               </Box>
