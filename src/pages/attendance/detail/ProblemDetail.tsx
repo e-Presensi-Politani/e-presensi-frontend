@@ -20,6 +20,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import WarningIcon from "@mui/icons-material/Warning";
 import BottomNav from "../../../components/BottomNav";
 import { useAttendance } from "../../../contexts/AttendanceContext";
+import { useAuth } from "../../../contexts/AuthContext";
 import { format } from "date-fns";
 import { id } from "date-fns/locale/id";
 
@@ -29,6 +30,7 @@ const AttendanceDetailProblem: React.FC = () => {
   const { guid } = useParams<{ guid: string }>();
   const { fetchAttendanceById, selectedAttendance, loading, error } =
     useAttendance();
+  const { user } = useAuth();
 
   // Handle success message from correction submission
   const [showSuccessMessage, setShowSuccessMessage] =
@@ -206,7 +208,7 @@ const AttendanceDetailProblem: React.FC = () => {
                     Nama
                   </TableCell>
                   <TableCell align="right">
-                    {selectedAttendance.userId}
+                    {user?.fullName || selectedAttendance.userId}
                   </TableCell>
                 </TableRow>
                 <TableRow>
