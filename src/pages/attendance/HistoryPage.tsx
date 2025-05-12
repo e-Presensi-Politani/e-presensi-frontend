@@ -92,14 +92,16 @@ const HistoryPage: React.FC = () => {
   const handleDetailClick = (status: string, guid: string) => {
     switch (status.toLowerCase()) {
       case "present":
-      case "ontime":
+      case "on_leave":
+      case "official_travel":
+      case "remote_working":
         navigate(`/attendance-present/${guid}`);
         break;
       case "absent":
         navigate(`/attendance-absent/${guid}`);
         break;
       case "late":
-      case "earlydeparture":
+      case "early_departure":
         navigate(`/attendance-problem/${guid}`);
         break;
       default:
@@ -111,12 +113,12 @@ const HistoryPage: React.FC = () => {
     const normalizedStatus = status ? status.toLowerCase().trim() : "";
     switch (normalizedStatus) {
       case "present":
-      case "ontime":
+      case "remote_working":
         return <CheckIcon style={{ color: "#4CAF50" }} />;
       case "absent":
         return <CloseIcon style={{ color: "#F44336" }} />;
       case "late":
-      case "earlydeparture":
+      case "early_departure":
         return <WarningIcon style={{ color: "#FFC107" }} />;
       default:
         return <UnknownIcon style={{ color: "#757575" }} />;
