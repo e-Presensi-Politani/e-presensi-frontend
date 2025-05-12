@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import {
   CalendarToday,
-  Description,
+  Task,
   Person,
   AssignmentTurnedIn,
   CheckBox,
@@ -136,8 +136,8 @@ const KajurDashboardPage: React.FC = () => {
     navigate("/profile");
   };
 
-  const handleHistory = () => {
-    navigate("/history");
+  const handleKoreksi = () => {
+    navigate("/under-development");
   };
 
   const handleCuti = () => {
@@ -254,11 +254,11 @@ const KajurDashboardPage: React.FC = () => {
                 </Typography>
               </Grid>
               <Grid sx={{ textAlign: "center" }}>
-                <IconButton color="warning" onClick={handleHistory}>
-                  <Description />
+                <IconButton color="warning" onClick={handleKoreksi}>
+                  <Task />
                 </IconButton>
                 <Typography variant="body2" color="textSecondary">
-                  Histori
+                  Koreksi
                 </Typography>
               </Grid>
               <Grid sx={{ textAlign: "center", position: "relative" }}>
