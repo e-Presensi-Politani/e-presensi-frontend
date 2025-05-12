@@ -10,11 +10,6 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
 } from "@mui/material";
 import {
   ArrowBack,
@@ -63,9 +58,7 @@ const PresensiPage: React.FC = () => {
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [isWithinRadius, setIsWithinRadius] = useState<boolean | null>(null);
   const [distanceToOffice, setDistanceToOffice] = useState<number | null>(null);
-  const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [showNotesDialog, setShowNotesDialog] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isCheckOut, setIsCheckOut] = useState<boolean>(false);
 
@@ -273,34 +266,20 @@ const PresensiPage: React.FC = () => {
     }
   };
 
-  const handleAttendanceAction = () => {
-    if (!capturedImage) {
-      showNotification("Please capture a photo first", "error");
-      return;
-    }
-
-    if (!userLocation) {
-      showNotification("Location data not available", "error");
-      return;
-    }
-
-    setShowNotesDialog(true);
-  };
-
   const submitAttendance = async () => {
     if (!userLocation || !imageFile) {
+      showNotification("Location or image data not available", "error");
       return;
     }
 
     setIsSubmitting(true);
-    setShowNotesDialog(false);
 
     try {
       if (isCheckOut) {
         const checkOutData: CheckOutDto = {
           latitude: userLocation[0],
           longitude: userLocation[1],
-          notes: notes,
+          notes: "", // Empty string instead of notes
         };
         await checkOut(checkOutData, imageFile);
         showNotification("Check-out successful!", "success");
@@ -308,7 +287,7 @@ const PresensiPage: React.FC = () => {
         const checkInData: CheckInDto = {
           latitude: userLocation[0],
           longitude: userLocation[1],
-          notes: notes,
+          notes: "", // Empty string instead of notes
         };
         await checkIn(checkInData, imageFile);
         showNotification("Check-in successful!", "success");
@@ -487,7 +466,7 @@ const PresensiPage: React.FC = () => {
               zoomControl={false}
             >
               <TileLayer
-                attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <Circle
@@ -565,7 +544,7 @@ const PresensiPage: React.FC = () => {
               <CameraAlt />
             )
           }
-          onClick={capturedImage ? handleAttendanceAction : handleCameraCapture}
+          onClick={capturedImage ? submitAttendance : handleCameraCapture}
           disabled={!!capturedImage && actionButtonDisabled}
           sx={{
             bgcolor: isCheckOut ? "#ff9800" : "#0073e6",
@@ -576,7 +555,7 @@ const PresensiPage: React.FC = () => {
             "&.Mui-disabled": { bgcolor: "#ccc", color: "#666" },
           }}
         >
-          {attendanceLoading ? (
+          {attendanceLoading || isSubmitting ? (
             <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
           ) : capturedImage ? (
             isCheckOut ? (
@@ -589,55 +568,6 @@ const PresensiPage: React.FC = () => {
           )}
         </Button>
       </Container>
-
-      <Dialog
-        open={showNotesDialog}
-        onClose={() => setShowNotesDialog(false)}
-        TransitionProps={{
-          onExited: () => {
-            if (!isSubmitting && isMounted.current) {
-              initializeCamera();
-            }
-          },
-        }}
-      >
-        <DialogTitle>
-          {isCheckOut ? "Add Check-out Notes" : "Add Check-in Notes"}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="notes"
-            label="Notes (optional)"
-            type="text"
-            fullWidth
-            multiline
-            rows={4}
-            variant="outlined"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder={`Add any relevant notes for your ${
-              isCheckOut ? "check-out" : "check-in"
-            }`}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowNotesDialog(false)}>Cancel</Button>
-          <Button
-            onClick={submitAttendance}
-            variant="contained"
-            disabled={isSubmitting}
-            sx={{ bgcolor: isCheckOut ? "#ff9800" : "#0073e6" }}
-          >
-            {isSubmitting ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              "Submit"
-            )}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Snackbar
         open={showAlert}
