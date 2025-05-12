@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -41,11 +41,11 @@ const attendanceData = [
   { name: "DL", value: 17.2, color: "#03A9F4" },
   { name: "Tanpa Keterangan", value: 9.1, color: "#F44336" },
   { name: "Other", value: 5.1, color: "#9E9E9E" },
-  
 ];
 
 const DashboardPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
+  const [currentDateTime, setCurrentDateTime] = useState<Date>(new Date());
   const { user: authUser } = useAuth();
   const {
     fetchUserByGuid,
@@ -73,6 +73,34 @@ const DashboardPage: React.FC = () => {
       clearError();
     };
   }, [authUser?.guid]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
+  const formatDate = (date: Date): string => {
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return date.toLocaleDateString("id-ID", options);
+  };
+
+  const formatCurrentTime = (date: Date): string => {
+    return date.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
 
   // Format time function
   const formatTime = (dateTime: Date | string | undefined): string => {
@@ -111,7 +139,6 @@ const DashboardPage: React.FC = () => {
   const handleLokasi = () => {
     navigate("/under-development");
   };
-
 
   // Determine button states based on today's attendance
   const hasCheckedIn = !!todayAttendance?.checkInTime;
@@ -236,7 +263,36 @@ const DashboardPage: React.FC = () => {
         </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ mt: 3, mb: 4 }}>
+      <Container maxWidth="lg" sx={{ mt: 2, mb: 4 }}>
+        <Paper
+          elevation={1}
+          sx={{
+            borderRadius: 2,
+            p: 1,
+            mb: 2,
+            bgcolor: "white",
+            textAlign: "center",
+          }}
+        >
+          <Typography variant="subtitle1" component="span">
+            <Box
+              component="span"
+              sx={{ fontWeight: "medium", color: "text.primary" }}
+            >
+              {formatDate(currentDateTime)}
+            </Box>
+            <Box component="span" sx={{ mx: 1 }}>
+              -{" "}
+            </Box>
+            <Box
+              component="span"
+              sx={{ fontWeight: "bold", color: "primary.main" }}
+            >
+              {formatCurrentTime(currentDateTime)}
+            </Box>
+          </Typography>
+        </Paper>
+
         <Grid container spacing={2} justifyContent="center" alignItems="center">
           <Grid>
             <Button
