@@ -23,6 +23,7 @@ import { useAttendance } from "../../../contexts/AttendanceContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { format } from "date-fns";
 import { id } from "date-fns/locale/id";
+import { WorkingStatus } from "../../../types/enums"; // Import enum
 
 const AttendanceDetailProblem: React.FC = () => {
   const navigate = useNavigate();
@@ -184,7 +185,11 @@ const AttendanceDetailProblem: React.FC = () => {
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-              Jam Kerja Kurang!
+              {selectedAttendance.status === WorkingStatus.LATE
+                ? "Terlambat!"
+                : selectedAttendance.status === WorkingStatus.EARLY_DEPARTURE
+                ? "Jam Kerja Kurang!"
+                : "Masalah Presensi"}
             </Typography>
             <Typography variant="body2">
               {attendanceDate}
