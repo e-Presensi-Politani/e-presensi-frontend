@@ -17,6 +17,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import BottomNav from "../../../components/BottomNav";
 import { useAttendance } from "../../../contexts/AttendanceContext";
+import { useAuth } from "../../../contexts/AuthContext";
 import { format } from "date-fns";
 import { id } from "date-fns/locale/id";
 
@@ -25,6 +26,7 @@ const AttendanceDetailPresent: React.FC = () => {
   const { guid } = useParams<{ guid: string }>();
   const { fetchAttendanceById, selectedAttendance, loading, error } =
     useAttendance();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (guid) {
@@ -165,7 +167,7 @@ const AttendanceDetailPresent: React.FC = () => {
                     align="right"
                     sx={{ borderBottom: "1px solid #e0e0e0" }}
                   >
-                    {selectedAttendance.userId}
+                    {user?.fullName || selectedAttendance.userId}
                   </TableCell>
                 </TableRow>
                 <TableRow>
