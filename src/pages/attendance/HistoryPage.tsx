@@ -155,9 +155,31 @@ const HistoryPage: React.FC = () => {
       }}
     >
       <Box
-        sx={{ bgcolor: "#1976D2", p: 2, color: "white", textAlign: "center" }}
+        sx={{
+          bgcolor: "#1976D2",
+          p: 1.5,
+          color: "white",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
       >
         <Typography variant="h6">Riwayat Presensi</Typography>
+        <Box
+          component="button"
+          sx={{
+            bgcolor: "#FFC107",
+            color: "black",
+            border: "none",
+            borderRadius: 1,
+            py: 0.1,
+            px: 2,
+            cursor: "pointer",
+          }}
+          onClick={() => navigate("/status-koreksi")}
+        >
+          <Typography variant="h6">Koreksi</Typography>
+        </Box>
       </Box>
       <Container maxWidth="sm" sx={{ mt: 2, mb: 2 }}>
         <FormControl fullWidth>
