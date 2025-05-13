@@ -1,4 +1,5 @@
-import React from "react";
+// src/pages/correction/DetailCorrectionPage.tsx
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -7,38 +8,108 @@ import {
   Avatar,
   IconButton,
   Divider,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
+import { useUsers } from "../../contexts/UserContext";
+import { useCorrections } from "../../contexts/CorrectionsContext";
+import { format } from "date-fns";
 
-interface CorrectionDetailProps {
-  fullName: string;
-  id: string;
-  department: string;
-  date: string;
-  permissionType: string;
-  status: string;
-  reason: string;
-}
-
-const CorrectionDetailPage: React.FC<CorrectionDetailProps> = ({
-  fullName = "M. Ghozi Syah Putra",
-  id = "21254323029",
-  department = "Rekayasa Pertanian dan Komputer",
-  date = "10/01/2025",
-  permissionType = "Penggunaan Jam Istirahat sebagai Jam Kerja",
-  status = "Terlambat",
-  reason = "Ban motor bocor",
-}) => {
+const CorrectionDetailPage: React.FC = () => {
   const navigate = useNavigate();
+  const { guid } = useParams<{ guid: string }>();
+  const { fetchCorrectionById, selectedCorrection, loading, error } =
+    useCorrections();
+  const { users, fetchUsers } = useUsers();
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleBack = () => {
-    navigate("/status-koreksi"); // Go back to previous page
+  // Get user data for the correction
+  const getUserData = (userId?: string) => {
+    if (!userId)
+      return {
+        name: "Unknown",
+        nip: "Unknown",
+        position: "Unknown",
+        department: "Unknown",
+      };
+    const user = users.find((u) => u.guid === userId);
+    return {
+      name: user?.fullName || "Unknown",
+      nip: user?.nip || "Unknown",
+      position: user?.position || "Unknown",
+      department: user?.department || "Unknown",
+    };
   };
 
+  useEffect(() => {
+    const loadCorrection = async () => {
+      if (!guid) {
+        navigate("/status-koreksi");
+        return;
+      }
+
+      try {
+        await fetchCorrectionById(guid);
+        await fetchUsers(); // Fetch users data
+      } catch (err) {
+        console.error("Failed to load correction details:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCorrection();
+  }, [guid, fetchCorrectionById, fetchUsers, navigate]);
+
+  const handleBack = () => {
+    navigate("/status-koreksi");
+  };
+
+  // Get user info from the correction
+  const userData = getUserData(selectedCorrection?.userId);
+
   // Get first letter for avatar
-  const userInitial = fullName ? fullName.charAt(0).toUpperCase() : "U";
+  const userInitial =
+    userData.name !== "Unknown" ? userData.name.charAt(0).toUpperCase() : "U";
+
+  if (isLoading || loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
+  if (!selectedCorrection) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="warning">Koreksi tidak ditemukan</Alert>
+      </Box>
+    );
+  }
+
+  // Format the date
+  const formattedDate = selectedCorrection.createdAt
+    ? format(new Date(selectedCorrection.createdAt), "dd/MM/yyyy")
+    : "-";
 
   return (
     <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100%", pb: 7 }}>
@@ -101,17 +172,20 @@ const CorrectionDetailPage: React.FC<CorrectionDetailProps> = ({
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 0.5 }}>
-              {fullName}
+              {userData.name}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5 }}>
-              {id}
+              {userData.nip}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              {userData.position}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ mb: 2, textAlign: "center" }}
             >
-              {department}
+              {userData.department}
             </Typography>
 
             <Divider sx={{ width: "100%", my: 1 }} />
@@ -122,7 +196,7 @@ const CorrectionDetailPage: React.FC<CorrectionDetailProps> = ({
                 Tanggal Pengajuan
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                {date}
+                {formattedDate}
               </Typography>
             </Box>
 
@@ -134,7 +208,7 @@ const CorrectionDetailPage: React.FC<CorrectionDetailProps> = ({
                 Izin
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                {permissionType}
+                {selectedCorrection.type || "Tipe tidak tersedia"}
               </Typography>
             </Box>
 
@@ -149,10 +223,19 @@ const CorrectionDetailPage: React.FC<CorrectionDetailProps> = ({
                 variant="body1"
                 sx={{
                   fontWeight: "bold",
-                  color: status === "Terlambat" ? "error.main" : "success.main",
+                  color:
+                    selectedCorrection.status === "APPROVED"
+                      ? "success.main"
+                      : selectedCorrection.status === "REJECTED"
+                      ? "error.main"
+                      : "warning.main",
                 }}
               >
-                {status}
+                {selectedCorrection.status === "PENDING"
+                  ? "Menunggu"
+                  : selectedCorrection.status === "APPROVED"
+                  ? "Disetujui"
+                  : "Ditolak"}
               </Typography>
             </Box>
 
@@ -163,8 +246,25 @@ const CorrectionDetailPage: React.FC<CorrectionDetailProps> = ({
               <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                 Alasan
               </Typography>
-              <Typography variant="body1">{reason}</Typography>
+              <Typography variant="body1">
+                {selectedCorrection.description || "Tidak ada alasan yang diberikan"}
+              </Typography>
             </Box>
+
+            {/* Show reviewer notes if available */}
+            {selectedCorrection.reviewNote && (
+              <>
+                <Divider sx={{ width: "100%", my: 1 }} />
+                <Box sx={{ width: "100%", px: 2, py: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: "medium" }}>
+                    Catatan Reviewer
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedCorrection.reviewNote}
+                  </Typography>
+                </Box>
+              </>
+            )}
           </Box>
         </Paper>
       </Container>

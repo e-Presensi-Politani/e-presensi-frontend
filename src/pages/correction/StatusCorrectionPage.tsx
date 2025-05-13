@@ -127,7 +127,7 @@ const StatusCorrectionPage: React.FC = () => {
   };
 
   const handleDetail = (guid: string) => {
-    navigate(`/correction-detail/${guid}`);
+    navigate(`/detail-koreksi/${guid}`);
   };
 
   return (
