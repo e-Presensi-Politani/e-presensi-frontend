@@ -4,7 +4,7 @@ export interface Correction {
   userId: string;
   departmentId: string;
   attendanceId: string;
-  correctionType: string;
+  type: string;
   requestDate: Date | string;
   description: string;
   status: "PENDING" | "APPROVED" | "REJECTED";

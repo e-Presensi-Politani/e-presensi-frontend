@@ -157,7 +157,7 @@ const HistoryPage: React.FC = () => {
       <Box
         sx={{
           bgcolor: "#1976D2",
-          p: 2,
+          p: 1.5,
           color: "white",
           display: "flex",
           justifyContent: "space-between",
@@ -172,13 +172,13 @@ const HistoryPage: React.FC = () => {
             color: "black",
             border: "none",
             borderRadius: 1,
-            py: 0.5,
+            py: 0.1,
             px: 2,
             cursor: "pointer",
           }}
           onClick={() => navigate("/status-koreksi")}
         >
-          <Typography variant="h6">koreksi</Typography>
+          <Typography variant="h6">Koreksi</Typography>
         </Box>
       </Box>
       <Container maxWidth="sm" sx={{ mt: 2, mb: 2 }}>
