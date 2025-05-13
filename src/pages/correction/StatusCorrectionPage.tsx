@@ -5,18 +5,26 @@ import {
   Container,
   Card,
   CardContent,
+  IconButton
 } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import HelpIcon from "@mui/icons-material/Help";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import BottomNav from "../../components/BottomNav";
+import { useNavigate } from "react-router-dom";
 
 const StatusPengajuanKoreksi: React.FC = () => {
+  const navigate = useNavigate();
   const statusItems = [
     { title: "Jam Kerja Kurang", date: "10 Januari 2025", status: "pending" },
     { title: "Terlambat", date: "09 Januari 2025", status: "approved" },
     { title: "Terlambat", date: "08 Januari 2025", status: "rejected" },
   ];
+
+  const handleBack = () => {
+    navigate("/history");
+  };
 
   return (
     <Box
@@ -32,12 +40,22 @@ const StatusPengajuanKoreksi: React.FC = () => {
       <Box
         sx={{
           bgcolor: "#1976d2",
+          height: "5vh",
+          p: 2,
           color: "white",
-          py: 2,
-          textAlign: "center",
+          display: "flex",
+          alignItems: "center",
         }}
       >
-        <Typography variant="h6">Status Pengajuan Koreksi</Typography>
+        <IconButton color="inherit" onClick={handleBack}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography
+          variant="h6"
+          sx={{ flexGrow: 1, textAlign: "center", mr: 4 }}
+        >
+          Status Pengajuan Koreksi
+        </Typography>
       </Box>
 
       {/* Content */}
