@@ -1,4 +1,4 @@
-// LeaveRequestPage.tsx
+// src/pages/correction/StatusCorrectionPage.tsx
 import React, { useEffect } from "react";
 import {
   Box,
@@ -6,36 +6,40 @@ import {
   Container,
   Card,
   CardContent,
-  Fab,
+  IconButton,
   CircularProgress,
   Alert,
   Snackbar,
 } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import HelpIcon from "@mui/icons-material/Help";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
-import HelpIcon from "@mui/icons-material/Help";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
 import BottomNav from "../../components/BottomNav";
 import { useNavigate } from "react-router-dom";
-import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
-import { format } from "date-fns";
+import { useCorrections } from "../../contexts/CorrectionsContext";
 import {
-  LeaveRequestStatus,
-  LeaveRequestTypeLabels,
-} from "../../types/leave-request-enums";
-import { LeaveRequest } from "../../types/leave-requests";
+  Correction,
+  CorrectionStatus,
+  CORRECTION_TYPE_LABELS,
+} from "../../types/corrections";
+import { format } from "date-fns";
 
-interface LeaveRequestItemProps {
-  leaveRequest: LeaveRequest;
+interface CorrectionItemProps {
+  correction: Correction;
   onClick?: () => void;
 }
 
-const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
-  leaveRequest,
+const CorrectionItem: React.FC<CorrectionItemProps> = ({
+  correction,
   onClick,
 }) => {
-  const { type, startDate, status } = leaveRequest;
-  const formattedDate = format(new Date(startDate), "dd MMMM yyyy");
+  const { type, createdAt, status } = correction;
+  const formattedDate = format(new Date(createdAt), "dd MMMM yyyy");
+
+  // Use the label mapping for correction type
+  const typeLabel =
+    CORRECTION_TYPE_LABELS[type as keyof typeof CORRECTION_TYPE_LABELS] || type;
 
   return (
     <Card
@@ -61,13 +65,13 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
             component="div"
             sx={{ fontWeight: "medium" }}
           >
-            {LeaveRequestTypeLabels[type] || type}
+            {typeLabel}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {formattedDate}
           </Typography>
         </Box>
-        {status === LeaveRequestStatus.PENDING && (
+        {status === CorrectionStatus.PENDING && (
           <Box
             sx={{
               bgcolor: "#FFEBBC",
@@ -82,7 +86,7 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
             <HelpIcon sx={{ color: "#F9A825" }} />
           </Box>
         )}
-        {status === LeaveRequestStatus.APPROVED && (
+        {status === CorrectionStatus.APPROVED && (
           <Box
             sx={{
               bgcolor: "#D7F5DB",
@@ -97,7 +101,7 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
             <CheckCircleIcon sx={{ color: "#4CAF50" }} />
           </Box>
         )}
-        {status === LeaveRequestStatus.REJECTED && (
+        {status === CorrectionStatus.REJECTED && (
           <Box
             sx={{
               bgcolor: "#FEEBEE",
@@ -117,22 +121,27 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
   );
 };
 
-const LeaveRequestPage: React.FC = () => {
+const StatusCorrectionPage: React.FC = () => {
   const navigate = useNavigate();
-  const { myRequests, loading, error, fetchMyRequests, clearError } =
-    useLeaveRequests();
+  const { corrections, loading, error, fetchMyCorrections, clearError } =
+    useCorrections();
 
   useEffect(() => {
-    fetchMyRequests();
+    fetchMyCorrections();
   }, []);
 
-  const handleForm = () => {
-    navigate("/leave-request-form");
+  const handleBack = () => {
+    navigate("/history");
   };
 
   const handleDetail = (guid: string) => {
-    navigate(`/detail-request/${guid}`); // Use dynamic route
+    navigate(`/detail-koreksi/${guid}`);
   };
+
+  // Sort corrections by date (newest first)
+  const sortedCorrections = [...corrections].sort((a, b) => {
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   return (
     <Box
@@ -148,12 +157,22 @@ const LeaveRequestPage: React.FC = () => {
       <Box
         sx={{
           bgcolor: "#1976d2",
+          height: "5vh",
+          p: 2,
           color: "white",
-          py: 2,
-          textAlign: "center",
+          display: "flex",
+          alignItems: "center",
         }}
       >
-        <Typography variant="h6">Pengajuan</Typography>
+        <IconButton color="inherit" onClick={handleBack}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography
+          variant="h6"
+          sx={{ flexGrow: 1, textAlign: "center", mr: 4 }}
+        >
+          Status Pengajuan Koreksi
+        </Typography>
       </Box>
 
       {/* Content */}
@@ -162,37 +181,25 @@ const LeaveRequestPage: React.FC = () => {
           <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
             <CircularProgress />
           </Box>
-        ) : myRequests.length > 0 ? (
-          myRequests.map((request) => (
-            <LeaveRequestItem
-              key={request.guid}
-              leaveRequest={request}
-              onClick={() => handleDetail(request.guid)}
-            />
-          ))
+        ) : sortedCorrections.length > 0 ? (
+          <>
+            {sortedCorrections.map((correction) => (
+              <CorrectionItem
+                key={correction.guid}
+                correction={correction}
+                onClick={() => handleDetail(correction.guid)}
+              />
+            ))}
+          </>
         ) : (
           <Box sx={{ mt: 4, textAlign: "center" }}>
             <Typography color="textSecondary">
-              Belum ada pengajuan. Klik tombol + untuk membuat pengajuan baru.
+              Belum ada pengajuan koreksi. Silakan buat pengajuan baru dari menu
+              utama.
             </Typography>
           </Box>
         )}
       </Container>
-
-      {/* Upload File Button */}
-      <Fab
-        onClick={handleForm}
-        color="primary"
-        size="medium"
-        aria-label="Ajukan Izin"
-        sx={{
-          position: "fixed",
-          bottom: 80,
-          right: 24,
-        }}
-      >
-        <UploadFileIcon />
-      </Fab>
 
       {/* Error Snackbar */}
       <Snackbar
@@ -212,4 +219,4 @@ const LeaveRequestPage: React.FC = () => {
   );
 };
 
-export default LeaveRequestPage;
+export default StatusCorrectionPage;

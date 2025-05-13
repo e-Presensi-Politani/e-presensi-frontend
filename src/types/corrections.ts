@@ -4,7 +4,7 @@ export interface Correction {
   userId: string;
   departmentId: string;
   attendanceId: string;
-  correctionType: string;
+  type: string;
   requestDate: Date | string;
   description: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
@@ -50,3 +50,32 @@ export interface MonthlyUsage {
     status: "PENDING" | "APPROVED" | "REJECTED";
   }[];
 }
+
+export enum CorrectionType {
+  BREAK_TIME_AS_WORK = "BREAK_TIME_AS_WORK",
+  EARLY_DEPARTURE = "EARLY_DEPARTURE",
+  LATE_ARRIVAL = "LATE_ARRIVAL",
+  MISSED_CHECK_IN = "MISSED_CHECK_IN",
+  MISSED_CHECK_OUT = "MISSED_CHECK_OUT",
+}
+
+export enum CorrectionStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+}
+
+export const CORRECTION_TYPE_LABELS: Record<CorrectionType, string> = {
+  [CorrectionType.BREAK_TIME_AS_WORK]:
+    "Penggunaan Jam Istirahat sebagai Jam Kerja",
+  [CorrectionType.EARLY_DEPARTURE]: "Izin Cepat Pulang",
+  [CorrectionType.LATE_ARRIVAL]: "Izin Terlambat Datang",
+  [CorrectionType.MISSED_CHECK_IN]: "Lupa Absen Masuk",
+  [CorrectionType.MISSED_CHECK_OUT]: "Lupa Absen Pulang",
+};
+
+export const CORRECTION_STATUS_LABELS: Record<CorrectionStatus, string> = {
+  [CorrectionStatus.PENDING]: "Menunggu Persetujuan",
+  [CorrectionStatus.APPROVED]: "Disetujui",
+  [CorrectionStatus.REJECTED]: "Ditolak",
+};
