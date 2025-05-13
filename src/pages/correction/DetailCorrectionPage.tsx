@@ -1,5 +1,5 @@
 // src/pages/correction/DetailCorrectionPage.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Box,
   Container,
@@ -17,65 +17,91 @@ import BottomNav from "../../components/BottomNav";
 import { useUsers } from "../../contexts/UserContext";
 import { useCorrections } from "../../contexts/CorrectionsContext";
 import { format } from "date-fns";
+import { User } from "../../types/users";
 
 const CorrectionDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { guid } = useParams<{ guid: string }>();
-  const { fetchCorrectionById, selectedCorrection, loading, error } =
-    useCorrections();
-  const { users, fetchUsers } = useUsers();
+  const {
+    selectedCorrection,
+    loading: correctionLoading,
+    error: correctionError,
+  } = useCorrections();
+  const { selectedUser, loading: userLoading, error: userError } = useUsers();
   const [isLoading, setIsLoading] = useState(true);
 
   // Get user data for the correction
-  const getUserData = (userId?: string) => {
-    if (!userId)
+  const getUserData = (user?: User | null) => {
+    if (!user) {
       return {
         name: "Unknown",
         nip: "Unknown",
         position: "Unknown",
         department: "Unknown",
       };
-    const user = users.find((u) => u.guid === userId);
+    }
     return {
-      name: user?.fullName || "Unknown",
-      nip: user?.nip || "Unknown",
-      position: user?.position || "Unknown",
-      department: user?.department || "Unknown",
+      name: user.fullName || "Unknown",
+      nip: user.nip || "Unknown",
+      position: user.position || "Unknown",
+      department: user.department || "Unknown",
     };
   };
 
+  // Using the context functions directly but NOT including them in useEffect dependencies
+  const { fetchCorrectionById } = useCorrections();
+  const { fetchUserByGuid } = useUsers();
+
+  // Create a memoized loader function
+  const loadData = useCallback(async () => {
+    if (!guid) {
+      navigate("/status-koreksi");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // First fetch the correction
+      const correction = await fetchCorrectionById(guid);
+
+      // Then fetch the associated user if userId exists
+      if (correction && correction.userId) {
+        await fetchUserByGuid(correction.userId);
+      }
+    } catch (err) {
+      console.error("Failed to load correction details:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [guid, navigate]); // Only depends on guid and navigate
+
   useEffect(() => {
-    const loadCorrection = async () => {
-      if (!guid) {
-        navigate("/status-koreksi");
-        return;
-      }
+    loadData();
 
-      try {
-        await fetchCorrectionById(guid);
-        await fetchUsers(); // Fetch users data
-      } catch (err) {
-        console.error("Failed to load correction details:", err);
-      } finally {
-        setIsLoading(false);
-      }
+    // Cleanup function to handle component unmount
+    return () => {
+      // You could clear the selected correction here if needed
     };
-
-    loadCorrection();
-  }, [guid, fetchCorrectionById, fetchUsers, navigate]);
+  }, [loadData]); // Only depend on the memoized function
 
   const handleBack = () => {
     navigate("/status-koreksi");
   };
 
-  // Get user info from the correction
-  const userData = getUserData(selectedCorrection?.userId);
+  // Get user info from the fetched user
+  const userData = getUserData(selectedUser);
 
   // Get first letter for avatar
   const userInitial =
     userData.name !== "Unknown" ? userData.name.charAt(0).toUpperCase() : "U";
 
-  if (isLoading || loading) {
+  // Combined loading state
+  const loading = isLoading || correctionLoading || userLoading;
+
+  // Combined error state
+  const error = correctionError || userError;
+
+  if (loading) {
     return (
       <Box
         sx={{
@@ -247,7 +273,8 @@ const CorrectionDetailPage: React.FC = () => {
                 Alasan
               </Typography>
               <Typography variant="body1">
-                {selectedCorrection.description || "Tidak ada alasan yang diberikan"}
+                {selectedCorrection.description ||
+                  "Tidak ada alasan yang diberikan"}
               </Typography>
             </Box>
 
