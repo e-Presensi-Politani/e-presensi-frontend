@@ -72,8 +72,8 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
             sx={{
               bgcolor: "#FFEBBC",
               borderRadius: "8px",
-              width: 36,
-              height: 36,
+              width: 45,
+              height: 45,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -87,8 +87,8 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
             sx={{
               bgcolor: "#D7F5DB",
               borderRadius: "8px",
-              width: 36,
-              height: 36,
+              width: 45,
+              height: 45,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -102,8 +102,8 @@ const LeaveRequestItem: React.FC<LeaveRequestItemProps> = ({
             sx={{
               bgcolor: "#FEEBEE",
               borderRadius: "8px",
-              width: 36,
-              height: 36,
+              width: 45,
+              height: 45,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",

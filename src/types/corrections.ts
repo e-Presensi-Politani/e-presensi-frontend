@@ -70,8 +70,8 @@ export const CORRECTION_TYPE_LABELS: Record<CorrectionType, string> = {
     "Penggunaan Jam Istirahat sebagai Jam Kerja",
   [CorrectionType.EARLY_DEPARTURE]: "Izin Cepat Pulang",
   [CorrectionType.LATE_ARRIVAL]: "Izin Terlambat Datang",
-  [CorrectionType.MISSED_CHECK_IN]: "Lupa Absen Check-in",
-  [CorrectionType.MISSED_CHECK_OUT]: "Lupa Absen Check-out",
+  [CorrectionType.MISSED_CHECK_IN]: "Lupa Absen Masuk",
+  [CorrectionType.MISSED_CHECK_OUT]: "Lupa Absen Pulang",
 };
 
 export const CORRECTION_STATUS_LABELS: Record<CorrectionStatus, string> = {

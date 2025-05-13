@@ -22,7 +22,6 @@ import {
   Correction,
   CorrectionStatus,
   CORRECTION_TYPE_LABELS,
-  CORRECTION_STATUS_LABELS,
 } from "../../types/corrections";
 import { format } from "date-fns";
 
@@ -71,17 +70,14 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({
           <Typography variant="body2" color="text.secondary">
             {formattedDate}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Status: {CORRECTION_STATUS_LABELS[status as CorrectionStatus]}
-          </Typography>
         </Box>
         {status === CorrectionStatus.PENDING && (
           <Box
             sx={{
               bgcolor: "#FFEBBC",
               borderRadius: "8px",
-              width: 36,
-              height: 36,
+              width: 45,
+              height: 45,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -95,8 +91,8 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({
             sx={{
               bgcolor: "#D7F5DB",
               borderRadius: "8px",
-              width: 36,
-              height: 36,
+              width: 45,
+              height: 45,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -110,8 +106,8 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({
             sx={{
               bgcolor: "#FEEBEE",
               borderRadius: "8px",
-              width: 36,
-              height: 36,
+              width: 45,
+              height: 45,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -142,16 +138,10 @@ const StatusCorrectionPage: React.FC = () => {
     navigate(`/detail-koreksi/${guid}`);
   };
 
-  // Group corrections by status for better organization
-  const pendingCorrections = corrections.filter(
-    (c) => c.status === CorrectionStatus.PENDING
-  );
-  const approvedCorrections = corrections.filter(
-    (c) => c.status === CorrectionStatus.APPROVED
-  );
-  const rejectedCorrections = corrections.filter(
-    (c) => c.status === CorrectionStatus.REJECTED
-  );
+  // Sort corrections by date (newest first)
+  const sortedCorrections = [...corrections].sort((a, b) => {
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   return (
     <Box
@@ -191,61 +181,15 @@ const StatusCorrectionPage: React.FC = () => {
           <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
             <CircularProgress />
           </Box>
-        ) : corrections.length > 0 ? (
+        ) : sortedCorrections.length > 0 ? (
           <>
-            {pendingCorrections.length > 0 && (
-              <>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ mt: 2, mb: 1, fontWeight: "bold" }}
-                >
-                  {CORRECTION_STATUS_LABELS[CorrectionStatus.PENDING]}
-                </Typography>
-                {pendingCorrections.map((correction) => (
-                  <CorrectionItem
-                    key={correction.guid}
-                    correction={correction}
-                    onClick={() => handleDetail(correction.guid)}
-                  />
-                ))}
-              </>
-            )}
-
-            {approvedCorrections.length > 0 && (
-              <>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ mt: 3, mb: 1, fontWeight: "bold" }}
-                >
-                  {CORRECTION_STATUS_LABELS[CorrectionStatus.APPROVED]}
-                </Typography>
-                {approvedCorrections.map((correction) => (
-                  <CorrectionItem
-                    key={correction.guid}
-                    correction={correction}
-                    onClick={() => handleDetail(correction.guid)}
-                  />
-                ))}
-              </>
-            )}
-
-            {rejectedCorrections.length > 0 && (
-              <>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ mt: 3, mb: 1, fontWeight: "bold" }}
-                >
-                  {CORRECTION_STATUS_LABELS[CorrectionStatus.REJECTED]}
-                </Typography>
-                {rejectedCorrections.map((correction) => (
-                  <CorrectionItem
-                    key={correction.guid}
-                    correction={correction}
-                    onClick={() => handleDetail(correction.guid)}
-                  />
-                ))}
-              </>
-            )}
+            {sortedCorrections.map((correction) => (
+              <CorrectionItem
+                key={correction.guid}
+                correction={correction}
+                onClick={() => handleDetail(correction.guid)}
+              />
+            ))}
           </>
         ) : (
           <Box sx={{ mt: 4, textAlign: "center" }}>
