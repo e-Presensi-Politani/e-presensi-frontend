@@ -18,6 +18,10 @@ import { useUsers } from "../../contexts/UserContext";
 import { useCorrections } from "../../contexts/CorrectionsContext";
 import { format } from "date-fns";
 import { User } from "../../types/users";
+import {
+  CORRECTION_TYPE_LABELS,
+  CorrectionType,
+} from "../../types/corrections";
 
 const CorrectionDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -100,6 +104,14 @@ const CorrectionDetailPage: React.FC = () => {
 
   // Combined error state
   const error = correctionError || userError;
+
+  // Get the formatted correction type label
+  const getCorrectionTypeLabel = (type: string): string => {
+    if (type in CorrectionType) {
+      return CORRECTION_TYPE_LABELS[type as CorrectionType] || type;
+    }
+    return type || "Tipe tidak tersedia";
+  };
 
   if (loading) {
     return (
@@ -234,7 +246,7 @@ const CorrectionDetailPage: React.FC = () => {
                 Izin
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                {selectedCorrection.type || "Tipe tidak tersedia"}
+                {getCorrectionTypeLabel(selectedCorrection.type)}
               </Typography>
             </Box>
 
@@ -273,7 +285,7 @@ const CorrectionDetailPage: React.FC = () => {
                 Alasan
               </Typography>
               <Typography variant="body1">
-                {selectedCorrection.description ||
+                {selectedCorrection.reason ||
                   "Tidak ada alasan yang diberikan"}
               </Typography>
             </Box>

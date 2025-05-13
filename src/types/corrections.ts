@@ -6,7 +6,7 @@ export interface Correction {
   attendanceId: string;
   type: string;
   requestDate: Date | string;
-  description: string;
+  reason: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
   reviewNote?: string;
   reviewedBy?: string;
