@@ -27,6 +27,7 @@ import PersetujuanDetailPage from "./pages/leave/PersetujuanDetailPage";
 import RejectApplicationForm from "./pages/leave/RejectPage";
 import PengajuanDetailPage from "./pages/leave/LeaveRequestDetailPage";
 import StatusPengajuanKoreksi from "./pages/correction/StatusCorrectionPage";
+import CorrectionDetailPage from "./pages/correction/DetailCorrectionPage";
 
 function App() {
   return (
@@ -99,6 +100,10 @@ function App() {
                       <Route
                         path="/status-koreksi"
                         element={<StatusPengajuanKoreksi />}
+                      />
+                      <Route
+                        path="/detail-koreksi"
+                        element={<CorrectionDetailPage/>}
                       />
                     </Route>
 
