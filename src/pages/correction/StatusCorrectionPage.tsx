@@ -18,7 +18,12 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import BottomNav from "../../components/BottomNav";
 import { useNavigate } from "react-router-dom";
 import { useCorrections } from "../../contexts/CorrectionsContext";
-import { Correction } from "../../types/corrections";
+import {
+  Correction,
+  CorrectionStatus,
+  CORRECTION_TYPE_LABELS,
+  CORRECTION_STATUS_LABELS,
+} from "../../types/corrections";
 import { format } from "date-fns";
 
 interface CorrectionItemProps {
@@ -32,6 +37,10 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({
 }) => {
   const { type, createdAt, status } = correction;
   const formattedDate = format(new Date(createdAt), "dd MMMM yyyy");
+
+  // Use the label mapping for correction type
+  const typeLabel =
+    CORRECTION_TYPE_LABELS[type as keyof typeof CORRECTION_TYPE_LABELS] || type;
 
   return (
     <Card
@@ -57,13 +66,16 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({
             component="div"
             sx={{ fontWeight: "medium" }}
           >
-            {type}
+            {typeLabel}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {formattedDate}
           </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Status: {CORRECTION_STATUS_LABELS[status as CorrectionStatus]}
+          </Typography>
         </Box>
-        {status === "PENDING" && (
+        {status === CorrectionStatus.PENDING && (
           <Box
             sx={{
               bgcolor: "#FFEBBC",
@@ -78,7 +90,7 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({
             <HelpIcon sx={{ color: "#F9A825" }} />
           </Box>
         )}
-        {status === "APPROVED" && (
+        {status === CorrectionStatus.APPROVED && (
           <Box
             sx={{
               bgcolor: "#D7F5DB",
@@ -93,7 +105,7 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({
             <CheckCircleIcon sx={{ color: "#4CAF50" }} />
           </Box>
         )}
-        {status === "REJECTED" && (
+        {status === CorrectionStatus.REJECTED && (
           <Box
             sx={{
               bgcolor: "#FEEBEE",
@@ -129,6 +141,17 @@ const StatusCorrectionPage: React.FC = () => {
   const handleDetail = (guid: string) => {
     navigate(`/detail-koreksi/${guid}`);
   };
+
+  // Group corrections by status for better organization
+  const pendingCorrections = corrections.filter(
+    (c) => c.status === CorrectionStatus.PENDING
+  );
+  const approvedCorrections = corrections.filter(
+    (c) => c.status === CorrectionStatus.APPROVED
+  );
+  const rejectedCorrections = corrections.filter(
+    (c) => c.status === CorrectionStatus.REJECTED
+  );
 
   return (
     <Box
@@ -169,13 +192,61 @@ const StatusCorrectionPage: React.FC = () => {
             <CircularProgress />
           </Box>
         ) : corrections.length > 0 ? (
-          corrections.map((correction) => (
-            <CorrectionItem
-              key={correction.guid}
-              correction={correction}
-              onClick={() => handleDetail(correction.guid)}
-            />
-          ))
+          <>
+            {pendingCorrections.length > 0 && (
+              <>
+                <Typography
+                  variant="subtitle1"
+                  sx={{ mt: 2, mb: 1, fontWeight: "bold" }}
+                >
+                  {CORRECTION_STATUS_LABELS[CorrectionStatus.PENDING]}
+                </Typography>
+                {pendingCorrections.map((correction) => (
+                  <CorrectionItem
+                    key={correction.guid}
+                    correction={correction}
+                    onClick={() => handleDetail(correction.guid)}
+                  />
+                ))}
+              </>
+            )}
+
+            {approvedCorrections.length > 0 && (
+              <>
+                <Typography
+                  variant="subtitle1"
+                  sx={{ mt: 3, mb: 1, fontWeight: "bold" }}
+                >
+                  {CORRECTION_STATUS_LABELS[CorrectionStatus.APPROVED]}
+                </Typography>
+                {approvedCorrections.map((correction) => (
+                  <CorrectionItem
+                    key={correction.guid}
+                    correction={correction}
+                    onClick={() => handleDetail(correction.guid)}
+                  />
+                ))}
+              </>
+            )}
+
+            {rejectedCorrections.length > 0 && (
+              <>
+                <Typography
+                  variant="subtitle1"
+                  sx={{ mt: 3, mb: 1, fontWeight: "bold" }}
+                >
+                  {CORRECTION_STATUS_LABELS[CorrectionStatus.REJECTED]}
+                </Typography>
+                {rejectedCorrections.map((correction) => (
+                  <CorrectionItem
+                    key={correction.guid}
+                    correction={correction}
+                    onClick={() => handleDetail(correction.guid)}
+                  />
+                ))}
+              </>
+            )}
+          </>
         ) : (
           <Box sx={{ mt: 4, textAlign: "center" }}>
             <Typography color="textSecondary">
