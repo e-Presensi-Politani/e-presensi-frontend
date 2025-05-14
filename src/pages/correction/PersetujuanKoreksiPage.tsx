@@ -19,9 +19,14 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useCorrections } from "../../contexts/CorrectionsContext";
 import { useUsers } from "../../contexts/UserContext";
-import { Correction } from "../../types/corrections";
+import {
+  Correction,
+  CORRECTION_TYPE_LABELS,
+  CorrectionType,
+} from "../../types/corrections";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { User } from "../../types/users";
 
 const PersetujuanKoreksiPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,13 +51,16 @@ const PersetujuanKoreksiPage: React.FC = () => {
 
   // Format dates for display in Indonesian
   const formatDate = (date: string | Date) => {
-    return format(typeof date === "string" ? new Date(date) : date, "dd MMMM yyyy", { locale: id });
+    return format(
+      typeof date === "string" ? new Date(date) : date,
+      "dd MMMM yyyy",
+      { locale: id }
+    );
   };
 
   useEffect(() => {
     // Fetch users when component mounts
     fetchUsers();
-
     fetchPendingCorrections();
   }, []);
 
@@ -64,35 +72,41 @@ const PersetujuanKoreksiPage: React.FC = () => {
     navigate(`/persetujuan-koreksi-detail/${guid}`);
   };
 
-  // Function to get user name by ID
-  const getUserName = (userId: string) => {
-    const user = users.find((user) => user.guid === userId);
-    return user ? user.fullName : "Nama tidak tersedia";
+  // Function to get user by ID
+  const getUserById = (userId: string): User | undefined => {
+    return users.find((user) => user.guid === userId);
   };
 
-  // Function to get user NIP by ID
-  const getUserNIP = (userId: string) => {
-    const user = users.find((user) => user.guid === userId);
-    return user ? user.nip : "NIP tidak tersedia";
+  // Function to get user data with default fallbacks
+  const getUserData = (userId: string) => {
+    const user = getUserById(userId);
+    if (!user) {
+      return {
+        name: "Unknown",
+        nip: "Unknown",
+        position: "Unknown",
+        department: "Unknown",
+      };
+    }
+    return {
+      name: user.fullName || "Unknown",
+      nip: user.nip || "Unknown",
+      position: user.position || "Unknown",
+      department: user.department || "Unknown",
+    };
   };
 
   // Get initial for avatar
   const getInitial = (name: string) => {
-    return name ? name.charAt(0).toUpperCase() : "U";
+    return name && name !== "Unknown" ? name.charAt(0).toUpperCase() : "U";
   };
 
-  // Get correction type label
-  const getCorrectionTypeLabel = (type: string) => {
-    switch (type) {
-      case "LATE":
-        return "Terlambat";
-      case "MISSING_HOURS":
-        return "Jam Kerja Kurang";
-      case "ABSENT":
-        return "Tidak Hadir";
-      default:
-        return type;
+  // Get the formatted correction type label
+  const getCorrectionTypeLabel = (type: string): string => {
+    if (type in CorrectionType) {
+      return CORRECTION_TYPE_LABELS[type as CorrectionType] || type;
     }
+    return type || "Tipe tidak tersedia";
   };
 
   // Clear errors from both contexts
@@ -148,9 +162,8 @@ const PersetujuanKoreksiPage: React.FC = () => {
         ) : (
           <List sx={{ p: 0 }}>
             {pendingCorrections.map((correction: Correction) => {
-              // Get user name and NIP from users array
-              const userName = getUserName(correction.userId);
-              const nip = getUserNIP(correction.userId);
+              // Get user data from users array
+              const userData = getUserData(correction.userId);
 
               return (
                 <Paper
@@ -186,17 +199,17 @@ const PersetujuanKoreksiPage: React.FC = () => {
                           bgcolor: "#ff7043",
                         }}
                       >
-                        {getInitial(userName)}
+                        {getInitial(userData.name)}
                       </Avatar>
                       <Box sx={{ ml: 2 }}>
                         <Typography
                           variant="subtitle1"
                           sx={{ fontWeight: "medium" }}
                         >
-                          {userName}
+                          {userData.name}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {nip}
+                          {userData.nip}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           {getCorrectionTypeLabel(correction.type)}
