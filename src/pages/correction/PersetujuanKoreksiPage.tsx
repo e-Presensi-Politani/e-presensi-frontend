@@ -1,5 +1,5 @@
-// src/pages/attendance/PersetujuanKoreksiPage.tsx
-import React from "react";
+// src/pages/correction/PersetujuanKoreksiPage.tsx
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -11,53 +11,69 @@ import {
   ListItem,
   AppBar,
   Toolbar,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
-
-// Mock data for our UI demonstration
-const mockCorrections = [
-  {
-    id: "1",
-    userId: "2124323029",
-    userName: "M. Ghozi Syah Putra",
-    type: "Jam Kerja Kurang",
-  },
-  {
-    id: "2",
-    userId: "2124323029",
-    userName: "M. Ghozi Syah Putra",
-    type: "Terlambat",
-  },
-  {
-    id: "3",
-    userId: "2124323029",
-    userName: "M. Ghozi Syah Putra",
-    type: "Jam Kerja Kurang",
-  },
-  {
-    id: "4",
-    userId: "2124323029",
-    userName: "M. Ghozi Syah Putra",
-    type: "Terlambat",
-  },
-];
+import { useCorrections } from "../../contexts/CorrectionsContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { Correction } from "../../types/corrections";
 
 const PersetujuanKoreksiPage: React.FC = () => {
   const navigate = useNavigate();
+  const {
+    pendingCorrections,
+    loading,
+    error,
+    fetchPendingCorrections,
+    clearError,
+  } = useCorrections();
+  const { user } = useAuth();
+  const [departmentId, setDepartmentId] = useState<string | undefined>(
+    undefined
+  );
+
+  useEffect(() => {
+    // Set the department ID from the user's department if available
+    if (user && user.departmentId) {
+      setDepartmentId(user.departmentId);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    // Fetch pending corrections when component mounts or when departmentId changes
+    if (departmentId) {
+      fetchPendingCorrections(departmentId);
+    }
+  }, [departmentId, fetchPendingCorrections]);
 
   const handleBack = () => {
     navigate("/kajur-dashboard"); // Navigate back to the dashboard
   };
 
-  const handleDetail = (id: string) => {
-    navigate(`/persetujuan-koreksi-detail/${id}`); // Navigate to detail page
+  const handleDetail = (guid: string) => {
+    navigate(`/persetujuan-koreksi-detail/${guid}`); // Navigate to detail page
   };
 
   // Get initial for avatar
   const getInitial = (name: string) => {
     return name ? name.charAt(0).toUpperCase() : "U";
+  };
+
+  // Get correction type label
+  const getCorrectionTypeLabel = (type: string) => {
+    switch (type) {
+      case "LATE":
+        return "Terlambat";
+      case "MISSING_HOURS":
+        return "Jam Kerja Kurang";
+      case "ABSENT":
+        return "Tidak Hadir";
+      default:
+        return type;
+    }
   };
 
   return (
@@ -79,7 +95,19 @@ const PersetujuanKoreksiPage: React.FC = () => {
 
       {/* Content */}
       <Container maxWidth="sm" sx={{ mt: 2 }}>
-        {mockCorrections.length === 0 ? (
+        {/* Error message */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={clearError}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Loading indicator */}
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : pendingCorrections.length === 0 ? (
           <Paper
             elevation={1}
             sx={{
@@ -94,10 +122,10 @@ const PersetujuanKoreksiPage: React.FC = () => {
           </Paper>
         ) : (
           <List sx={{ p: 0 }}>
-            {mockCorrections.map((correction) => (
+            {pendingCorrections.map((correction: Correction) => (
               <Paper
-                onClick={() => handleDetail(correction.id)}
-                key={correction.id}
+                onClick={() => handleDetail(correction.guid)}
+                key={correction.guid}
                 elevation={1}
                 sx={{
                   mb: 2,
@@ -114,7 +142,13 @@ const PersetujuanKoreksiPage: React.FC = () => {
                     py: 2,
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
                     <Avatar
                       sx={{
                         width: 40,
@@ -122,20 +156,25 @@ const PersetujuanKoreksiPage: React.FC = () => {
                         bgcolor: "#ff7043",
                       }}
                     >
-                      {getInitial(correction.userName)}
+                      {getInitial(correction.user?.name || "")}
                     </Avatar>
                     <Box sx={{ ml: 2 }}>
                       <Typography
                         variant="subtitle1"
                         sx={{ fontWeight: "medium" }}
                       >
-                        {correction.userName}
+                        {correction.user?.name || "Unknown User"}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {correction.userId}
+                        {correction.user?.nip || correction.userId}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {correction.type}
+                        {getCorrectionTypeLabel(correction.type)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {new Date(correction.createdAt).toLocaleDateString(
+                          "id-ID"
+                        )}
                       </Typography>
                     </Box>
                   </Box>
