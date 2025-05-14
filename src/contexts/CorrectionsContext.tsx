@@ -5,7 +5,7 @@ import {
   CreateCorrectionDto,
   UpdateCorrectionDto,
   CorrectionQueryParams,
-  MonthlyUsage
+  MonthlyUsage,
 } from "../types/corrections";
 import CorrectionsService from "../services/CorrectionsService";
 import { useAuth } from "./AuthContext";
@@ -20,23 +20,32 @@ interface CorrectionsContextType {
   error: string | null;
   fetchCorrections: (queryParams?: CorrectionQueryParams) => Promise<void>;
   fetchMyCorrections: (queryParams?: CorrectionQueryParams) => Promise<void>;
-  fetchPendingByDepartment: (departmentId: string) => Promise<void>;
+  fetchPendingCorrections: (departmentId?: string) => Promise<void>;
+  fetchPendingByDepartment: (departmentId: string) => Promise<void>; // Legacy method
   fetchCorrectionById: (guid: string) => Promise<Correction>;
   createCorrection: (correctionData: CreateCorrectionDto) => Promise<void>;
-  reviewCorrection: (guid: string, reviewData: UpdateCorrectionDto) => Promise<void>;
+  reviewCorrection: (
+    guid: string,
+    reviewData: UpdateCorrectionDto
+  ) => Promise<void>;
   fetchMonthlyUsage: () => Promise<void>;
   clearSelectedCorrection: () => void;
   clearError: () => void;
 }
 
-const CorrectionsContext = createContext<CorrectionsContextType | undefined>(undefined);
+const CorrectionsContext = createContext<CorrectionsContextType | undefined>(
+  undefined
+);
 
 export const CorrectionsProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [corrections, setCorrections] = useState<Correction[]>([]);
-  const [pendingCorrections, setPendingCorrections] = useState<Correction[]>([]);
-  const [selectedCorrection, setSelectedCorrection] = useState<Correction | null>(null);
+  const [pendingCorrections, setPendingCorrections] = useState<Correction[]>(
+    []
+  );
+  const [selectedCorrection, setSelectedCorrection] =
+    useState<Correction | null>(null);
   const [monthlyUsage, setMonthlyUsage] = useState<MonthlyUsage | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +59,9 @@ export const CorrectionsProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [isAuthenticated, user]);
 
-  const fetchCorrections = async (queryParams?: CorrectionQueryParams): Promise<void> => {
+  const fetchCorrections = async (
+    queryParams?: CorrectionQueryParams
+  ): Promise<void> => {
     if (!isAuthenticated) return;
 
     setLoading(true);
@@ -60,14 +71,17 @@ export const CorrectionsProvider: React.FC<{ children: React.ReactNode }> = ({
       const data = await CorrectionsService.getAllCorrections(queryParams);
       setCorrections(data);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Failed to fetch corrections";
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch corrections";
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMyCorrections = async (queryParams?: CorrectionQueryParams): Promise<void> => {
+  const fetchMyCorrections = async (
+    queryParams?: CorrectionQueryParams
+  ): Promise<void> => {
     if (!isAuthenticated) return;
 
     setLoading(true);
@@ -77,16 +91,24 @@ export const CorrectionsProvider: React.FC<{ children: React.ReactNode }> = ({
       const data = await CorrectionsService.getMyCorrections(queryParams);
       setCorrections(data);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Failed to fetch your corrections";
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch your corrections";
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchPendingByDepartment = async (departmentId: string): Promise<void> => {
-    if (!isAuthenticated || (user?.role !== UserRole.KAJUR && user?.role !== "ADMIN")) {
-      setError("Unauthorized: Only department heads can view pending corrections");
+  const fetchPendingCorrections = async (
+    departmentId?: string
+  ): Promise<void> => {
+    if (
+      !isAuthenticated ||
+      (user?.role !== UserRole.KAJUR && user?.role !== "ADMIN")
+    ) {
+      setError(
+        "Unauthorized: Only department heads can view pending corrections"
+      );
       return;
     }
 
@@ -94,10 +116,42 @@ export const CorrectionsProvider: React.FC<{ children: React.ReactNode }> = ({
     setError(null);
 
     try {
-      const data = await CorrectionsService.getPendingByDepartment(departmentId);
+      const data = await CorrectionsService.getPendingCorrections(departmentId);
       setPendingCorrections(data);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Failed to fetch pending corrections";
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch pending corrections";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Legacy method - kept for compatibility
+  const fetchPendingByDepartment = async (
+    departmentId: string
+  ): Promise<void> => {
+    if (
+      !isAuthenticated ||
+      (user?.role !== UserRole.KAJUR && user?.role !== "ADMIN")
+    ) {
+      setError(
+        "Unauthorized: Only department heads can view pending corrections"
+      );
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await CorrectionsService.getPendingByDepartment(
+        departmentId
+      );
+      setPendingCorrections(data);
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch pending corrections";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -113,7 +167,8 @@ export const CorrectionsProvider: React.FC<{ children: React.ReactNode }> = ({
       setSelectedCorrection(data);
       return data;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Failed to fetch correction details";
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch correction details";
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -121,20 +176,25 @@ export const CorrectionsProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const createCorrection = async (correctionData: CreateCorrectionDto): Promise<void> => {
+  const createCorrection = async (
+    correctionData: CreateCorrectionDto
+  ): Promise<void> => {
     setLoading(true);
     setError(null);
 
     try {
-      const newCorrection = await CorrectionsService.createCorrection(correctionData);
-      
+      const newCorrection = await CorrectionsService.createCorrection(
+        correctionData
+      );
+
       // Update the corrections list with the new one
       setCorrections((prevCorrections) => [newCorrection, ...prevCorrections]);
-      
+
       // Update monthly usage
       await fetchMonthlyUsage();
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Failed to create correction request";
+      const errorMessage =
+        err.response?.data?.message || "Failed to create correction request";
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -146,7 +206,10 @@ export const CorrectionsProvider: React.FC<{ children: React.ReactNode }> = ({
     guid: string,
     reviewData: UpdateCorrectionDto
   ): Promise<void> => {
-    if (!isAuthenticated || (user?.role !== UserRole.KAJUR && user?.role !== "ADMIN")) {
+    if (
+      !isAuthenticated ||
+      (user?.role !== UserRole.KAJUR && user?.role !== "ADMIN")
+    ) {
       setError("Unauthorized: Only department heads can review corrections");
       return;
     }
@@ -155,26 +218,30 @@ export const CorrectionsProvider: React.FC<{ children: React.ReactNode }> = ({
     setError(null);
 
     try {
-      const updatedCorrection = await CorrectionsService.reviewCorrection(guid, reviewData);
-      
+      const updatedCorrection = await CorrectionsService.reviewCorrection(
+        guid,
+        reviewData
+      );
+
       // Update the selected correction if it's the one being reviewed
       if (selectedCorrection && selectedCorrection.guid === guid) {
         setSelectedCorrection(updatedCorrection);
       }
-      
+
       // Update corrections list
       setCorrections((prevCorrections) =>
         prevCorrections.map((correction) =>
           correction.guid === guid ? updatedCorrection : correction
         )
       );
-      
+
       // Update pending corrections list
       setPendingCorrections((prevPendingCorrections) =>
         prevPendingCorrections.filter((correction) => correction.guid !== guid)
       );
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Failed to review correction";
+      const errorMessage =
+        err.response?.data?.message || "Failed to review correction";
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -192,7 +259,8 @@ export const CorrectionsProvider: React.FC<{ children: React.ReactNode }> = ({
       const data = await CorrectionsService.getMonthlyUsage();
       setMonthlyUsage(data);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Failed to fetch monthly usage";
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch monthly usage";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -216,7 +284,8 @@ export const CorrectionsProvider: React.FC<{ children: React.ReactNode }> = ({
     error,
     fetchCorrections,
     fetchMyCorrections,
-    fetchPendingByDepartment,
+    fetchPendingCorrections,
+    fetchPendingByDepartment, // Legacy method
     fetchCorrectionById,
     createCorrection,
     reviewCorrection,
