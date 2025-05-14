@@ -1,5 +1,5 @@
 // src/pages/correction/PersetujuanKoreksiPage.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Container,
@@ -18,10 +18,10 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useCorrections } from "../../contexts/CorrectionsContext";
-import { useUsers } from "../../contexts/UserContext"; // Import UserContext instead of AuthContext
+import { useUsers } from "../../contexts/UserContext";
 import { Correction } from "../../types/corrections";
-import { format } from "date-fns"; // Import format from date-fns
-import { id } from "date-fns/locale"; // Import Indonesian locale
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 const PersetujuanKoreksiPage: React.FC = () => {
   const navigate = useNavigate();
@@ -39,15 +39,9 @@ const PersetujuanKoreksiPage: React.FC = () => {
     error: usersError,
     fetchUsers,
     clearError: clearUsersError,
-  } = useUsers(); // Use UserContext
+  } = useUsers();
 
-  const [departmentId, setDepartmentId] = useState<string | undefined>(
-    undefined
-  );
-
-  // Track the loading state for both data sources
   const loading = correctionsLoading || usersLoading;
-  // Combine error messages from both contexts
   const error = correctionsError || usersError;
 
   // Format dates for display in Indonesian
@@ -58,21 +52,16 @@ const PersetujuanKoreksiPage: React.FC = () => {
   useEffect(() => {
     // Fetch users when component mounts
     fetchUsers();
+
+    fetchPendingCorrections();
   }, []);
 
-  useEffect(() => {
-    // Fetch pending corrections when component mounts or when departmentId changes
-    if (departmentId) {
-      fetchPendingCorrections(departmentId);
-    }
-  }, [departmentId, fetchPendingCorrections]);
-
   const handleBack = () => {
-    navigate("/kajur-dashboard"); // Navigate back to the dashboard
+    navigate("/kajur-dashboard");
   };
 
   const handleDetail = (guid: string) => {
-    navigate(`/persetujuan-koreksi-detail/${guid}`); // Navigate to detail page
+    navigate(`/persetujuan-koreksi-detail/${guid}`);
   };
 
   // Function to get user name by ID
