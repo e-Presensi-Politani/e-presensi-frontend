@@ -29,6 +29,7 @@ import PengajuanDetailPage from "./pages/leave/LeaveRequestDetailPage";
 import StatusCorrectionPage from "./pages/correction/StatusCorrectionPage";
 import CorrectionDetailPage from "./pages/correction/DetailCorrectionPage";
 import PersetujuanKoreksiPage from "./pages/correction/PersetujuanKoreksiPage";
+import PersetujuanKoreksiDetailPage from "./pages/correction/PersetujuanKoreksiDetail";
 
 function App() {
   return (
@@ -110,6 +111,10 @@ function App() {
                         path="/persetujuan-koreksi"
                         element={<PersetujuanKoreksiPage/>}
                       />
+                      <Route
+                        path="/persetujuan-koreksi-detail/:guid"
+                        element={<PersetujuanKoreksiDetailPage />}
+                        />
                     </Route>
 
                     {/* Protected routes for kajur (department head) only */}
