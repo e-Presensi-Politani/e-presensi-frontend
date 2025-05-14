@@ -45,8 +45,8 @@ const PersetujuanKoreksiPage: React.FC = () => {
   const error = correctionsError || usersError;
 
   // Format dates for display in Indonesian
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "dd MMMM yyyy", { locale: id });
+  const formatDate = (date: string | Date) => {
+    return format(typeof date === "string" ? new Date(date) : date, "dd MMMM yyyy", { locale: id });
   };
 
   useEffect(() => {
