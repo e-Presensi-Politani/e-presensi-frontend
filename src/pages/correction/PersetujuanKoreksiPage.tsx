@@ -18,29 +18,47 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useCorrections } from "../../contexts/CorrectionsContext";
-import { useAuth } from "../../contexts/AuthContext";
+import { useUsers } from "../../contexts/UserContext"; // Import UserContext instead of AuthContext
 import { Correction } from "../../types/corrections";
+import { format } from "date-fns"; // Import format from date-fns
+import { id } from "date-fns/locale"; // Import Indonesian locale
 
 const PersetujuanKoreksiPage: React.FC = () => {
   const navigate = useNavigate();
   const {
     pendingCorrections,
-    loading,
-    error,
+    loading: correctionsLoading,
+    error: correctionsError,
     fetchPendingCorrections,
-    clearError,
+    clearError: clearCorrectionsError,
   } = useCorrections();
-  const { user } = useAuth();
+
+  const {
+    users,
+    loading: usersLoading,
+    error: usersError,
+    fetchUsers,
+    clearError: clearUsersError,
+  } = useUsers(); // Use UserContext
+
   const [departmentId, setDepartmentId] = useState<string | undefined>(
     undefined
   );
 
+  // Track the loading state for both data sources
+  const loading = correctionsLoading || usersLoading;
+  // Combine error messages from both contexts
+  const error = correctionsError || usersError;
+
+  // Format dates for display in Indonesian
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), "dd MMMM yyyy", { locale: id });
+  };
+
   useEffect(() => {
-    // Set the department ID from the user's department if available
-    if (user && user.departmentId) {
-      setDepartmentId(user.departmentId);
-    }
-  }, [user]);
+    // Fetch users when component mounts
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     // Fetch pending corrections when component mounts or when departmentId changes
@@ -55,6 +73,18 @@ const PersetujuanKoreksiPage: React.FC = () => {
 
   const handleDetail = (guid: string) => {
     navigate(`/persetujuan-koreksi-detail/${guid}`); // Navigate to detail page
+  };
+
+  // Function to get user name by ID
+  const getUserName = (userId: string) => {
+    const user = users.find((user) => user.guid === userId);
+    return user ? user.fullName : "Nama tidak tersedia";
+  };
+
+  // Function to get user NIP by ID
+  const getUserNIP = (userId: string) => {
+    const user = users.find((user) => user.guid === userId);
+    return user ? user.nip : "NIP tidak tersedia";
   };
 
   // Get initial for avatar
@@ -74,6 +104,12 @@ const PersetujuanKoreksiPage: React.FC = () => {
       default:
         return type;
     }
+  };
+
+  // Clear errors from both contexts
+  const handleClearError = () => {
+    clearCorrectionsError();
+    clearUsersError();
   };
 
   return (
@@ -97,7 +133,7 @@ const PersetujuanKoreksiPage: React.FC = () => {
       <Container maxWidth="sm" sx={{ mt: 2 }}>
         {/* Error message */}
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={clearError}>
+          <Alert severity="error" sx={{ mb: 2 }} onClose={handleClearError}>
             {error}
           </Alert>
         )}
@@ -122,65 +158,69 @@ const PersetujuanKoreksiPage: React.FC = () => {
           </Paper>
         ) : (
           <List sx={{ p: 0 }}>
-            {pendingCorrections.map((correction: Correction) => (
-              <Paper
-                onClick={() => handleDetail(correction.guid)}
-                key={correction.guid}
-                elevation={1}
-                sx={{
-                  mb: 2,
-                  borderRadius: 2,
-                  overflow: "hidden",
-                  cursor: "pointer",
-                }}
-              >
-                <ListItem
+            {pendingCorrections.map((correction: Correction) => {
+              // Get user name and NIP from users array
+              const userName = getUserName(correction.userId);
+              const nip = getUserNIP(correction.userId);
+
+              return (
+                <Paper
+                  onClick={() => handleDetail(correction.guid)}
+                  key={correction.guid}
+                  elevation={1}
                   sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    py: 2,
+                    mb: 2,
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    cursor: "pointer",
                   }}
                 >
-                  <Box
+                  <ListItem
                     sx={{
                       display: "flex",
-                      alignItems: "center",
-                      width: "100%",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      py: 2,
                     }}
                   >
-                    <Avatar
+                    <Box
                       sx={{
-                        width: 40,
-                        height: 40,
-                        bgcolor: "#ff7043",
+                        display: "flex",
+                        alignItems: "center",
+                        width: "100%",
                       }}
                     >
-                      {getInitial(correction.user?.name || "")}
-                    </Avatar>
-                    <Box sx={{ ml: 2 }}>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: "medium" }}
+                      <Avatar
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          bgcolor: "#ff7043",
+                        }}
                       >
-                        {correction.user?.name || "Unknown User"}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {correction.user?.nip || correction.userId}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {getCorrectionTypeLabel(correction.type)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(correction.createdAt).toLocaleDateString(
-                          "id-ID"
-                        )}
-                      </Typography>
+                        {getInitial(userName)}
+                      </Avatar>
+                      <Box sx={{ ml: 2 }}>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: "medium" }}
+                        >
+                          {userName}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {nip}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {getCorrectionTypeLabel(correction.type)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatDate(correction.createdAt)}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </ListItem>
-              </Paper>
-            ))}
+                  </ListItem>
+                </Paper>
+              );
+            })}
           </List>
         )}
       </Container>
