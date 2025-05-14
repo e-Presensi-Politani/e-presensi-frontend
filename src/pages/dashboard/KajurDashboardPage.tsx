@@ -137,7 +137,7 @@ const KajurDashboardPage: React.FC = () => {
   };
 
   const handleKoreksi = () => {
-    navigate("/under-development");
+    navigate("/persetujuan-koreksi");
   };
 
   const handleCuti = () => {
