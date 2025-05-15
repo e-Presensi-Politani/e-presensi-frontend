@@ -59,11 +59,21 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({
           py: 1.5,
         }}
       >
-        <Box>
+        <Box
+          sx={{
+            flex: "1 1 auto",
+            overflow: "hidden",
+          }}
+        >
           <Typography
             variant="h6"
             component="div"
-            sx={{ fontWeight: "medium" }}
+            sx={{
+              fontWeight: "medium",
+              lineHeight: 1,
+              mb: 1,
+              textOverflow: "ellipsis",
+            }}
           >
             {typeLabel}
           </Typography>
@@ -81,6 +91,9 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
+              minWidth: 45,
+              minHeight: 45,
+              flexShrink: 0,
             }}
           >
             <HelpIcon sx={{ color: "#F9A825" }} />
@@ -96,6 +109,9 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
+              minWidth: 45,
+              minHeight: 45,
+              flexShrink: 0,
             }}
           >
             <CheckCircleIcon sx={{ color: "#4CAF50" }} />
@@ -111,6 +127,9 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
+              minWidth: 45,
+              minHeight: 45,
+              flexShrink: 0,
             }}
           >
             <CancelIcon sx={{ color: "#F44336" }} />
