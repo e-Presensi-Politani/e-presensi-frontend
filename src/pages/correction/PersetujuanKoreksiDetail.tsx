@@ -118,7 +118,6 @@ const PersetujuanKoreksiDetailPage: React.FC = () => {
     try {
       await reviewCorrection(guid, {
         status: CorrectionStatus.REJECTED,
-        reviewNote: "Permintaan koreksi ditolak",
       });
       navigate("/kajur-dashboard");
     } catch (err: any) {
@@ -137,7 +136,6 @@ const PersetujuanKoreksiDetailPage: React.FC = () => {
     try {
       await reviewCorrection(guid, {
         status: CorrectionStatus.APPROVED,
-        reviewNote: "Disetujui",
       });
       navigate("/kajur-dashboard");
     } catch (err: any) {
