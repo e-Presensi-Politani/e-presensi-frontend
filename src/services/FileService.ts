@@ -16,6 +16,20 @@ const apiClient = axios.create({
   withCredentials: true, // Include cookies for all requests
 });
 
+// Add a request interceptor to include the auth token from localStorage
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 class FileService {
   /**
    * Upload a file with progress tracking
@@ -117,8 +131,16 @@ class FileService {
    */
   static async downloadFile(guid: string, filename?: string): Promise<void> {
     try {
+      // Get token from localStorage directly for this specific request
+      const token = localStorage.getItem("auth_token");
+
       const response = await apiClient.get(`/files/${guid}/download`, {
         responseType: "blob",
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : undefined,
       });
 
       // Create a blob URL and initiate download
