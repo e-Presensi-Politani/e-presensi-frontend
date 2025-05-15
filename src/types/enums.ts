@@ -14,3 +14,10 @@ export enum WorkingStatus {
   ON_LEAVE = "on_leave",
   OFFICIAL_TRAVEL = "official_travel",
 }
+
+export enum FileCategory {
+  ATTENDANCE = "ATTENDANCE",
+  PERMISSION = "PERMISSION",
+  PROFILE = "PROFILE",
+  OTHER = "OTHER",
+}
