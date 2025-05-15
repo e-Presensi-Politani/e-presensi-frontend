@@ -8,7 +8,7 @@ export interface Correction {
   requestDate: Date | string;
   reason: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
-  reviewNote?: string;
+  rejectionReason?: string;
   reviewedBy?: string;
   reviewedAt?: Date | string;
   createdAt: Date | string;
