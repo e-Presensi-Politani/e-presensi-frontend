@@ -7,51 +7,42 @@ import {
 } from "../types/files";
 import { FileCategory } from "../types/enums";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API_URL = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+});
+
 
 class FileService {
   /**
-   * Upload a file to the server
-   * @param file The file to upload
-   * @param category File category
-   * @param relatedId Optional related resource ID
-   * @param onUploadProgress Optional progress callback
-   * @returns Promise with the upload response
+   * Upload a file with progress tracking
    */
-  async uploadFile(
+  static async uploadFile(
     file: File,
-    category: FileCategory = FileCategory.OTHER,
+    category: FileCategory,
     relatedId?: string,
     onUploadProgress?: (progressEvent: any) => void
   ): Promise<FileUploadResponse> {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("category", category);
 
-    // Add query parameters
-    const params = new URLSearchParams();
-    if (category) {
-      params.append("category", category);
-    }
     if (relatedId) {
-      params.append("relatedId", relatedId);
+      formData.append("relatedId", relatedId);
     }
 
     try {
-      const response = await axios.post<FileMetadata>(
-        `${API_URL}/files/upload?${params.toString()}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true,
-          onUploadProgress,
-        }
-      );
+      const response = await axios.post(`${API_URL}/files`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true, // Include cookies
+        onUploadProgress,
+      });
 
       return {
         success: true,
         data: response.data,
+        message: "File uploaded successfully",
       };
     } catch (error: any) {
       return {
@@ -63,118 +54,114 @@ class FileService {
   }
 
   /**
-   * Get all files based on query parameters
-   * @param params Query parameters
-   * @returns Promise with array of file metadata
+   * Get files based on query parameters
    */
-  async getFiles(params?: FileQueryParams): Promise<FileMetadata[]> {
-    try {
-      const queryParams = new URLSearchParams();
-
-      if (params?.category) {
-        queryParams.append("category", params.category);
-      }
-
-      if (params?.relatedId) {
-        queryParams.append("relatedId", params.relatedId);
-      }
-
-      const response = await axios.get<FileMetadata[]>(
-        `${API_URL}/files?${queryParams.toString()}`,
-        {
-          withCredentials: true,
-        }
-      );
-
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      return [];
+  static async getFiles(params?: FileQueryParams): Promise<FileMetadata[]> {
+    const queryParams = new URLSearchParams();
+    if (params?.category) {
+      queryParams.append("category", params.category);
     }
+    if (params?.relatedId) {
+      queryParams.append("relatedId", params.relatedId);
+    }
+
+    const response = await axios.get(`${API_URL}/files?${queryParams}`, {
+      withCredentials: true, // Include cookies
+    });
+    return response.data;
   }
 
   /**
    * Get a single file by GUID
-   * @param guid File GUID
-   * @returns Promise with file metadata
    */
-  async getFile(guid: string): Promise<FileMetadata | null> {
+  static async getFile(guid: string): Promise<FileMetadata | null> {
     try {
-      const response = await axios.get<FileMetadata>(
-        `${API_URL}/files/${guid}`,
-        {
-          withCredentials: true,
-        }
-      );
-
+      const response = await axios.get(`${API_URL}/files/${guid}`, {
+        withCredentials: true, // Include cookies
+      });
       return response.data;
     } catch (error) {
-      console.error(`Error fetching file ${guid}:`, error);
+      console.error("Error fetching file:", error);
       return null;
     }
   }
 
   /**
    * Delete a file by GUID
-   * @param guid File GUID
-   * @returns Promise with success status
    */
-  async deleteFile(guid: string): Promise<boolean> {
+  static async deleteFile(guid: string): Promise<boolean> {
     try {
       await axios.delete(`${API_URL}/files/${guid}`, {
-        withCredentials: true,
+        withCredentials: true, // Include cookies
       });
-
       return true;
     } catch (error) {
-      console.error(`Error deleting file ${guid}:`, error);
+      console.error("Error deleting file:", error);
       return false;
     }
   }
 
   /**
    * Get file view URL
-   * @param guid File GUID
-   * @returns URL to view the file
    */
-  getFileViewUrl(guid: string): string {
+  static getFileViewUrl(guid: string): string {
     return `${API_URL}/files/${guid}/view`;
   }
 
   /**
    * Get file download URL
-   * @param guid File GUID
-   * @returns URL to download the file
    */
-  getFileDownloadUrl(guid: string): string {
+  static getFileDownloadUrl(guid: string): string {
     return `${API_URL}/files/${guid}/download`;
   }
 
   /**
-   * Update file relation
-   * @param guid File GUID
-   * @param relatedId Related resource ID
-   * @returns Promise with updated file metadata
+   * Download a file with authentication
    */
-  async updateFileRelation(
+  static async downloadFile(guid: string, filename?: string): Promise<void> {
+    try {
+      const response = await axios.get(`${API_URL}/files/${guid}/download`, {
+        responseType: "blob",
+        withCredentials: true, // Include cookies/auth
+      });
+
+      // Create a blob URL and initiate download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename || `file-${guid}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url); // Clean up
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update file relation
+   */
+  static async updateFileRelation(
     guid: string,
     relatedId: string
   ): Promise<FileMetadata | null> {
     try {
-      const response = await axios.patch<FileMetadata>(
-        `${API_URL}/files/${guid}/relation`,
+      const response = await axios.patch(
+        `${API_URL}/files/${guid}`,
         { relatedId },
         {
-          withCredentials: true,
+          withCredentials: true, // Include cookies
         }
       );
-
       return response.data;
     } catch (error) {
-      console.error(`Error updating file relation for ${guid}:`, error);
+      console.error("Error updating file relation:", error);
       return null;
     }
   }
 }
 
-export default new FileService();
+export default FileService;

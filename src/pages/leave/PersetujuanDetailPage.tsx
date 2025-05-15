@@ -34,6 +34,7 @@ const PersetujuanDetailPage: React.FC = () => {
   const { guid } = useParams<{ guid: string }>();
   const [processing, setProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [downloadingFile, setDownloadingFile] = useState<boolean>(false);
 
   const {
     selectedRequest,
@@ -47,7 +48,7 @@ const PersetujuanDetailPage: React.FC = () => {
   const { users, fetchUsers } = useUsers();
 
   // Use FileContext for file-related operations
-  const { getFileDownloadUrl } = useFiles();
+  const { downloadFile } = useFiles();
 
   // Get user data for the request
   const getUserData = (userId?: string) => {
@@ -102,10 +103,20 @@ const PersetujuanDetailPage: React.FC = () => {
   };
 
   // Function to handle attachment download using FileContext
-  const handleDownloadAttachment = () => {
+  const handleDownloadAttachment = async () => {
     if (selectedRequest?.attachmentId) {
-      const downloadUrl = getFileDownloadUrl(selectedRequest.attachmentId);
-      window.open(downloadUrl, "_blank");
+      setDownloadingFile(true);
+      try {
+        // Use the new downloadFile method that handles auth
+        await downloadFile(
+          selectedRequest.attachmentId,
+          selectedRequest.attachment?.originalName
+        );
+      } catch (err: any) {
+        setError(err.message || "Failed to download file");
+      } finally {
+        setDownloadingFile(false);
+      }
     }
   };
 
@@ -141,7 +152,7 @@ const PersetujuanDetailPage: React.FC = () => {
   const userData = getUserData(selectedRequest?.userId);
 
   // Combine loading states
-  const isLoading = loading || processing;
+  const isLoading = loading || processing || downloadingFile;
 
   return (
     <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", width: "100%", pb: 7 }}>
@@ -323,12 +334,27 @@ const PersetujuanDetailPage: React.FC = () => {
                       variant="body2"
                       sx={{
                         fontWeight: "medium",
-                        cursor: "pointer",
-                        "&:hover": { textDecoration: "underline" },
+                        cursor: downloadingFile ? "default" : "pointer",
+                        "&:hover": {
+                          textDecoration: downloadingFile
+                            ? "none"
+                            : "underline",
+                        },
+                        display: "flex",
+                        alignItems: "center",
                       }}
-                      onClick={handleDownloadAttachment}
+                      onClick={
+                        downloadingFile ? undefined : handleDownloadAttachment
+                      }
                     >
-                      {selectedRequest.attachment?.originalName || "Attachment"}
+                      {downloadingFile ? (
+                        <>
+                          <CircularProgress size={16} sx={{ mr: 1 }} />
+                          Downloading...
+                        </>
+                      ) : (
+                        selectedRequest.attachment?.originalName || "Attachment"
+                      )}
                     </Typography>
                   </Box>
                 )}

@@ -1,4 +1,4 @@
-// src/contexts/FileContext.tsx
+// src/contexts/FileContext.tsx (Updated)
 import React, {
   createContext,
   useState,
@@ -30,6 +30,7 @@ interface FileContextType {
   deleteFile: (guid: string) => Promise<boolean>;
   getFileViewUrl: (guid: string) => string;
   getFileDownloadUrl: (guid: string) => string;
+  downloadFile: (guid: string, filename?: string) => Promise<void>;
   updateFileRelation: (
     guid: string,
     relatedId: string
@@ -194,6 +195,26 @@ export const FileProvider: React.FC<FileProviderProps> = ({ children }) => {
   }, []);
 
   /**
+   * Download file with authentication
+   */
+  const downloadFile = useCallback(
+    async (guid: string, filename?: string): Promise<void> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        await FileService.downloadFile(guid, filename);
+      } catch (error: any) {
+        setError(error.message || `Error downloading file ${guid}`);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  /**
    * Update file relation
    */
   const updateFileRelation = useCallback(
@@ -247,6 +268,7 @@ export const FileProvider: React.FC<FileProviderProps> = ({ children }) => {
     deleteFile,
     getFileViewUrl,
     getFileDownloadUrl,
+    downloadFile,
     updateFileRelation,
     clearFiles,
     clearError,
