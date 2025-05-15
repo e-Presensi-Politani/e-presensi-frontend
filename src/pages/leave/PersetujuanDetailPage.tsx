@@ -21,36 +21,42 @@ import { useNavigate, useParams } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
 import { useUsers } from "../../contexts/UserContext";
+import { useFiles } from "../../contexts/FileContext"; // Import useFiles hook
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { LeaveRequestType, LeaveRequestStatus } from "../../types/leave-requests";
+import {
+  LeaveRequestType,
+  LeaveRequestStatus,
+} from "../../types/leave-requests";
 
 const PersetujuanDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { guid } = useParams<{ guid: string }>();
   const [processing, setProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const {
     selectedRequest,
     loading,
     error: fetchError,
     fetchLeaveRequestByGuid,
     reviewLeaveRequest,
-    getAttachmentDownloadUrl,
     clearSelectedRequest,
   } = useLeaveRequests();
-  
+
   const { users, fetchUsers } = useUsers();
+
+  // Use FileContext for file-related operations
+  const { getFileDownloadUrl } = useFiles();
 
   // Get user data for the request
   const getUserData = (userId?: string) => {
     if (!userId) return { name: "Unknown", nip: "Unknown" };
-    const user = users.find(u => u.guid === userId);
+    const user = users.find((u) => u.guid === userId);
     return {
       name: user?.fullName || "Unknown",
       nip: user?.nip || "Unknown",
-      department: user?.department || "Unknown"
+      department: user?.department || "Unknown",
     };
   };
 
@@ -60,7 +66,7 @@ const PersetujuanDetailPage: React.FC = () => {
       fetchLeaveRequestByGuid(guid);
       fetchUsers();
     }
-    
+
     // Clear selected request when component unmounts
     return () => {
       clearSelectedRequest();
@@ -78,20 +84,28 @@ const PersetujuanDetailPage: React.FC = () => {
 
   const handleApprove = async () => {
     if (!guid) return;
-    
+
     setProcessing(true);
     setError(null);
-    
+
     try {
       await reviewLeaveRequest(guid, {
         status: LeaveRequestStatus.APPROVED,
-        comments: "Disetujui"
+        comments: "Disetujui",
       });
       navigate("/kajur-dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to approve request");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  // Function to handle attachment download using FileContext
+  const handleDownloadAttachment = () => {
+    if (selectedRequest?.attachmentId) {
+      const downloadUrl = getFileDownloadUrl(selectedRequest.attachmentId);
+      window.open(downloadUrl, "_blank");
     }
   };
 
@@ -134,7 +148,12 @@ const PersetujuanDetailPage: React.FC = () => {
       {/* Header */}
       <AppBar position="static" sx={{ bgcolor: "#0073e6" }}>
         <Toolbar>
-          <IconButton edge="start" color="inherit" onClick={handleBack} disabled={isLoading}>
+          <IconButton
+            edge="start"
+            color="inherit"
+            onClick={handleBack}
+            disabled={isLoading}
+          >
             <ArrowBackIcon />
           </IconButton>
           <Typography
@@ -210,7 +229,11 @@ const PersetujuanDetailPage: React.FC = () => {
                 <Typography variant="h6" sx={{ fontWeight: "bold", mb: 0.5 }}>
                   {userData.name}
                 </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5 }}>
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mb: 0.5 }}
+                >
                   {userData.nip}
                 </Typography>
                 <Typography
@@ -228,8 +251,6 @@ const PersetujuanDetailPage: React.FC = () => {
                   container
                   sx={{
                     width: "100%",
-                    // px: 2,
-                    // py: 1,
                     justifyContent: "space-between",
                   }}
                 >
@@ -270,12 +291,14 @@ const PersetujuanDetailPage: React.FC = () => {
                   <Typography variant="body2" sx={{ fontWeight: "medium" }}>
                     Keterangan
                   </Typography>
-                  <Typography variant="body1">{selectedRequest.reason || "-"}</Typography>
+                  <Typography variant="body1">
+                    {selectedRequest.reason || "-"}
+                  </Typography>
                 </Box>
 
                 <Divider sx={{ width: "100%", my: 1 }} />
 
-                {/* Attachment */}
+                {/* Attachment - Updated to use FileContext */}
                 {selectedRequest.attachmentId && (
                   <Box
                     sx={{
@@ -296,17 +319,14 @@ const PersetujuanDetailPage: React.FC = () => {
                     >
                       <InsertDriveFileIcon fontSize="small" />
                     </Avatar>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
+                    <Typography
+                      variant="body2"
+                      sx={{
                         fontWeight: "medium",
                         cursor: "pointer",
-                        "&:hover": { textDecoration: "underline" }
+                        "&:hover": { textDecoration: "underline" },
                       }}
-                      onClick={() => {
-                        const downloadUrl = getAttachmentDownloadUrl(selectedRequest.guid);
-                        window.open(downloadUrl, "_blank");
-                      }}
+                      onClick={handleDownloadAttachment}
                     >
                       {selectedRequest.attachment?.originalName || "Attachment"}
                     </Typography>
