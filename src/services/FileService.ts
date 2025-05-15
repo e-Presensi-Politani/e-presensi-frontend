@@ -7,10 +7,14 @@ import {
 } from "../types/files";
 import { FileCategory } from "../types/enums";
 
-const API_URL = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
+// Create a base axios instance with the API URL
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
+// Create an axios instance with baseURL properly configured
+const apiClient = axios.create({
+  baseURL: API_URL,
+  withCredentials: true, // Include cookies for all requests
+});
 
 class FileService {
   /**
@@ -31,11 +35,10 @@ class FileService {
     }
 
     try {
-      const response = await axios.post(`${API_URL}/files`, formData, {
+      const response = await apiClient.post("/files", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-        withCredentials: true, // Include cookies
         onUploadProgress,
       });
 
@@ -65,9 +68,7 @@ class FileService {
       queryParams.append("relatedId", params.relatedId);
     }
 
-    const response = await axios.get(`${API_URL}/files?${queryParams}`, {
-      withCredentials: true, // Include cookies
-    });
+    const response = await apiClient.get(`/files?${queryParams}`);
     return response.data;
   }
 
@@ -76,9 +77,7 @@ class FileService {
    */
   static async getFile(guid: string): Promise<FileMetadata | null> {
     try {
-      const response = await axios.get(`${API_URL}/files/${guid}`, {
-        withCredentials: true, // Include cookies
-      });
+      const response = await apiClient.get(`/files/${guid}`);
       return response.data;
     } catch (error) {
       console.error("Error fetching file:", error);
@@ -91,9 +90,7 @@ class FileService {
    */
   static async deleteFile(guid: string): Promise<boolean> {
     try {
-      await axios.delete(`${API_URL}/files/${guid}`, {
-        withCredentials: true, // Include cookies
-      });
+      await apiClient.delete(`/files/${guid}`);
       return true;
     } catch (error) {
       console.error("Error deleting file:", error);
@@ -120,9 +117,8 @@ class FileService {
    */
   static async downloadFile(guid: string, filename?: string): Promise<void> {
     try {
-      const response = await axios.get(`${API_URL}/files/${guid}/download`, {
+      const response = await apiClient.get(`/files/${guid}/download`, {
         responseType: "blob",
-        withCredentials: true, // Include cookies/auth
       });
 
       // Create a blob URL and initiate download
@@ -149,13 +145,7 @@ class FileService {
     relatedId: string
   ): Promise<FileMetadata | null> {
     try {
-      const response = await axios.patch(
-        `${API_URL}/files/${guid}`,
-        { relatedId },
-        {
-          withCredentials: true, // Include cookies
-        }
-      );
+      const response = await apiClient.patch(`/files/${guid}`, { relatedId });
       return response.data;
     } catch (error) {
       console.error("Error updating file relation:", error);
