@@ -24,7 +24,7 @@ export interface CreateCorrectionDto {
 
 export interface UpdateCorrectionDto {
   status: "APPROVED" | "REJECTED";
-  reviewNote?: string;
+  rejectionReason?: string;
 }
 
 export interface CorrectionQueryParams {

@@ -13,6 +13,12 @@ import {
   Toolbar,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  TextField,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate, useParams } from "react-router-dom";
@@ -32,6 +38,11 @@ const PersetujuanKoreksiDetailPage: React.FC = () => {
   const { guid } = useParams<{ guid: string }>();
   const [processing, setProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState<boolean>(false);
+  const [rejectionReason, setRejectionReason] = useState<string>("");
+  const [rejectionReasonError, setRejectionReasonError] = useState<
+    string | null
+  >(null);
 
   const {
     selectedCorrection,
@@ -109,15 +120,33 @@ const PersetujuanKoreksiDetailPage: React.FC = () => {
     navigate("/persetujuan-koreksi");
   };
 
+  const handleOpenRejectDialog = () => {
+    setRejectDialogOpen(true);
+    setRejectionReason("");
+    setRejectionReasonError(null);
+  };
+
+  const handleCloseRejectDialog = () => {
+    setRejectDialogOpen(false);
+  };
+
   const handleReject = async () => {
+    // Validate rejection reason
+    if (!rejectionReason.trim()) {
+      setRejectionReasonError("Alasan penolakan harus diisi");
+      return;
+    }
+
     if (!guid) return;
 
     setProcessing(true);
     setError(null);
+    handleCloseRejectDialog();
 
     try {
       await reviewCorrection(guid, {
         status: CorrectionStatus.REJECTED,
+        rejectionReason: rejectionReason.trim(),
       });
       navigate("/kajur-dashboard");
     } catch (err: any) {
@@ -356,7 +385,7 @@ const PersetujuanKoreksiDetailPage: React.FC = () => {
                   py: 1.5,
                   borderRadius: 1,
                 }}
-                onClick={handleReject}
+                onClick={handleOpenRejectDialog}
                 disabled={isLoading}
               >
                 Tolak
@@ -379,6 +408,48 @@ const PersetujuanKoreksiDetailPage: React.FC = () => {
           </>
         )}
       </Container>
+
+      {/* Rejection Dialog */}
+      <Dialog open={rejectDialogOpen} onClose={handleCloseRejectDialog}>
+        <DialogTitle sx={{ bgcolor: "#f5f5f5", fontWeight: "bold" }}>
+          Alasan Penolakan
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <DialogContentText sx={{ mb: 2 }}>
+            Mohon berikan alasan penolakan koreksi ini:
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="rejection-reason"
+            label="Alasan Penolakan"
+            type="text"
+            fullWidth
+            multiline
+            rows={4}
+            value={rejectionReason}
+            onChange={(e) => {
+              setRejectionReason(e.target.value);
+              setRejectionReasonError(null);
+            }}
+            error={!!rejectionReasonError}
+            helperText={rejectionReasonError}
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1 } }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={handleCloseRejectDialog} sx={{ color: "#757575" }}>
+            Batal
+          </Button>
+          <Button
+            onClick={handleReject}
+            variant="contained"
+            sx={{ bgcolor: "#f44336", "&:hover": { bgcolor: "#d32f2f" } }}
+          >
+            Tolak
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Bottom Navigation */}
       <BottomNav />
