@@ -76,7 +76,21 @@ const CorrectionsService = {
   },
 
   /**
-   * Get pending corrections for a specific department
+   * Get pending corrections with optional department filter
+   * @param departmentId Optional department ID to filter by
+   * @returns Array of pending corrections
+   */
+  getPendingCorrections: async (
+    departmentId?: string
+  ): Promise<Correction[]> => {
+    const response = await API.get<Correction[]>("/corrections/pending", {
+      params: departmentId ? { departmentId } : undefined,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get pending corrections for a specific department (legacy method)
    * @param departmentId The department ID
    * @returns Array of pending corrections for the department
    */

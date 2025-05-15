@@ -291,7 +291,7 @@ const CorrectionDetailPage: React.FC = () => {
             </Box>
 
             {/* Show reviewer notes if available */}
-            {selectedCorrection.reviewNote && (
+            {selectedCorrection.rejectionReason && (
               <>
                 <Divider sx={{ width: "100%", my: 1 }} />
                 <Box sx={{ width: "100%", px: 2, py: 1 }}>
@@ -299,7 +299,7 @@ const CorrectionDetailPage: React.FC = () => {
                     Catatan Reviewer
                   </Typography>
                   <Typography variant="body1">
-                    {selectedCorrection.reviewNote}
+                    {selectedCorrection.rejectionReason}
                   </Typography>
                 </Box>
               </>

@@ -34,6 +34,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
+import { useCorrections } from "../../contexts/CorrectionsContext";
 
 // Sample attendance data (you would fetch this from an API)
 const attendanceData = [
@@ -67,15 +68,22 @@ const KajurDashboardPage: React.FC = () => {
     loading: loadingLeaveRequests,
     error: leaveRequestsError,
   } = useLeaveRequests();
+  const {
+    pendingCorrections,
+    fetchPendingCorrections,
+    loading: loadingCorrections,
+    error: correctionsError,
+  } = useCorrections();
   const navigate = useNavigate();
 
-  // Fetch user details, today's attendance, and pending leave requests when component mounts
+  // Fetch user details, today's attendance, pending leave requests, and pending corrections when component mounts
   useEffect(() => {
     if (authUser?.guid) {
       fetchUserByGuid(authUser.guid);
     }
     fetchTodayAttendance();
     fetchPendingRequests();
+    fetchPendingCorrections(); // Fetch pending corrections for the Kajur
 
     return () => {
       clearError();
@@ -137,7 +145,7 @@ const KajurDashboardPage: React.FC = () => {
   };
 
   const handleKoreksi = () => {
-    navigate("/under-development");
+    navigate("/persetujuan-koreksi");
   };
 
   const handleCuti = () => {
@@ -159,8 +167,16 @@ const KajurDashboardPage: React.FC = () => {
   // Determine count of pending approval requests
   const pendingApprovalCount = pendingRequests?.length || 0;
 
-  const loading = loadingUser || loadingAttendance || loadingLeaveRequests;
-  const error = userError || attendanceError || leaveRequestsError;
+  // Determine count of pending correction requests
+  const pendingCorrectionCount = pendingCorrections?.length || 0;
+
+  const loading =
+    loadingUser ||
+    loadingAttendance ||
+    loadingLeaveRequests ||
+    loadingCorrections;
+  const error =
+    userError || attendanceError || leaveRequestsError || correctionsError;
 
   if (loading) {
     return (
@@ -253,10 +269,34 @@ const KajurDashboardPage: React.FC = () => {
                   Cuti
                 </Typography>
               </Grid>
-              <Grid sx={{ textAlign: "center" }}>
-                <IconButton color="warning" onClick={handleKoreksi}>
-                  <Task />
-                </IconButton>
+              <Grid sx={{ textAlign: "center", position: "relative" }}>
+                <Box sx={{ position: "relative", display: "inline-block" }}>
+                  <IconButton color="warning" onClick={handleKoreksi}>
+                    <Task />
+                  </IconButton>
+                  {pendingCorrectionCount > 0 && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        bgcolor: "error.main",
+                        color: "white",
+                        borderRadius: "50%",
+                        width: 16,
+                        height: 16,
+                        fontSize: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {pendingCorrectionCount > 99
+                        ? "99+"
+                        : pendingCorrectionCount}
+                    </Box>
+                  )}
+                </Box>
                 <Typography variant="body2" color="textSecondary">
                   Koreksi
                 </Typography>
