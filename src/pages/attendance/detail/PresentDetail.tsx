@@ -12,6 +12,7 @@ import {
   Container,
   IconButton,
   CircularProgress,
+  Chip,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -20,6 +21,11 @@ import { useAttendance } from "../../../contexts/AttendanceContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { format } from "date-fns";
 import { id } from "date-fns/locale/id";
+import { WorkingStatus } from "../../../types/enums";
+import {
+  WorkingStatusLabels,
+  WorkingStatusColors,
+} from "../../../types/working-status";
 
 const AttendanceDetailPresent: React.FC = () => {
   const navigate = useNavigate();
@@ -84,6 +90,19 @@ const AttendanceDetailPresent: React.FC = () => {
     "EEEE, dd MMMM yyyy",
     { locale: id }
   );
+
+  // Menentukan status dalam bahasa Indonesia
+  const statusText = selectedAttendance.status
+    ? WorkingStatusLabels[selectedAttendance.status as WorkingStatus] ||
+      selectedAttendance.status
+    : "Tidak Diketahui";
+
+  // Menentukan warna status
+  const statusColor =
+    selectedAttendance.status &&
+    (selectedAttendance.status as WorkingStatus) in WorkingStatusColors
+      ? WorkingStatusColors[selectedAttendance.status as WorkingStatus]
+      : "default";
 
   return (
     <Box
@@ -220,7 +239,18 @@ const AttendanceDetailPresent: React.FC = () => {
                     Status
                   </TableCell>
                   <TableCell align="right">
-                    {selectedAttendance.status}
+                    <Chip
+                      label={statusText}
+                      color={
+                        statusColor as
+                          | "success"
+                          | "warning"
+                          | "error"
+                          | "info"
+                          | "default"
+                      }
+                      size="small"
+                    />
                   </TableCell>
                 </TableRow>
               </TableBody>

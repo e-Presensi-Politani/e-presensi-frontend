@@ -113,6 +113,8 @@ const HistoryPage: React.FC = () => {
     const normalizedStatus = status ? status.toLowerCase().trim() : "";
     switch (normalizedStatus) {
       case "present":
+      case "on_leave":
+      case "official_travel":
       case "remote_working":
         return <CheckIcon style={{ color: "#4CAF50" }} />;
       case "absent":
