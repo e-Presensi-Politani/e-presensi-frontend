@@ -1,5 +1,5 @@
 // LeaveRequestDetailPage.tsx
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Container,
@@ -18,18 +18,21 @@ import { useNavigate, useParams } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
 import { useUsers } from "../../contexts/UserContext";
+import { useFiles } from "../../contexts/FileContext"; // Import useFiles hook
 import { format } from "date-fns";
 import { LeaveRequestTypeLabels } from "../../types/leave-request-enums";
 
 const LeaveRequestDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [downloadingFile, setDownloadingFile] = useState<boolean>(false); // Add state for download indication
+  const [downloadError, setDownloadError] = useState<string | null>(null); // Add state for download errors
+
   const {
     selectedRequest,
     loading: leaveLoading,
     error: leaveError,
     fetchLeaveRequestByGuid,
-    getAttachmentDownloadUrl,
     clearSelectedRequest,
   } = useLeaveRequests();
 
@@ -40,6 +43,9 @@ const LeaveRequestDetailPage: React.FC = () => {
     fetchUserByGuid,
     clearSelectedUser,
   } = useUsers();
+
+  // Use the FileContext hook for file operations
+  const { downloadFile } = useFiles();
 
   // Use refs to track whether we've already initiated fetches
   const requestFetchedRef = useRef<boolean>(false);
@@ -99,19 +105,31 @@ const LeaveRequestDetailPage: React.FC = () => {
     navigate("/leave-request");
   };
 
-  const handleDownloadAttachment = () => {
+  // Update the attachment download handler to use FileContext
+  const handleDownloadAttachment = async () => {
     if (selectedRequest?.attachmentId) {
-      window.open(
-        getAttachmentDownloadUrl(selectedRequest.attachmentId),
-        "_blank"
-      );
+      setDownloadingFile(true);
+      setDownloadError(null);
+
+      try {
+        // Use the FileContext's downloadFile method that handles auth
+        await downloadFile(
+          selectedRequest.attachmentId,
+          selectedRequest.attachment?.originalName
+        );
+      } catch (error: any) {
+        console.error("Error downloading attachment:", error);
+        setDownloadError(error.message || "Failed to download attachment");
+      } finally {
+        setDownloadingFile(false);
+      }
     }
   };
 
-  const loading = leaveLoading || userLoading;
-  const error = leaveError || userError;
+  const loading = leaveLoading || userLoading || downloadingFile;
+  const error = leaveError || userError || downloadError;
 
-  if (loading) {
+  if (loading && !downloadingFile) {
     return (
       <Box
         sx={{
@@ -126,7 +144,7 @@ const LeaveRequestDetailPage: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error && !downloadingFile) {
     return (
       <Box
         sx={{
@@ -199,6 +217,16 @@ const LeaveRequestDetailPage: React.FC = () => {
       </Box>
 
       <Container maxWidth="sm" sx={{ mt: 2 }}>
+        {downloadError && (
+          <Alert
+            severity="error"
+            sx={{ mb: 2 }}
+            onClose={() => setDownloadError(null)}
+          >
+            {downloadError}
+          </Alert>
+        )}
+
         <Paper elevation={1} sx={{ borderRadius: 2, overflow: "hidden" }}>
           <Box
             sx={{
@@ -350,17 +378,36 @@ const LeaveRequestDetailPage: React.FC = () => {
                     py: 1,
                     display: "flex",
                     alignItems: "center",
-                    cursor: "pointer",
+                    cursor: downloadingFile ? "default" : "pointer",
                   }}
-                  onClick={handleDownloadAttachment}
+                  onClick={
+                    downloadingFile ? undefined : handleDownloadAttachment
+                  }
                 >
                   <Avatar
                     sx={{ width: 36, height: 36, bgcolor: "#0073e6", mr: 1.5 }}
                   >
                     <InsertDriveFileIcon fontSize="small" />
                   </Avatar>
-                  <Typography variant="body2" sx={{ fontWeight: "medium" }}>
-                    {selectedRequest.attachment.originalName}
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: "medium",
+                      display: "flex",
+                      alignItems: "center",
+                      "&:hover": {
+                        textDecoration: downloadingFile ? "none" : "underline",
+                      },
+                    }}
+                  >
+                    {downloadingFile ? (
+                      <>
+                        <CircularProgress size={16} sx={{ mr: 1 }} />
+                        Downloading...
+                      </>
+                    ) : (
+                      selectedRequest.attachment.originalName
+                    )}
                   </Typography>
                 </Box>
               </>
