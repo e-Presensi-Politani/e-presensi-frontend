@@ -15,6 +15,7 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
+  Chip,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import WarningIcon from "@mui/icons-material/Warning";
@@ -23,7 +24,8 @@ import { useAttendance } from "../../../contexts/AttendanceContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { format } from "date-fns";
 import { id } from "date-fns/locale/id";
-import { WorkingStatus } from "../../../types/enums"; // Import enum
+import { WorkingStatus } from "../../../types/enums";
+import { WorkingStatusLabels, WorkingStatusColors } from "../../../types/working-status";
 
 const AttendanceDetailProblem: React.FC = () => {
   const navigate = useNavigate();
@@ -111,6 +113,27 @@ const AttendanceDetailProblem: React.FC = () => {
     { locale: id }
   );
 
+  // Menentukan status dalam bahasa Indonesia
+  const statusText = selectedAttendance.status 
+    ? WorkingStatusLabels[selectedAttendance.status as WorkingStatus] || selectedAttendance.status
+    : "Tidak Diketahui";
+  
+  // Menentukan warna status
+  const statusColor = selectedAttendance.status && (selectedAttendance.status as WorkingStatus) in WorkingStatusColors
+    ? WorkingStatusColors[selectedAttendance.status as WorkingStatus]
+    : "default";
+
+  // Title text berdasarkan status
+  const getTitleText = () => {
+    if (selectedAttendance.status === WorkingStatus.LATE) {
+      return "Terlambat!";
+    } else if (selectedAttendance.status === WorkingStatus.EARLY_DEPARTURE) {
+      return "Jam Kerja Kurang!";
+    } else {
+      return "Masalah Presensi";
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -185,11 +208,7 @@ const AttendanceDetailProblem: React.FC = () => {
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-              {selectedAttendance.status === WorkingStatus.LATE
-                ? "Terlambat!"
-                : selectedAttendance.status === WorkingStatus.EARLY_DEPARTURE
-                ? "Jam Kerja Kurang!"
-                : "Masalah Presensi"}
+              {getTitleText()}
             </Typography>
             <Typography variant="body2">
               {attendanceDate}
@@ -255,7 +274,11 @@ const AttendanceDetailProblem: React.FC = () => {
                     Status
                   </TableCell>
                   <TableCell align="right">
-                    {selectedAttendance.status}
+                    <Chip 
+                      label={statusText} 
+                      color={statusColor as "success" | "warning" | "error" | "info" | "default"}
+                      size="small"
+                    />
                   </TableCell>
                 </TableRow>
               </TableBody>
