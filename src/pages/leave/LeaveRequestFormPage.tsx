@@ -329,17 +329,7 @@ const LeaveRequestFormPage: React.FC = () => {
             </Box>
           )}
 
-          {/* Department information display */}
-          {selectedDepartment && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Department
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: "medium" }}>
-                {selectedDepartment.name}
-              </Typography>
-            </Box>
-          )}
+          {/* Department display section removed as requested */}
 
           <FormControl fullWidth error={!!formErrors.leaveType} sx={{ mb: 3 }}>
             <InputLabel id="leave-type-label">Jenis Pengajuan</InputLabel>
@@ -516,11 +506,10 @@ const LeaveRequestFormPage: React.FC = () => {
             {loading ? <CircularProgress size={24} color="inherit" /> : "Kirim"}
           </Button>
 
-          {/* Show the no department error only when we're no longer in the initial loading state */}
+          {/* Error message kept, but with no specific mention of department */}
           {shouldShowNoDepartmentError && (
             <Alert severity="error" sx={{ mt: 2 }}>
-              Anda belum terdaftar di departemen manapun - Harap hubungi
-              administrator.
+              Tidak dapat mengirim pengajuan - Harap hubungi administrator.
             </Alert>
           )}
         </Paper>
