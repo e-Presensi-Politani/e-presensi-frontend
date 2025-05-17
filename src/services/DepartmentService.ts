@@ -1,13 +1,6 @@
 // src/services/DepartmentService.ts
 import axios from "axios";
-import {
-  Department,
-  CreateDepartmentDto,
-  UpdateDepartmentDto,
-  AssignHeadDto,
-  AddMembersDto,
-} from "../types/departments";
-import AuthService from "./AuthService";
+import { Department } from "../types/departments";
 
 // Create API instance with base configuration
 const API = axios.create({
@@ -26,48 +19,10 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Set up response interceptor to handle token refresh
-API.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    // If error is 401 and we haven't already tried to refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        // Try to refresh the token
-        const refreshToken = localStorage.getItem("refresh_token");
-        if (!refreshToken) {
-          // No refresh token available, redirect to login
-          AuthService.logout();
-          return Promise.reject(error);
-        }
-
-        const response = await AuthService.refreshToken(refreshToken);
-
-        // Store new tokens
-        localStorage.setItem("access_token", response.access_token);
-        localStorage.setItem("refresh_token", response.refresh_token);
-
-        // Update authorization header and retry
-        originalRequest.headers.Authorization = `Bearer ${response.access_token}`;
-        return API(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails, clear tokens and redirect to login
-        AuthService.logout();
-        return Promise.reject(refreshError);
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
-
 const DepartmentService = {
   /**
    * Get all departments
+   * @returns Array of all departments
    */
   getAllDepartments: async (): Promise<Department[]> => {
     const response = await API.get<Department[]>("/departments");
@@ -75,129 +30,47 @@ const DepartmentService = {
   },
 
   /**
-   * Get all departments including inactive ones (admin only)
+   * Get a department by ID
+   * @param guid The department ID
+   * @returns The department details
    */
-  getAllWithInactive: async (): Promise<Department[]> => {
-    const response = await API.get<Department[]>("/departments/with-inactive");
-    return response.data;
-  },
-
-  /**
-   * Get department by GUID
-   */
-  getDepartmentByGuid: async (guid: string): Promise<Department> => {
+  getDepartmentById: async (guid: string): Promise<Department> => {
     const response = await API.get<Department>(`/departments/${guid}`);
     return response.data;
   },
 
   /**
-   * Get department by code
+   * Get a department by name
+   * @param name The department name
+   * @returns The department details
    */
-  getDepartmentByCode: async (code: string): Promise<Department> => {
-    const response = await API.get<Department>(`/departments/code/${code}`);
-    return response.data;
-  },
-
-  /**
-   * Create a new department (admin only)
-   */
-  createDepartment: async (
-    departmentData: CreateDepartmentDto
-  ): Promise<Department> => {
-    const response = await API.post<Department>("/departments", departmentData);
-    return response.data;
-  },
-
-  /**
-   * Update department details (admin only)
-   */
-  updateDepartment: async (
-    guid: string,
-    departmentData: UpdateDepartmentDto
-  ): Promise<Department> => {
-    const response = await API.put<Department>(
-      `/departments/${guid}`,
-      departmentData
+  getDepartmentByName: async (name: string): Promise<Department> => {
+    const response = await API.get<Department>(
+      `/departments/by-name/${encodeURIComponent(name)}`
     );
     return response.data;
   },
 
   /**
-   * Delete a department (soft delete) (admin only)
+   * Get departments by head (department leader)
+   * @param headId User ID of the department head
+   * @returns Array of departments led by the specified user
    */
-  deleteDepartment: async (guid: string): Promise<Department> => {
-    const response = await API.delete<Department>(`/departments/${guid}`);
-    return response.data;
-  },
-
-  /**
-   * Delete a department permanently (admin only)
-   */
-  hardDeleteDepartment: async (guid: string): Promise<Department> => {
-    const response = await API.delete<Department>(`/departments/${guid}/hard`);
-    return response.data;
-  },
-
-  /**
-   * Assign department head (admin only)
-   */
-  assignDepartmentHead: async (
-    guid: string,
-    assignHeadDto: AssignHeadDto
-  ): Promise<Department> => {
-    const response = await API.put<Department>(
-      `/departments/${guid}/head`,
-      assignHeadDto
-    );
-    return response.data;
-  },
-
-  /**
-   * Add members to department (admin or department head)
-   */
-  addDepartmentMembers: async (
-    guid: string,
-    addMembersDto: AddMembersDto
-  ): Promise<Department> => {
-    const response = await API.put<Department>(
-      `/departments/${guid}/members`,
-      addMembersDto
-    );
-    return response.data;
-  },
-
-  /**
-   * Remove members from department (admin or department head)
-   */
-  removeDepartmentMembers: async (
-    guid: string,
-    membersDto: AddMembersDto
-  ): Promise<Department> => {
-    const response = await API.delete<Department>(
-      `/departments/${guid}/members`,
-      {
-        data: membersDto,
-      }
+  getDepartmentsByHead: async (headId: string): Promise<Department[]> => {
+    const response = await API.get<Department[]>(
+      `/departments/by-head/${headId}`
     );
     return response.data;
   },
 
   /**
    * Get departments by member
+   * @param memberId User ID of the department member
+   * @returns Array of departments the user belongs to
    */
-  getDepartmentsByMember: async (userId: string): Promise<Department[]> => {
+  getDepartmentsByMember: async (memberId: string): Promise<Department[]> => {
     const response = await API.get<Department[]>(
-      `/departments/by-member/${userId}`
-    );
-    return response.data;
-  },
-
-  /**
-   * Get department by head
-   */
-  getDepartmentByHead: async (userId: string): Promise<Department[]> => {
-    const response = await API.get<Department[]>(
-      `/departments/by-head/${userId}`
+      `/departments/by-member/${memberId}`
     );
     return response.data;
   },

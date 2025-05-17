@@ -25,8 +25,8 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
-import { useAuth } from "../../contexts/AuthContext";
-import { useDepartment } from "../../contexts/DepartmentContext";
+import { useDepartments } from "../../contexts/DepartmentContext";
+import { useUsers } from "../../contexts/UserContext";
 import { LeaveRequestType } from "../../types/leave-requests";
 
 interface FormData {
@@ -41,13 +41,17 @@ interface FormData {
 const LeaveRequestFormPage: React.FC = () => {
   const navigate = useNavigate();
   const { createLeaveRequest, loading, error, clearError } = useLeaveRequests();
-  const { user: authUser } = useAuth();
-  const { departments, fetchDepartmentsByMember } = useDepartment();
+  const { selectedUser, fetchUserByGuid } = useUsers();
+  const { fetchDepartmentByName, selectedDepartment } = useDepartments();
 
   const startDateRef = useRef<HTMLDivElement | null>(null);
   const endDateRef = useRef<HTMLDivElement | null>(null);
 
-  const departmentsFetchedRef = useRef<boolean>(false);
+  const departmentFetchedRef = useRef<boolean>(false);
+  const userFetchedRef = useRef<boolean>(false);
+
+  // Add a state to track the initial loading state
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
 
   const [formData, setFormData] = useState<FormData>({
     leaveType: "",
@@ -62,21 +66,44 @@ const LeaveRequestFormPage: React.FC = () => {
   const [fileName, setFileName] = useState<string>("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  // Get current user information
   useEffect(() => {
-    if (authUser?.guid && !departmentsFetchedRef.current) {
-      departmentsFetchedRef.current = true;
-      fetchDepartmentsByMember(authUser.guid);
-    }
-  }, [authUser, fetchDepartmentsByMember]);
+    // Use sessionStorage or localStorage to get the current user GUID
+    const currentUserGuid =
+      sessionStorage.getItem("userGuid") || localStorage.getItem("userGuid");
 
+    if (currentUserGuid && !userFetchedRef.current) {
+      userFetchedRef.current = true;
+      fetchUserByGuid(currentUserGuid);
+    }
+  }, [fetchUserByGuid]);
+
+  // Fetch department when user info is available
   useEffect(() => {
-    if (departments && departments.length > 0 && !formData.departmentId) {
+    if (selectedUser?.department && !departmentFetchedRef.current) {
+      departmentFetchedRef.current = true;
+      fetchDepartmentByName(selectedUser.department);
+    }
+  }, [selectedUser, fetchDepartmentByName]);
+
+  // Set department ID in form data when department is fetched
+  useEffect(() => {
+    if (
+      selectedDepartment &&
+      selectedDepartment.guid &&
+      !formData.departmentId
+    ) {
       setFormData((prev) => ({
         ...prev,
-        departmentId: departments[0].guid,
+        departmentId: selectedDepartment.guid,
       }));
     }
-  }, [departments, formData.departmentId]);
+
+    // Set initial loading to false once we've either loaded the department or confirmed it doesn't exist
+    if (selectedUser && (selectedDepartment || !selectedUser.department)) {
+      setInitialLoading(false);
+    }
+  }, [selectedDepartment, formData.departmentId, selectedUser]);
 
   const handleLeaveTypeChange = (event: SelectChangeEvent) => {
     setFormData({
@@ -237,49 +264,9 @@ const LeaveRequestFormPage: React.FC = () => {
     clearError();
   };
 
-  const renderDepartmentSelection = () => {
-    if (departments && departments.length > 1) {
-      return (
-        <FormControl fullWidth error={!!formErrors.departmentId} sx={{ mb: 3 }}>
-          <InputLabel id="department-label">Department</InputLabel>
-          <Select
-            labelId="department-label"
-            id="department"
-            value={formData.departmentId}
-            label="Department"
-            onChange={(event) => {
-              setFormData({
-                ...formData,
-                departmentId: event.target.value,
-              });
-              if (formErrors.departmentId) {
-                const { departmentId, ...rest } = formErrors;
-                setFormErrors(rest);
-              }
-              setTimeout(() => {
-                document.getElementById("form-container")?.focus();
-              }, 10);
-            }}
-            sx={{
-              "& fieldset": {
-                borderRadius: 2,
-              },
-            }}
-          >
-            {departments.map((dept) => (
-              <MenuItem key={dept.guid} value={dept.guid}>
-                {dept.name}
-              </MenuItem>
-            ))}
-          </Select>
-          {formErrors.departmentId && (
-            <FormHelperText>{formErrors.departmentId}</FormHelperText>
-          )}
-        </FormControl>
-      );
-    }
-    return null;
-  };
+  // Determine if we should show the no department error
+  const shouldShowNoDepartmentError =
+    !initialLoading && selectedUser && !selectedDepartment;
 
   return (
     <Box sx={{ bgcolor: "#fff", minHeight: "100vh", width: "100%", pb: 6 }}>
@@ -333,7 +320,16 @@ const LeaveRequestFormPage: React.FC = () => {
           tabIndex={-1}
           id="form-container"
         >
-          {renderDepartmentSelection()}
+          {/* Loading state indicator */}
+          {initialLoading && (
+            <Box
+              sx={{ display: "flex", justifyContent: "center", mb: 3, mt: 3 }}
+            >
+              <CircularProgress size={24} />
+            </Box>
+          )}
+
+          {/* Department display section removed as requested */}
 
           <FormControl fullWidth error={!!formErrors.leaveType} sx={{ mb: 3 }}>
             <InputLabel id="leave-type-label">Jenis Pengajuan</InputLabel>
@@ -424,7 +420,7 @@ const LeaveRequestFormPage: React.FC = () => {
                     helperText: formErrors.endDate,
                     InputProps: {
                       id: "endDate",
-                    }
+                    },
                   },
                   popper: {
                     disablePortal: false,
@@ -499,7 +495,7 @@ const LeaveRequestFormPage: React.FC = () => {
             color="primary"
             size="large"
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || !selectedDepartment}
             sx={{
               py: 1.5,
               borderRadius: 3,
@@ -510,10 +506,10 @@ const LeaveRequestFormPage: React.FC = () => {
             {loading ? <CircularProgress size={24} color="inherit" /> : "Kirim"}
           </Button>
 
-          {(!departments || departments.length === 0) && (
+          {/* Error message kept, but with no specific mention of department */}
+          {shouldShowNoDepartmentError && (
             <Alert severity="error" sx={{ mt: 2 }}>
-              Anda belum terdaftar di departemen manapun - Harap hubungi
-              administrator.
+              Tidak dapat mengirim pengajuan - Harap hubungi administrator.
             </Alert>
           )}
         </Paper>
