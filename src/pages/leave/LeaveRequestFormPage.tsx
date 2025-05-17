@@ -52,8 +52,6 @@ const LeaveRequestFormPage: React.FC = () => {
 
   // Add a state to track the initial loading state
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
-  // Add a state to track if there was a loading error
-  const [loadingError, setLoadingError] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<FormData>({
     leaveType: "",
@@ -76,15 +74,7 @@ const LeaveRequestFormPage: React.FC = () => {
 
     if (currentUserGuid && !userFetchedRef.current) {
       userFetchedRef.current = true;
-      fetchUserByGuid(currentUserGuid).catch(() => {
-        // Handle user fetch error
-        setLoadingError(true);
-        setInitialLoading(false);
-      });
-    } else if (!currentUserGuid) {
-      // If no userGuid is found, stop loading and show error
-      setLoadingError(true);
-      setInitialLoading(false);
+      fetchUserByGuid(currentUserGuid);
     }
   }, [fetchUserByGuid]);
 
@@ -92,14 +82,7 @@ const LeaveRequestFormPage: React.FC = () => {
   useEffect(() => {
     if (selectedUser?.department && !departmentFetchedRef.current) {
       departmentFetchedRef.current = true;
-      fetchDepartmentByName(selectedUser.department).catch(() => {
-        // Handle department fetch error
-        setLoadingError(true);
-        setInitialLoading(false);
-      });
-    } else if (selectedUser && !selectedUser.department) {
-      // If user doesn't have a department, we're done loading
-      setInitialLoading(false);
+      fetchDepartmentByName(selectedUser.department);
     }
   }, [selectedUser, fetchDepartmentByName]);
 
@@ -121,20 +104,6 @@ const LeaveRequestFormPage: React.FC = () => {
       setInitialLoading(false);
     }
   }, [selectedDepartment, formData.departmentId, selectedUser]);
-
-  // Set a timeout to prevent infinite loading state
-  useEffect(() => {
-    const loadingTimeout = setTimeout(() => {
-      if (initialLoading) {
-        setInitialLoading(false);
-        if (!selectedUser || !selectedDepartment) {
-          setLoadingError(true);
-        }
-      }
-    }, 10000); // 10 seconds timeout
-
-    return () => clearTimeout(loadingTimeout);
-  }, [initialLoading, selectedUser, selectedDepartment]);
 
   const handleLeaveTypeChange = (event: SelectChangeEvent) => {
     setFormData({
@@ -299,7 +268,6 @@ const LeaveRequestFormPage: React.FC = () => {
   const shouldShowNoDepartmentError =
     !initialLoading && selectedUser && !selectedDepartment;
 
-
   return (
     <Box sx={{ bgcolor: "#fff", minHeight: "100vh", width: "100%", pb: 6 }}>
       <Box
@@ -342,74 +310,93 @@ const LeaveRequestFormPage: React.FC = () => {
       )}
 
       <Container sx={{ py: 2 }}>
-        {/* Loading state indicator */}
-        {initialLoading && (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "60vh",
-            }}
-          >
-            <CircularProgress size={40} />
-            <Typography variant="body1" sx={{ mt: 2 }}>
-              Memuat data...
-            </Typography>
-          </Box>
-        )}
-
-        {/* Error state with retry button */}
-        {loadingError && (
-          <Box
-            sx={{
-              display: "flex",
-            }}
-          >
-            <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
-              Gagal memuat data Jurusan. Harap hubungi administrator.
-            </Alert>
-          </Box>
-        )}
-
-        {/* Only show the form when not in initial loading state and no loading error */}
-        {!initialLoading && !loadingError && (
-          <Paper
-            elevation={0}
-            sx={{
-              p: 0,
-              borderRadius: 2,
-              mb: 2,
-            }}
-            tabIndex={-1}
-            id="form-container"
-          >
-            <FormControl
-              fullWidth
-              error={!!formErrors.leaveType}
-              sx={{ mb: 3 }}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 0,
+            borderRadius: 2,
+            mb: 2,
+          }}
+          tabIndex={-1}
+          id="form-container"
+        >
+          {/* Loading state indicator */}
+          {initialLoading && (
+            <Box
+              sx={{ display: "flex", justifyContent: "center", mb: 3, mt: 3 }}
             >
-              <InputLabel id="leave-type-label">Jenis Pengajuan</InputLabel>
-              <Select
-                labelId="leave-type-label"
-                id="leave-type"
-                value={formData.leaveType}
-                label="Jenis Pengajuan"
-                onChange={handleLeaveTypeChange}
-                MenuProps={{
-                  disablePortal: false,
-                  disableScrollLock: true,
-                  onClose: () => {
-                    setTimeout(() => {
-                      if (startDateRef.current) {
-                        const input =
-                          startDateRef.current.querySelector("input");
-                        if (input) {
-                          input.focus();
-                        }
+              <CircularProgress size={24} />
+            </Box>
+          )}
+
+          {/* Department display section removed as requested */}
+
+          <FormControl fullWidth error={!!formErrors.leaveType} sx={{ mb: 3 }}>
+            <InputLabel id="leave-type-label">Jenis Pengajuan</InputLabel>
+            <Select
+              labelId="leave-type-label"
+              id="leave-type"
+              value={formData.leaveType}
+              label="Jenis Pengajuan"
+              onChange={handleLeaveTypeChange}
+              MenuProps={{
+                disablePortal: false,
+                disableScrollLock: true,
+                onClose: () => {
+                  setTimeout(() => {
+                    if (startDateRef.current) {
+                      const input = startDateRef.current.querySelector("input");
+                      if (input) {
+                        input.focus();
                       }
-                    }, 100);
+                    }
+                  }, 100);
+                },
+              }}
+              sx={{
+                "& fieldset": {
+                  borderRadius: 2,
+                },
+              }}
+            >
+              <MenuItem value={LeaveRequestType.LEAVE}>Cuti</MenuItem>
+              <MenuItem value={LeaveRequestType.WFH}>
+                Work From Home (WFH)
+              </MenuItem>
+              <MenuItem value={LeaveRequestType.WFA}>
+                Work From Anywhere (WFA)
+              </MenuItem>
+              <MenuItem value={LeaveRequestType.DL}>Dinas Luar (DL)</MenuItem>
+            </Select>
+            {formErrors.leaveType && (
+              <FormHelperText>{formErrors.leaveType}</FormHelperText>
+            )}
+          </FormControl>
+
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <Box sx={{ mb: 3 }} ref={startDateRef}>
+              <DatePicker
+                label="Tanggal Mulai"
+                value={formData.startDate}
+                onChange={handleStartDateChange}
+                format="dd-MM-yyyy"
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    error: !!formErrors.startDate,
+                    helperText: formErrors.startDate,
+                    InputProps: {
+                      id: "startDate",
+                    },
+                  },
+                  popper: {
+                    disablePortal: false,
+                    modifiers: [
+                      {
+                        name: "preventOverflow",
+                        enabled: true,
+                      },
+                    ],
                   },
                 }}
                 sx={{
@@ -417,166 +404,115 @@ const LeaveRequestFormPage: React.FC = () => {
                     borderRadius: 2,
                   },
                 }}
-              >
-                <MenuItem value={LeaveRequestType.LEAVE}>Cuti</MenuItem>
-                <MenuItem value={LeaveRequestType.WFH}>
-                  Work From Home (WFH)
-                </MenuItem>
-                <MenuItem value={LeaveRequestType.WFA}>
-                  Work From Anywhere (WFA)
-                </MenuItem>
-                <MenuItem value={LeaveRequestType.DL}>Dinas Luar (DL)</MenuItem>
-              </Select>
-              {formErrors.leaveType && (
-                <FormHelperText>{formErrors.leaveType}</FormHelperText>
-              )}
-            </FormControl>
-
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <Box sx={{ mb: 3 }} ref={startDateRef}>
-                <DatePicker
-                  label="Tanggal Mulai"
-                  value={formData.startDate}
-                  onChange={handleStartDateChange}
-                  format="dd-MM-yyyy"
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !!formErrors.startDate,
-                      helperText: formErrors.startDate,
-                      InputProps: {
-                        id: "startDate",
-                      },
-                    },
-                    popper: {
-                      disablePortal: false,
-                      modifiers: [
-                        {
-                          name: "preventOverflow",
-                          enabled: true,
-                        },
-                      ],
-                    },
-                  }}
-                  sx={{
-                    "& fieldset": {
-                      borderRadius: 2,
-                    },
-                  }}
-                />
-              </Box>
-
-              <Box sx={{ mb: 3 }} ref={endDateRef}>
-                <DatePicker
-                  label="Tanggal Selesai"
-                  value={formData.endDate}
-                  onChange={handleEndDateChange}
-                  format="dd-MM-yyyy"
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !!formErrors.endDate,
-                      helperText: formErrors.endDate,
-                      InputProps: {
-                        id: "endDate",
-                      },
-                    },
-                    popper: {
-                      disablePortal: false,
-                      modifiers: [
-                        {
-                          name: "preventOverflow",
-                          enabled: true,
-                        },
-                      ],
-                    },
-                  }}
-                  sx={{
-                    "& fieldset": {
-                      borderRadius: 2,
-                    },
-                  }}
-                />
-              </Box>
-            </LocalizationProvider>
-
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Upload Berkas
-              </Typography>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<AttachFileIcon />}
-                fullWidth
-                sx={{
-                  justifyContent: "flex-start",
-                  textTransform: "none",
-                  py: 1.5,
-                  borderRadius: 2,
-                  border: formErrors.file ? "1px solid #f44336" : undefined,
-                  color: formErrors.file ? "#f44336" : undefined,
-                }}
-              >
-                {fileName || "File Upload (PDF/JPG, max 2MB)"}
-                <input
-                  type="file"
-                  hidden
-                  accept=".pdf,.jpg,.jpeg"
-                  onChange={handleFileChange}
-                />
-              </Button>
-              {formErrors.file && (
-                <FormHelperText error>{formErrors.file}</FormHelperText>
-              )}
+              />
             </Box>
 
-            <TextField
-              fullWidth
-              id="notes"
-              label="Keterangan"
-              multiline
-              rows={4}
-              value={formData.notes}
-              onChange={handleNotesChange}
-              placeholder="Masukan Keterangan ..."
-              sx={{ mb: 3 }}
-              InputProps={{
-                sx: {
-                  borderRadius: 2,
-                },
-              }}
-            />
+            <Box sx={{ mb: 3 }} ref={endDateRef}>
+              <DatePicker
+                label="Tanggal Selesai"
+                value={formData.endDate}
+                onChange={handleEndDateChange}
+                format="dd-MM-yyyy"
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    error: !!formErrors.endDate,
+                    helperText: formErrors.endDate,
+                    InputProps: {
+                      id: "endDate",
+                    },
+                  },
+                  popper: {
+                    disablePortal: false,
+                    modifiers: [
+                      {
+                        name: "preventOverflow",
+                        enabled: true,
+                      },
+                    ],
+                  },
+                }}
+                sx={{
+                  "& fieldset": {
+                    borderRadius: 2,
+                  },
+                }}
+              />
+            </Box>
+          </LocalizationProvider>
 
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Upload Berkas
+            </Typography>
             <Button
+              variant="outlined"
+              component="label"
+              startIcon={<AttachFileIcon />}
               fullWidth
-              variant="contained"
-              color="primary"
-              size="large"
-              onClick={handleSubmit}
-              disabled={loading || !selectedDepartment}
               sx={{
-                py: 1.5,
-                borderRadius: 3,
+                justifyContent: "flex-start",
                 textTransform: "none",
-                fontSize: 16,
+                py: 1.5,
+                borderRadius: 2,
+                border: formErrors.file ? "1px solid #f44336" : undefined,
+                color: formErrors.file ? "#f44336" : undefined,
               }}
             >
-              {loading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                "Kirim"
-              )}
+              {fileName || "File Upload (PDF/JPG, max 2MB)"}
+              <input
+                type="file"
+                hidden
+                accept=".pdf,.jpg,.jpeg"
+                onChange={handleFileChange}
+              />
             </Button>
-
-            {/* Error message kept, but with no specific mention of department */}
-            {shouldShowNoDepartmentError && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                Tidak dapat mengirim pengajuan - Harap hubungi administrator.
-              </Alert>
+            {formErrors.file && (
+              <FormHelperText error>{formErrors.file}</FormHelperText>
             )}
-          </Paper>
-        )}
+          </Box>
+
+          <TextField
+            fullWidth
+            id="notes"
+            label="Keterangan"
+            multiline
+            rows={4}
+            value={formData.notes}
+            onChange={handleNotesChange}
+            placeholder="Masukan Keterangan ..."
+            sx={{ mb: 3 }}
+            InputProps={{
+              sx: {
+                borderRadius: 2,
+              },
+            }}
+          />
+
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            size="large"
+            onClick={handleSubmit}
+            disabled={loading || !selectedDepartment}
+            sx={{
+              py: 1.5,
+              borderRadius: 3,
+              textTransform: "none",
+              fontSize: 16,
+            }}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Kirim"}
+          </Button>
+
+          {/* Error message kept, but with no specific mention of department */}
+          {shouldShowNoDepartmentError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              Tidak dapat mengirim pengajuan - Harap hubungi administrator.
+            </Alert>
+          )}
+        </Paper>
       </Container>
 
       <BottomNav />
