@@ -15,7 +15,7 @@ import {
 import { AccountCircle, Lock } from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import loginSvg from "../../assets/images/login.svg";
+import loginSvg from "../../assets/images/login-logo.png";
 
 // Define types for login
 interface LoginCredentials {
