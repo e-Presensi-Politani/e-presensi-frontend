@@ -50,6 +50,9 @@ const LeaveRequestFormPage: React.FC = () => {
   const departmentFetchedRef = useRef<boolean>(false);
   const userFetchedRef = useRef<boolean>(false);
 
+  // Add a state to track the initial loading state
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
+
   const [formData, setFormData] = useState<FormData>({
     leaveType: "",
     startDate: null,
@@ -95,7 +98,12 @@ const LeaveRequestFormPage: React.FC = () => {
         departmentId: selectedDepartment.guid,
       }));
     }
-  }, [selectedDepartment, formData.departmentId]);
+
+    // Set initial loading to false once we've either loaded the department or confirmed it doesn't exist
+    if (selectedUser && (selectedDepartment || !selectedUser.department)) {
+      setInitialLoading(false);
+    }
+  }, [selectedDepartment, formData.departmentId, selectedUser]);
 
   const handleLeaveTypeChange = (event: SelectChangeEvent) => {
     setFormData({
@@ -256,6 +264,10 @@ const LeaveRequestFormPage: React.FC = () => {
     clearError();
   };
 
+  // Determine if we should show the no department error
+  const shouldShowNoDepartmentError =
+    !initialLoading && selectedUser && !selectedDepartment;
+
   return (
     <Box sx={{ bgcolor: "#fff", minHeight: "100vh", width: "100%", pb: 6 }}>
       <Box
@@ -308,6 +320,16 @@ const LeaveRequestFormPage: React.FC = () => {
           tabIndex={-1}
           id="form-container"
         >
+          {/* Loading state indicator */}
+          {initialLoading && (
+            <Box
+              sx={{ display: "flex", justifyContent: "center", mb: 3, mt: 3 }}
+            >
+              <CircularProgress size={24} />
+            </Box>
+          )}
+
+          {/* Department information display */}
           {selectedDepartment && (
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1" gutterBottom>
@@ -316,12 +338,6 @@ const LeaveRequestFormPage: React.FC = () => {
               <Typography variant="body1" sx={{ fontWeight: "medium" }}>
                 {selectedDepartment.name}
               </Typography>
-            </Box>
-          )}
-
-          {!selectedDepartment && loading && (
-            <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-              <CircularProgress size={24} />
             </Box>
           )}
 
@@ -500,7 +516,8 @@ const LeaveRequestFormPage: React.FC = () => {
             {loading ? <CircularProgress size={24} color="inherit" /> : "Kirim"}
           </Button>
 
-          {!selectedDepartment && !loading && (
+          {/* Show the no department error only when we're no longer in the initial loading state */}
+          {shouldShowNoDepartmentError && (
             <Alert severity="error" sx={{ mt: 2 }}>
               Anda belum terdaftar di departemen manapun - Harap hubungi
               administrator.
