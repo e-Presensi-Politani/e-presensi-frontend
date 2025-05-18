@@ -162,12 +162,11 @@ const DashboardPage: React.FC = () => {
   const checkOutTime = formatTime(todayAttendance?.checkOutTime);
 
   // Get the current day of the month to display in the chart title
-  const currentDay = currentDateTime.getDate();
   const currentMonth = currentDateTime.toLocaleString("id-ID", {
     month: "long",
   });
 
-  // Perbaikan pada fungsi getAttendanceChartData untuk memastikan total persentase 100%
+  // Updated function to include Remote Working as a separate category
   const getAttendanceChartData = () => {
     if (!statistics) {
       // Default data when statistics are not available
@@ -176,6 +175,7 @@ const DashboardPage: React.FC = () => {
         { name: "Cuti", value: 0, color: "#FFC107" },
         { name: "DL", value: 0, color: "#03A9F4" },
         { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
+        { name: "Remote", value: 0, color: "#9C27B0" },
         { name: "Other", value: 0, color: "#9E9E9E" },
       ];
     }
@@ -197,6 +197,7 @@ const DashboardPage: React.FC = () => {
         { name: "Cuti", value: 0, color: "#FFC107" },
         { name: "DL", value: 0, color: "#03A9F4" },
         { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
+        { name: "Remote", value: 0, color: "#9C27B0" },
         { name: "Other", value: 0, color: "#9E9E9E" },
       ];
     }
@@ -207,14 +208,12 @@ const DashboardPage: React.FC = () => {
     const officialTravelPercentage =
       (statistics.officialTravel / totalAttendance) * 100;
     const absentPercentage = (statistics.absent / totalAttendance) * 100;
+    const remoteWorkingPercentage =
+      (statistics.remoteWorking / totalAttendance) * 100;
 
-    // Menggabungkan late, earlyDeparture, dan remoteWorking untuk kategori Other
+    // Menggabungkan late dan earlyDeparture untuk kategori Other (tidak termasuk remoteWorking)
     const otherPercentage =
-      ((statistics.late +
-        statistics.earlyDeparture +
-        statistics.remoteWorking) /
-        totalAttendance) *
-      100;
+      ((statistics.late + statistics.earlyDeparture) / totalAttendance) * 100;
 
     // Membuat array data dengan persentase yang sudah dihitung
     let chartData = [
@@ -237,6 +236,11 @@ const DashboardPage: React.FC = () => {
         name: "Tanpa Keterangan",
         value: parseFloat(absentPercentage.toFixed(1)),
         color: "#F44336",
+      },
+      {
+        name: "Remote",
+        value: parseFloat(remoteWorkingPercentage.toFixed(1)),
+        color: "#9C27B0",
       },
       {
         name: "Other",
@@ -507,8 +511,8 @@ const DashboardPage: React.FC = () => {
             bgcolor: "white",
           }}
         >
-          <Typography variant="h6" gutterBottom fontWeight="medium">
-            Rekap Kehadiran {currentMonth} (1-{currentDay})
+          <Typography variant="body1" gutterBottom fontWeight="medium" align="center">
+            Rekap Kehadiran {currentMonth}
           </Typography>
           {loadingStatistics ? (
             <Box sx={{ display: "flex", justifyContent: "center", my: 5 }}>
