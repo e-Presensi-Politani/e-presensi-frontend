@@ -131,24 +131,12 @@ const LoginPage: React.FC = () => {
             alt="Login Illustration"
             sx={{
               width: { xs: "80%", sm: "60%", md: "80%" },
-              maxWidth: { xs: 240, md: 320 },
+              maxWidth: { xs: 320, md: 320 },
               height: "auto",
               mt: 8,
-              mb: 2,
+              mb: 4,
             }}
           />
-          <Typography
-            component="h1"
-            variant="h5"
-            sx={{
-              color: "white",
-              fontWeight: 500,
-              fontSize: { xs: "1.5rem", md: "2rem" },
-              mt: 2,
-            }}
-          >
-            e-Presensi Politani
-          </Typography>
         </Box>
 
         {/* Login form container */}

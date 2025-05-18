@@ -35,15 +35,8 @@ import { useUsers } from "../../contexts/UserContext";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
 import { useCorrections } from "../../contexts/CorrectionsContext";
-
-// Sample attendance data (you would fetch this from an API)
-const attendanceData = [
-  { name: "Hadir", value: 42.9, color: "#4CAF50" },
-  { name: "Cuti", value: 25.8, color: "#FFC107" },
-  { name: "DL", value: 17.2, color: "#03A9F4" },
-  { name: "Tanpa Keterangan", value: 9.1, color: "#F44336" },
-  { name: "Other", value: 5.1, color: "#9E9E9E" },
-];
+import { useStatistics } from "../../contexts/StatisticsContext";
+import { ReportPeriod } from "../../types/statistics";
 
 const KajurDashboardPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
@@ -54,7 +47,7 @@ const KajurDashboardPage: React.FC = () => {
     selectedUser,
     loading: loadingUser,
     error: userError,
-    clearError,
+    clearError: clearUserError,
   } = useUsers();
   const {
     todayAttendance,
@@ -74,6 +67,13 @@ const KajurDashboardPage: React.FC = () => {
     loading: loadingCorrections,
     error: correctionsError,
   } = useCorrections();
+  const {
+    statistics,
+    loading: loadingStatistics,
+    error: statisticsError,
+    fetchMyStatistics,
+    clearError: clearStatisticsError,
+  } = useStatistics();
   const navigate = useNavigate();
 
   // Fetch user details, today's attendance, pending leave requests, and pending corrections when component mounts
@@ -85,8 +85,21 @@ const KajurDashboardPage: React.FC = () => {
     fetchPendingRequests();
     fetchPendingCorrections(); // Fetch pending corrections for the Kajur
 
+    // Fetch statistics for the current month up to today
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Use today as the end date instead of the last day of the month
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    fetchMyStatistics({
+      startDate: firstDayOfMonth.toISOString().split("T")[0],
+      endDate: today.toISOString().split("T")[0],
+      period: ReportPeriod.MONTHLY,
+    });
+
     return () => {
-      clearError();
+      clearUserError();
+      clearStatisticsError();
     };
   }, [authUser?.guid]);
 
@@ -170,13 +183,143 @@ const KajurDashboardPage: React.FC = () => {
   // Determine count of pending correction requests
   const pendingCorrectionCount = pendingCorrections?.length || 0;
 
+  // Get the current day of the month to display in the chart title
+  const currentMonth = currentDateTime.toLocaleString("id-ID", {
+    month: "long",
+  });
+
+  // Updated function to include Remote Working as a separate category
+  const getAttendanceChartData = () => {
+    if (!statistics) {
+      // Default data when statistics are not available
+      return [
+        { name: "Hadir", value: 0, color: "#4CAF50" },
+        { name: "Cuti", value: 0, color: "#FFC107" },
+        { name: "DL", value: 0, color: "#03A9F4" },
+        { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
+        { name: "Remote", value: 0, color: "#9C27B0" },
+        { name: "Other", value: 0, color: "#9E9E9E" },
+      ];
+    }
+
+    // Menghitung total semua kategori untuk memastikan pembagian yang tepat
+    const totalAttendance =
+      statistics.present +
+      statistics.onLeave +
+      statistics.officialTravel +
+      statistics.absent +
+      statistics.late +
+      statistics.earlyDeparture +
+      statistics.remoteWorking;
+
+    // Jika totalAttendance adalah 0, gunakan data default untuk menghindari pembagian dengan nol
+    if (totalAttendance === 0) {
+      return [
+        { name: "Hadir", value: 0, color: "#4CAF50" },
+        { name: "Cuti", value: 0, color: "#FFC107" },
+        { name: "DL", value: 0, color: "#03A9F4" },
+        { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
+        { name: "Remote", value: 0, color: "#9C27B0" },
+        { name: "Other", value: 0, color: "#9E9E9E" },
+      ];
+    }
+
+    // Menghitung persentase berdasarkan total kehadiran, bukan total hari
+    const presentPercentage = (statistics.present / totalAttendance) * 100;
+    const onLeavePercentage = (statistics.onLeave / totalAttendance) * 100;
+    const officialTravelPercentage =
+      (statistics.officialTravel / totalAttendance) * 100;
+    const absentPercentage = (statistics.absent / totalAttendance) * 100;
+    const remoteWorkingPercentage =
+      (statistics.remoteWorking / totalAttendance) * 100;
+
+    // Menggabungkan late dan earlyDeparture untuk kategori Other (tidak termasuk remoteWorking)
+    const otherPercentage =
+      ((statistics.late + statistics.earlyDeparture) / totalAttendance) * 100;
+
+    // Membuat array data dengan persentase yang sudah dihitung
+    let chartData = [
+      {
+        name: "Hadir",
+        value: parseFloat(presentPercentage.toFixed(1)),
+        color: "#4CAF50",
+      },
+      {
+        name: "Cuti",
+        value: parseFloat(onLeavePercentage.toFixed(1)),
+        color: "#FFC107",
+      },
+      {
+        name: "DL",
+        value: parseFloat(officialTravelPercentage.toFixed(1)),
+        color: "#03A9F4",
+      },
+      {
+        name: "Tanpa Keterangan",
+        value: parseFloat(absentPercentage.toFixed(1)),
+        color: "#F44336",
+      },
+      {
+        name: "Remote",
+        value: parseFloat(remoteWorkingPercentage.toFixed(1)),
+        color: "#9C27B0",
+      },
+      {
+        name: "Other",
+        value: parseFloat(otherPercentage.toFixed(1)),
+        color: "#9E9E9E",
+      },
+    ];
+
+    // Menghitung total persentase setelah pembulatan
+    const totalPercentage = chartData.reduce(
+      (sum, item) => sum + item.value,
+      0
+    );
+
+    // Menyesuaikan nilai kategori terbesar untuk memastikan total tepat 100%
+    if (totalPercentage !== 100) {
+      const diff = 100 - totalPercentage;
+
+      // Mencari kategori dengan nilai tertinggi untuk menambahkan/mengurangi selisih
+      let highestValueIndex = 0;
+      let highestValue = chartData[0].value;
+
+      for (let i = 1; i < chartData.length; i++) {
+        if (chartData[i].value > highestValue) {
+          highestValue = chartData[i].value;
+          highestValueIndex = i;
+        }
+      }
+
+      // Menyesuaikan nilai kategori terbesar
+      chartData[highestValueIndex].value = parseFloat(
+        (chartData[highestValueIndex].value + diff).toFixed(1)
+      );
+    }
+
+    return chartData;
+  };
+
+  const attendanceData = getAttendanceChartData();
+
   const loading =
     loadingUser ||
     loadingAttendance ||
     loadingLeaveRequests ||
-    loadingCorrections;
+    loadingCorrections ||
+    loadingStatistics;
   const error =
-    userError || attendanceError || leaveRequestsError || correctionsError;
+    userError ||
+    attendanceError ||
+    leaveRequestsError ||
+    correctionsError ||
+    statisticsError;
+
+  const clearError = () => {
+    clearUserError();
+    clearStatisticsError();
+  };
 
   if (loading) {
     return (
@@ -447,36 +590,51 @@ const KajurDashboardPage: React.FC = () => {
             bgcolor: "white",
           }}
         >
-          <Typography variant="h6" gutterBottom fontWeight="medium">
-            Rekap Kehadiran
+          <Typography
+            variant="body1"
+            gutterBottom
+            fontWeight="medium"
+            align="center"
+          >
+            Rekap Kehadiran {currentMonth}
           </Typography>
-          <Box sx={{ width: "100%", height: 300 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={attendanceData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={isDesktop ? 60 : 40}
-                  outerRadius={isDesktop ? 100 : 80}
-                  paddingAngle={2}
-                  dataKey="value"
-                  label={({ value }) => `${value}%`}
-                  labelLine={false}
-                >
-                  {attendanceData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => `${value}%`} />
-                <Legend
-                  layout="horizontal"
-                  verticalAlign="bottom"
-                  align="center"
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </Box>
+          {loadingStatistics ? (
+            <Box sx={{ display: "flex", justifyContent: "center", my: 5 }}>
+              <CircularProgress />
+            </Box>
+          ) : statistics ? (
+            <Box sx={{ width: "100%", height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={attendanceData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={isDesktop ? 60 : 40}
+                    outerRadius={isDesktop ? 100 : 80}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ value }) => `${value}%`}
+                    labelLine={false}
+                  >
+                    {attendanceData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => `${value}%`} />
+                  <Legend
+                    layout="horizontal"
+                    verticalAlign="bottom"
+                    align="center"
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </Box>
+          ) : (
+            <Typography variant="body1" color="text.secondary" align="center">
+              Tidak ada data kehadiran untuk ditampilkan
+            </Typography>
+          )}
         </Paper>
       </Container>
 
