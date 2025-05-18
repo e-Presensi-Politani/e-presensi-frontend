@@ -175,7 +175,7 @@ const DashboardPage: React.FC = () => {
         { name: "Cuti", value: 0, color: "#FFC107" },
         { name: "DL", value: 0, color: "#03A9F4" },
         { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
-        { name: "Remote", value: 0, color: "#9C27B0" },
+        { name: "Remote", value: 0, color: "#ff7043" },
         { name: "Other", value: 0, color: "#9E9E9E" },
       ];
     }
@@ -197,7 +197,7 @@ const DashboardPage: React.FC = () => {
         { name: "Cuti", value: 0, color: "#FFC107" },
         { name: "DL", value: 0, color: "#03A9F4" },
         { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
-        { name: "Remote", value: 0, color: "#9C27B0" },
+        { name: "Remote", value: 0, color: "#ff7043" },
         { name: "Other", value: 0, color: "#9E9E9E" },
       ];
     }
@@ -240,7 +240,7 @@ const DashboardPage: React.FC = () => {
       {
         name: "Remote",
         value: parseFloat(remoteWorkingPercentage.toFixed(1)),
-        color: "#9C27B0",
+        color: "#ff7043",
       },
       {
         name: "Other",
