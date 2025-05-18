@@ -69,14 +69,15 @@ const DashboardPage: React.FC = () => {
     }
     fetchTodayAttendance();
 
-    // Fetch monthly statistics for the current month
+    // Fetch statistics for the current month up to today
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    // Use today as the end date instead of the last day of the month
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     fetchMyStatistics({
       startDate: firstDayOfMonth.toISOString().split("T")[0],
-      endDate: lastDayOfMonth.toISOString().split("T")[0],
+      endDate: today.toISOString().split("T")[0],
       period: ReportPeriod.MONTHLY,
     });
 
@@ -159,6 +160,12 @@ const DashboardPage: React.FC = () => {
   // Get check-in and check-out times
   const checkInTime = formatTime(todayAttendance?.checkInTime);
   const checkOutTime = formatTime(todayAttendance?.checkOutTime);
+
+  // Get the current day of the month to display in the chart title
+  const currentDay = currentDateTime.getDate();
+  const currentMonth = currentDateTime.toLocaleString("id-ID", {
+    month: "long",
+  });
 
   // Prepare chart data from statistics
   const getAttendanceChartData = () => {
@@ -447,7 +454,7 @@ const DashboardPage: React.FC = () => {
           }}
         >
           <Typography variant="h6" gutterBottom fontWeight="medium">
-            Rekap Kehadiran Bulan Ini
+            Rekap Kehadiran {currentMonth} (1-{currentDay})
           </Typography>
           {loadingStatistics ? (
             <Box sx={{ display: "flex", justifyContent: "center", my: 5 }}>
