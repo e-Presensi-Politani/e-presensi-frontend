@@ -8,7 +8,7 @@ import {
 } from "../types/statistics";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API,
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 class StatisticsService {
