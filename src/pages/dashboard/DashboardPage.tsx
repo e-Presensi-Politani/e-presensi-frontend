@@ -33,15 +33,8 @@ import BottomNav from "../../components/BottomNav";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
 import { useAttendance } from "../../contexts/AttendanceContext";
-
-// Sample attendance data (you would fetch this from an API)
-const attendanceData = [
-  { name: "Hadir", value: 42.9, color: "#4CAF50" },
-  { name: "Cuti", value: 25.8, color: "#FFC107" },
-  { name: "DL", value: 17.2, color: "#03A9F4" },
-  { name: "Tanpa Keterangan", value: 9.1, color: "#F44336" },
-  { name: "Other", value: 5.1, color: "#9E9E9E" },
-];
+import { useStatistics } from "../../contexts/StatisticsContext";
+import { ReportPeriod } from "../../types/statistics";
 
 const DashboardPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
@@ -52,7 +45,7 @@ const DashboardPage: React.FC = () => {
     selectedUser,
     loading: loadingUser,
     error: userError,
-    clearError,
+    clearError: clearUserError,
   } = useUsers();
   const {
     todayAttendance,
@@ -60,17 +53,36 @@ const DashboardPage: React.FC = () => {
     loading: loadingAttendance,
     error: attendanceError,
   } = useAttendance();
+  const {
+    statistics,
+    loading: loadingStatistics,
+    error: statisticsError,
+    fetchMyStatistics,
+    clearError: clearStatisticsError,
+  } = useStatistics();
   const navigate = useNavigate();
 
-  // Fetch user details and today's attendance when component mounts
+  // Fetch user details, today's attendance, and statistics when component mounts
   useEffect(() => {
     if (authUser?.guid) {
       fetchUserByGuid(authUser.guid);
     }
     fetchTodayAttendance();
 
+    // Fetch monthly statistics for the current month
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    fetchMyStatistics({
+      startDate: firstDayOfMonth.toISOString().split("T")[0],
+      endDate: lastDayOfMonth.toISOString().split("T")[0],
+      period: ReportPeriod.MONTHLY,
+    });
+
     return () => {
-      clearError();
+      clearUserError();
+      clearStatisticsError();
     };
   }, [authUser?.guid]);
 
@@ -148,8 +160,68 @@ const DashboardPage: React.FC = () => {
   const checkInTime = formatTime(todayAttendance?.checkInTime);
   const checkOutTime = formatTime(todayAttendance?.checkOutTime);
 
-  const loading = loadingUser || loadingAttendance;
-  const error = userError || attendanceError;
+  // Prepare chart data from statistics
+  const getAttendanceChartData = () => {
+    if (!statistics) {
+      // Default data when statistics are not available
+      return [
+        { name: "Hadir", value: 0, color: "#4CAF50" },
+        { name: "Cuti", value: 0, color: "#FFC107" },
+        { name: "DL", value: 0, color: "#03A9F4" },
+        { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
+        { name: "Other", value: 0, color: "#9E9E9E" },
+      ];
+    }
+
+    const totalDays = statistics.totalDays || 1; // Avoid division by zero
+
+    return [
+      {
+        name: "Hadir",
+        value: parseFloat(((statistics.present / totalDays) * 100).toFixed(1)),
+        color: "#4CAF50",
+      },
+      {
+        name: "Cuti",
+        value: parseFloat(((statistics.onLeave / totalDays) * 100).toFixed(1)),
+        color: "#FFC107",
+      },
+      {
+        name: "DL",
+        value: parseFloat(
+          ((statistics.officialTravel / totalDays) * 100).toFixed(1)
+        ),
+        color: "#03A9F4",
+      },
+      {
+        name: "Tanpa Keterangan",
+        value: parseFloat(((statistics.absent / totalDays) * 100).toFixed(1)),
+        color: "#F44336",
+      },
+      {
+        name: "Other",
+        value: parseFloat(
+          (
+            ((statistics.late +
+              statistics.earlyDeparture +
+              statistics.remoteWorking) /
+              totalDays) *
+            100
+          ).toFixed(1)
+        ),
+        color: "#9E9E9E",
+      },
+    ];
+  };
+
+  const attendanceData = getAttendanceChartData();
+
+  const loading = loadingUser || loadingAttendance || loadingStatistics;
+  const error = userError || attendanceError || statisticsError;
+  const clearError = () => {
+    clearUserError();
+    clearStatisticsError();
+  };
 
   if (loading) {
     return (
@@ -375,35 +447,45 @@ const DashboardPage: React.FC = () => {
           }}
         >
           <Typography variant="h6" gutterBottom fontWeight="medium">
-            Rekap Kehadiran
+            Rekap Kehadiran Bulan Ini
           </Typography>
-          <Box sx={{ width: "100%", height: 300 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={attendanceData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={isDesktop ? 60 : 40}
-                  outerRadius={isDesktop ? 100 : 80}
-                  paddingAngle={2}
-                  dataKey="value"
-                  label={({ value }) => `${value}%`}
-                  labelLine={false}
-                >
-                  {attendanceData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => `${value}%`} />
-                <Legend
-                  layout="horizontal"
-                  verticalAlign="bottom"
-                  align="center"
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </Box>
+          {loadingStatistics ? (
+            <Box sx={{ display: "flex", justifyContent: "center", my: 5 }}>
+              <CircularProgress />
+            </Box>
+          ) : statistics ? (
+            <Box sx={{ width: "100%", height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={attendanceData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={isDesktop ? 60 : 40}
+                    outerRadius={isDesktop ? 100 : 80}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ value }) => `${value}%`}
+                    labelLine={false}
+                  >
+                    {attendanceData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => `${value}%`} />
+                  <Legend
+                    layout="horizontal"
+                    verticalAlign="bottom"
+                    align="center"
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </Box>
+          ) : (
+            <Typography variant="body1" color="text.secondary" align="center">
+              Tidak ada data kehadiran untuk ditampilkan
+            </Typography>
+          )}
         </Paper>
       </Container>
 
