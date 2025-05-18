@@ -167,7 +167,7 @@ const DashboardPage: React.FC = () => {
     month: "long",
   });
 
-  // Prepare chart data from statistics
+  // Perbaikan pada fungsi getAttendanceChartData untuk memastikan total persentase 100%
   const getAttendanceChartData = () => {
     if (!statistics) {
       // Default data when statistics are not available
@@ -180,45 +180,99 @@ const DashboardPage: React.FC = () => {
       ];
     }
 
-    const totalDays = statistics.totalDays || 1; // Avoid division by zero
+    // Menghitung total semua kategori untuk memastikan pembagian yang tepat
+    const totalAttendance =
+      statistics.present +
+      statistics.onLeave +
+      statistics.officialTravel +
+      statistics.absent +
+      statistics.late +
+      statistics.earlyDeparture +
+      statistics.remoteWorking;
 
-    return [
+    // Jika totalAttendance adalah 0, gunakan data default untuk menghindari pembagian dengan nol
+    if (totalAttendance === 0) {
+      return [
+        { name: "Hadir", value: 0, color: "#4CAF50" },
+        { name: "Cuti", value: 0, color: "#FFC107" },
+        { name: "DL", value: 0, color: "#03A9F4" },
+        { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
+        { name: "Other", value: 0, color: "#9E9E9E" },
+      ];
+    }
+
+    // Menghitung persentase berdasarkan total kehadiran, bukan total hari
+    const presentPercentage = (statistics.present / totalAttendance) * 100;
+    const onLeavePercentage = (statistics.onLeave / totalAttendance) * 100;
+    const officialTravelPercentage =
+      (statistics.officialTravel / totalAttendance) * 100;
+    const absentPercentage = (statistics.absent / totalAttendance) * 100;
+
+    // Menggabungkan late, earlyDeparture, dan remoteWorking untuk kategori Other
+    const otherPercentage =
+      ((statistics.late +
+        statistics.earlyDeparture +
+        statistics.remoteWorking) /
+        totalAttendance) *
+      100;
+
+    // Membuat array data dengan persentase yang sudah dihitung
+    let chartData = [
       {
         name: "Hadir",
-        value: parseFloat(((statistics.present / totalDays) * 100).toFixed(1)),
+        value: parseFloat(presentPercentage.toFixed(1)),
         color: "#4CAF50",
       },
       {
         name: "Cuti",
-        value: parseFloat(((statistics.onLeave / totalDays) * 100).toFixed(1)),
+        value: parseFloat(onLeavePercentage.toFixed(1)),
         color: "#FFC107",
       },
       {
         name: "DL",
-        value: parseFloat(
-          ((statistics.officialTravel / totalDays) * 100).toFixed(1)
-        ),
+        value: parseFloat(officialTravelPercentage.toFixed(1)),
         color: "#03A9F4",
       },
       {
         name: "Tanpa Keterangan",
-        value: parseFloat(((statistics.absent / totalDays) * 100).toFixed(1)),
+        value: parseFloat(absentPercentage.toFixed(1)),
         color: "#F44336",
       },
       {
         name: "Other",
-        value: parseFloat(
-          (
-            ((statistics.late +
-              statistics.earlyDeparture +
-              statistics.remoteWorking) /
-              totalDays) *
-            100
-          ).toFixed(1)
-        ),
+        value: parseFloat(otherPercentage.toFixed(1)),
         color: "#9E9E9E",
       },
     ];
+
+    // Menghitung total persentase setelah pembulatan
+    const totalPercentage = chartData.reduce(
+      (sum, item) => sum + item.value,
+      0
+    );
+
+    // Menyesuaikan nilai kategori terbesar untuk memastikan total tepat 100%
+    if (totalPercentage !== 100) {
+      const diff = 100 - totalPercentage;
+
+      // Mencari kategori dengan nilai tertinggi untuk menambahkan/mengurangi selisih
+      let highestValueIndex = 0;
+      let highestValue = chartData[0].value;
+
+      for (let i = 1; i < chartData.length; i++) {
+        if (chartData[i].value > highestValue) {
+          highestValue = chartData[i].value;
+          highestValueIndex = i;
+        }
+      }
+
+      // Menyesuaikan nilai kategori terbesar
+      chartData[highestValueIndex].value = parseFloat(
+        (chartData[highestValueIndex].value + diff).toFixed(1)
+      );
+    }
+
+    return chartData;
   };
 
   const attendanceData = getAttendanceChartData();
