@@ -143,7 +143,7 @@ const PersetujuanKoreksiPage: React.FC = () => {
 
         {/* Loading indicator */}
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4, overflow: "hidden" }}>
             <CircularProgress />
           </Box>
         ) : pendingCorrections.length === 0 ? (
