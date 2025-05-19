@@ -23,30 +23,84 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
+import { useStatistics } from "../../contexts/StatisticsContext";
+import { ReportPeriod } from "../../types/statistics";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { logout, user: authUser } = useAuth();
-  const { fetchUserByGuid, selectedUser, loading, error, clearError } =
-    useUsers();
+  const {
+    fetchUserByGuid,
+    selectedUser,
+    loading: loadingUser,
+    error: userError,
+    clearError: clearUserError,
+  } = useUsers();
+  const {
+    statistics,
+    loading: loadingStatistics,
+    error: statisticsError,
+    fetchMyStatistics,
+    clearError: clearStatisticsError,
+  } = useStatistics();
 
-  // Stats data (to be replaced with actual API data in future)
-  const statsData = {
-    totalKehadiran: "18/20 hari",
-    rataJamKerja: "8.2 Jam",
-    izinLupaAbsen: 2,
-    presentaseKehadiran: 90,
+  // Calculate stats based on actual statistics data
+  const getStatsData = () => {
+    if (!statistics) {
+      return {
+        totalKehadiran: "N/A",
+        rataJamKerja: "N/A",
+        izinLupaAbsen: 0,
+        presentaseKehadiran: 0,
+      };
+    }
+
+    // Calculate total attendance as a fraction
+    const totalDays = statistics.totalDays || 0;
+    const presentDays = statistics.present || 0;
+    const totalAttendance = `${presentDays}/${totalDays} hari`;
+
+    // Calculate average work hours
+    const averageWorkHours = statistics.averageWorkHours
+      ? `${statistics.averageWorkHours.toFixed(1)} Jam`
+      : "N/A";
+
+    // Calculate missed or permit absences (combining onLeave and absent)
+    const missedOrPermit = (statistics.onLeave || 0) + (statistics.absent || 0);
+
+    // Calculate attendance percentage
+    const attendancePercentage =
+      totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+
+    return {
+      totalKehadiran: totalAttendance,
+      rataJamKerja: averageWorkHours,
+      izinLupaAbsen: missedOrPermit,
+      presentaseKehadiran: attendancePercentage,
+    };
   };
 
-  // Fetch user details when component mounts
+  // Fetch user details and statistics when component mounts
   useEffect(() => {
     if (authUser?.guid) {
       fetchUserByGuid(authUser.guid);
     }
 
-    // Clear any selected user data when component unmounts
+    // Fetch statistics for the current month
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    fetchMyStatistics({
+      startDate: firstDayOfMonth.toISOString().split("T")[0],
+      endDate: lastDayOfMonth.toISOString().split("T")[0],
+      period: ReportPeriod.MONTHLY,
+    });
+
+    // Clear any errors when component unmounts
     return () => {
-      clearError();
+      clearUserError();
+      clearStatisticsError();
     };
   }, [authUser?.guid]);
 
@@ -57,6 +111,17 @@ const ProfilePage: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate("/");
+  };
+
+  // Get real statistics data
+  const statsData = getStatsData();
+
+  const loading = loadingUser || loadingStatistics;
+  const error = userError || statisticsError;
+
+  const clearError = () => {
+    clearUserError();
+    clearStatisticsError();
   };
 
   if (loading) {
