@@ -1,3 +1,4 @@
+// src/pages/profile/ProfilePage.tsx
 import React, { useEffect } from "react";
 import {
   Box,
@@ -17,36 +18,102 @@ import {
   Alert,
 } from "@mui/material";
 import LockIcon from "@mui/icons-material/Lock";
+import EditIcon from "@mui/icons-material/Edit";
 import LogoutIcon from "@mui/icons-material/Logout";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
+import { useStatistics } from "../../contexts/StatisticsContext";
+import { ReportPeriod } from "../../types/statistics";
+import ReportGenerator from "../../components/ReportGenerator";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { logout, user: authUser } = useAuth();
-  const { fetchUserByGuid, selectedUser, loading, error, clearError } =
-    useUsers();
+  const {
+    fetchUserByGuid,
+    selectedUser,
+    loading: loadingUser,
+    error: userError,
+    clearError: clearUserError,
+  } = useUsers();
+  const {
+    statistics,
+    loading: loadingStatistics,
+    error: statisticsError,
+    fetchMyStatistics,
+    clearError: clearStatisticsError,
+  } = useStatistics();
 
-  // Stats data (to be replaced with actual API data in future)
-  const statsData = {
-    totalKehadiran: "18/20 hari",
-    rataJamKerja: "8.2 Jam",
-    izinLupaAbsen: 2,
-    presentaseKehadiran: 90,
+  // Calculate stats based on actual statistics data
+  const getStatsData = () => {
+    if (!statistics) {
+      return {
+        totalKehadiran: "N/A",
+        rataJamKerja: "N/A",
+        izinLupaAbsen: 0,
+        presentaseKehadiran: 0,
+      };
+    }
+
+    // Count remote, dl (dinas luar), and cuti as present
+    const presentDays = statistics.present || 0;
+    const remoteDays = statistics.remoteWorking || 0;
+    const dlDays = statistics.officialTravel || 0;
+    const cutiDays = statistics.onLeave || 0;
+
+    // Total days that count as "present" now includes remote, dl, and cuti
+    const effectivePresentDays = presentDays + remoteDays + dlDays + cutiDays;
+
+    // Total days is unchanged
+    const totalDays = statistics.totalDays || 0;
+
+    // Format the attendance fraction
+    const totalAttendance = `${effectivePresentDays}/${totalDays} hari`;
+
+    // Calculate average work hours
+    const averageWorkHours = statistics.averageWorkHours
+      ? `${statistics.averageWorkHours.toFixed(1)} Jam`
+      : "N/A";
+
+    // Only count "absent" as missed absences (not cuti, remote, or dl)
+    const missedOrPermit = statistics.absent || 0;
+
+    // Calculate attendance percentage with our new definition of "present"
+    const attendancePercentage =
+      totalDays > 0 ? Math.round((effectivePresentDays / totalDays) * 100) : 0;
+
+    return {
+      totalKehadiran: totalAttendance,
+      rataJamKerja: averageWorkHours,
+      izinLupaAbsen: missedOrPermit,
+      presentaseKehadiran: attendancePercentage,
+    };
   };
 
-  // Fetch user details when component mounts
+  // Fetch user details and statistics when component mounts
   useEffect(() => {
     if (authUser?.guid) {
       fetchUserByGuid(authUser.guid);
     }
 
-    // Clear any selected user data when component unmounts
+    // Fetch statistics for the current month
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    fetchMyStatistics({
+      startDate: firstDayOfMonth.toISOString().split("T")[0],
+      endDate: lastDayOfMonth.toISOString().split("T")[0],
+      period: ReportPeriod.MONTHLY,
+    });
+
+    // Clear any errors when component unmounts
     return () => {
-      clearError();
+      clearUserError();
+      clearStatisticsError();
     };
   }, [authUser?.guid]);
 
@@ -57,6 +124,17 @@ const ProfilePage: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate("/");
+  };
+
+  // Get real statistics data
+  const statsData = getStatsData();
+
+  const loading = loadingUser || loadingStatistics;
+  const error = userError || statisticsError;
+
+  const clearError = () => {
+    clearUserError();
+    clearStatisticsError();
   };
 
   if (loading) {
@@ -126,8 +204,8 @@ const ProfilePage: React.FC = () => {
               { label: "Nama", value: selectedUser?.fullName || "N/A" },
               { label: "NIP", value: selectedUser?.nip || "N/A" },
               { label: "Email", value: selectedUser?.email || "N/A" },
-              { label: "Department", value: selectedUser?.department || "N/A" },
-              { label: "Position", value: selectedUser?.position || "N/A" },
+              { label: "Jurusan", value: selectedUser?.department || "N/A" },
+              { label: "Jabatan", value: selectedUser?.position || "N/A" },
             ].map((item, index) => (
               <React.Fragment key={index}>
                 <ListItem>
@@ -151,17 +229,22 @@ const ProfilePage: React.FC = () => {
         </Paper>
 
         {/* Stats */}
-        <Grid container spacing={1} sx={{ mb: 2 }}>
+        <Grid
+          container
+          spacing={1}
+          sx={{ mb: 2, justifyContent: "center", alignItems: "center" }}
+        >
           <Grid>
             <Card
               sx={{
                 bgcolor: "#4CAF50",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
+                width: { xs: "44vw", sm: "40vw" },
+                pb: { xs: 0, sm: 1 },
               }}
             >
-              <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
+              <CardContent sx={{ textAlign: "center", py: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1 }} noWrap>
                   Total Kehadiran
                 </Typography>
@@ -178,10 +261,11 @@ const ProfilePage: React.FC = () => {
                 bgcolor: "#FFC107",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
+                width: { xs: "44vw", sm: "40vw" },
+                pb: { sm: 1 },
               }}
             >
-              <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
+              <CardContent sx={{ textAlign: "center", py: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1 }} noWrap>
                   Rata-rata Jam Kerja
                 </Typography>
@@ -198,12 +282,13 @@ const ProfilePage: React.FC = () => {
                 bgcolor: "#F44336",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
+                width: { xs: "44vw", sm: "40vw" },
+                pb: { sm: 1 },
               }}
             >
-              <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
+              <CardContent sx={{ textAlign: "center", py: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1 }} noWrap>
-                  Izin/Lupa Absen
+                  Tidak Hadir
                 </Typography>
                 <Typography variant="h5" fontWeight="bold">
                   {statsData.izinLupaAbsen}
@@ -218,10 +303,11 @@ const ProfilePage: React.FC = () => {
                 bgcolor: "#00BCD4",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
+                width: { xs: "44vw", sm: "40vw" },
+                pb: { sm: 1 },
               }}
             >
-              <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
+              <CardContent sx={{ textAlign: "center", py: 2 }}>
                 <Typography
                   variant="body2"
                   sx={{
@@ -240,6 +326,31 @@ const ProfilePage: React.FC = () => {
           </Grid>
         </Grid>
 
+        {/* Report Generator Button */}
+        <Box sx={{ display: "flex", justifyContent: "center" }}>
+          <ReportGenerator />
+        </Box>
+
+        {/* Edit Profile Button */}
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            startIcon={<EditIcon />}
+            onClick={() => navigate("/edit-profile")}
+            sx={{
+              width: "100%",
+              py: 1.5,
+              textTransform: "none",
+              borderRadius: 1,
+              boxShadow: 2,
+            }}
+          >
+            Edit Profile
+          </Button>
+        </Box>
+        
         {/* Change Password Button */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
           <Button
@@ -250,7 +361,7 @@ const ProfilePage: React.FC = () => {
             endIcon={<KeyboardArrowRightIcon />}
             onClick={handleChangePassword}
             sx={{
-              width: { xs: "100%", sm: "80%" },
+              width: "100%",
               py: 1.5,
               textTransform: "none",
               borderRadius: 1,
@@ -269,7 +380,7 @@ const ProfilePage: React.FC = () => {
             startIcon={<LogoutIcon />}
             onClick={handleLogout}
             sx={{
-              width: { xs: "100%", sm: "80%" },
+              width: "100%",
               bgcolor: "#F44336",
               py: 1.5,
               textTransform: "none",
