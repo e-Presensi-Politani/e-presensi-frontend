@@ -127,7 +127,7 @@ const ReportGenerator: React.FC = () => {
         startIcon={<DownloadIcon />}
         onClick={handleOpen}
         sx={{
-          width: { xs: "100%", sm: "80%" },
+          width:  "100%",
           py: 1.5,
           textTransform: "none",
           borderRadius: 1,

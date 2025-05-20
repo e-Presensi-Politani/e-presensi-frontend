@@ -228,17 +228,22 @@ const ProfilePage: React.FC = () => {
         </Paper>
 
         {/* Stats */}
-        <Grid container spacing={1} sx={{ mb: 2 }}>
+        <Grid
+          container
+          spacing={1}
+          sx={{ mb: 2, justifyContent: "center", alignItems: "center" }}
+        >
           <Grid>
             <Card
               sx={{
                 bgcolor: "#4CAF50",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
+                width: { xs: "44vw", sm: "40vw" },
+                pb: { xs: 0, sm: 1 },
               }}
             >
-              <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
+              <CardContent sx={{ textAlign: "center", py: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1 }} noWrap>
                   Total Kehadiran
                 </Typography>
@@ -255,10 +260,11 @@ const ProfilePage: React.FC = () => {
                 bgcolor: "#FFC107",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
+                width: { xs: "44vw", sm: "40vw" },
+                pb: { sm: 1 },
               }}
             >
-              <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
+              <CardContent sx={{ textAlign: "center", py: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1 }} noWrap>
                   Rata-rata Jam Kerja
                 </Typography>
@@ -275,10 +281,11 @@ const ProfilePage: React.FC = () => {
                 bgcolor: "#F44336",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
+                width: { xs: "44vw", sm: "40vw" },
+                pb: { sm: 1 },
               }}
             >
-              <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
+              <CardContent sx={{ textAlign: "center", py: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1 }} noWrap>
                   Tidak Hadir
                 </Typography>
@@ -295,10 +302,11 @@ const ProfilePage: React.FC = () => {
                 bgcolor: "#00BCD4",
                 color: "white",
                 height: "12vh",
-                width: "44vw",
+                width: { xs: "44vw", sm: "40vw" },
+                pb: { sm: 1 },
               }}
             >
-              <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
+              <CardContent sx={{ textAlign: "center", py: 2 }}>
                 <Typography
                   variant="body2"
                   sx={{
@@ -332,7 +340,7 @@ const ProfilePage: React.FC = () => {
             endIcon={<KeyboardArrowRightIcon />}
             onClick={handleChangePassword}
             sx={{
-              width: { xs: "100%", sm: "80%" },
+              width: "100%",
               py: 1.5,
               textTransform: "none",
               borderRadius: 1,
@@ -351,7 +359,7 @@ const ProfilePage: React.FC = () => {
             startIcon={<LogoutIcon />}
             onClick={handleLogout}
             sx={{
-              width: { xs: "100%", sm: "80%" },
+              width: "100%",
               bgcolor: "#F44336",
               py: 1.5,
               textTransform: "none",
