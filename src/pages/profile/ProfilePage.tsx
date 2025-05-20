@@ -1,3 +1,4 @@
+// src/pages/profile/ProfilePage.tsx
 import React, { useEffect } from "react";
 import {
   Box,
@@ -25,6 +26,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
 import { useStatistics } from "../../contexts/StatisticsContext";
 import { ReportPeriod } from "../../types/statistics";
+import ReportGenerator from "../../components/ReportGenerator";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -314,6 +316,11 @@ const ProfilePage: React.FC = () => {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Report Generator Button */}
+        <Box sx={{ display: "flex", justifyContent: "center" }}>
+          <ReportGenerator />
+        </Box>
 
         {/* Change Password Button */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
