@@ -360,22 +360,6 @@ const PresensiPage: React.FC = () => {
           overflow: "auto",
         }}
       >
-        {todayAttendance?.checkInTime && !todayAttendance?.checkOutTime && (
-          <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
-            You checked in today at{" "}
-            {new Date(todayAttendance.checkInTime).toLocaleTimeString()}. Don't
-            forget to check out.
-          </Alert>
-        )}
-
-        {todayAttendance?.checkInTime && todayAttendance?.checkOutTime && (
-          <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
-            You have completed your attendance for today. Check-in:{" "}
-            {new Date(todayAttendance.checkInTime).toLocaleTimeString()},
-            Check-out:{" "}
-            {new Date(todayAttendance.checkOutTime).toLocaleTimeString()}
-          </Alert>
-        )}
 
         <Paper
           elevation={2}

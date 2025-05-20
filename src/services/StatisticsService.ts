@@ -82,7 +82,6 @@ class StatisticsService {
       });
       return response.data;
     } catch (error) {
-      console.error("Error fetching statistics:", error);
       throw error;
     }
   }
@@ -101,7 +100,6 @@ class StatisticsService {
       });
       return response.data;
     } catch (error) {
-      console.error("Error fetching my statistics:", error);
       throw error;
     }
   }
@@ -118,7 +116,6 @@ class StatisticsService {
       const response = await API.post("/statistics/generate-report", data);
       return response.data;
     } catch (error) {
-      console.error("Error generating report:", error);
       throw error;
     }
   }
@@ -135,7 +132,6 @@ class StatisticsService {
       const response = await API.post("/statistics/generate-my-report", data);
       return response.data;
     } catch (error) {
-      console.error("Error generating personal report:", error);
       throw error;
     }
   }
@@ -150,11 +146,76 @@ class StatisticsService {
   }
 
   /**
-   * Trigger download of a report
-   * @param downloadUrl URL to download the report from
+   * Download a report file directly
+   * @param downloadUrl Relative URL path to the report file
    */
-  downloadReport(downloadUrl: string): void {
-    window.open(downloadUrl, "_blank");
+  async downloadReport(downloadUrl: string): Promise<void> {
+    try {
+      // Get the access token
+      const token = localStorage.getItem("access_token");
+
+      if (!downloadUrl.startsWith("http")) {
+        // If it's a relative path, ensure we're using the full API URL
+        if (!downloadUrl.startsWith("/")) {
+          downloadUrl = "/" + downloadUrl;
+        }
+        downloadUrl = BASE_URL + downloadUrl;
+      }
+
+      // Method 1: Using fetch API with better blob handling
+      const response = await fetch(downloadUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+
+      // Try to get filename from content-disposition header
+      let filename;
+      const contentDisposition = response.headers.get("content-disposition");
+
+      if (contentDisposition && contentDisposition.includes("filename=")) {
+        const filenameMatch = contentDisposition.match(/filename=([^;]+)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/["']/g, "").trim();
+        }
+      }
+
+      // Fallback filename if we couldn't extract it
+      if (!filename) {
+        const urlParts = downloadUrl.split("/");
+        filename = urlParts[urlParts.length - 1] || "attendance_report.xlsx";
+      }
+
+      // Create object URL
+      const url = URL.createObjectURL(blob);
+
+      // Create temporary link and trigger download
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      link.style.display = "none";
+      document.body.appendChild(link);
+
+      // Programmatically click the link to trigger download
+      link.click();
+
+      // Small timeout to ensure download starts before cleanup
+      setTimeout(() => {
+        // Clean up
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      throw error;
+    }
   }
 }
 
