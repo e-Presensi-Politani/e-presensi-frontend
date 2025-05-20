@@ -150,7 +150,7 @@ class StatisticsService {
   }
 
   /**
-   * Download a report file directly without opening a new tab
+   * Download a report file directly
    * @param downloadUrl Relative URL path to the report file
    */
   async downloadReport(downloadUrl: string): Promise<void> {
@@ -166,33 +166,62 @@ class StatisticsService {
         downloadUrl = BASE_URL + downloadUrl;
       }
 
-      // Use Axios to get the file with proper authorization
-      const response = await axios({
-        url: downloadUrl,
+      console.log("Downloading from URL:", downloadUrl);
+
+      // Method 1: Using fetch API with better blob handling
+      const response = await fetch(downloadUrl, {
         method: "GET",
-        responseType: "blob", // Important for file downloads
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      // Extract filename from the URL or use a default name
-      const urlParts = downloadUrl.split("/");
-      const filename =
-        urlParts[urlParts.length - 1] || "attendance_report.xlsx";
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
 
-      // Create a blob URL and trigger download
-      const blob = new Blob([response.data]);
-      const url = window.URL.createObjectURL(blob);
+      // Get the blob from the response
+      const blob = await response.blob();
+      
+      // Try to get filename from content-disposition header
+      let filename;
+      const contentDisposition = response.headers.get("content-disposition");
+      
+      if (contentDisposition && contentDisposition.includes("filename=")) {
+        const filenameMatch = contentDisposition.match(/filename=([^;]+)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/["']/g, "").trim();
+        }
+      }
+      
+      // Fallback filename if we couldn't extract it
+      if (!filename) {
+        const urlParts = downloadUrl.split("/");
+        filename = urlParts[urlParts.length - 1] || "attendance_report.xlsx";
+      }
+
+      console.log("File to download:", filename);
+
+      // Create object URL
+      const url = URL.createObjectURL(blob);
+      
+      // Create temporary link and trigger download
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", filename);
+      link.style.display = "none";
       document.body.appendChild(link);
+      
+      // Programmatically click the link to trigger download
       link.click();
-
-      // Clean up
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(link);
+      
+      // Small timeout to ensure download starts before cleanup
+      setTimeout(() => {
+        // Clean up
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
     } catch (error) {
       console.error("Error downloading report:", error);
       throw error;
