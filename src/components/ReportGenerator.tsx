@@ -101,10 +101,10 @@ const ReportGenerator: React.FC = () => {
         title,
       });
 
-      // Automatically download the report
-      downloadReport(response.data.downloadUrl);
+      // Download the report with correct API path
+      await downloadReport(response.data.downloadUrl);
 
-      setSnackbarMessage("Berhasil membuat laporan!");
+      setSnackbarMessage("Berhasil membuat dan mengunduh laporan!");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
       handleClose();
@@ -235,7 +235,7 @@ const ReportGenerator: React.FC = () => {
             }
             disabled={isGenerating}
           >
-            {isGenerating ? "Generating..." : "Generate"}
+            {isGenerating ? "Mengunduh..." : "Generate"}
           </Button>
         </DialogActions>
       </Dialog>

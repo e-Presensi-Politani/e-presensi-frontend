@@ -150,11 +150,53 @@ class StatisticsService {
   }
 
   /**
-   * Trigger download of a report
-   * @param downloadUrl URL to download the report from
+   * Download a report file directly without opening a new tab
+   * @param downloadUrl Relative URL path to the report file
    */
-  downloadReport(downloadUrl: string): void {
-    window.open(downloadUrl, "_blank");
+  async downloadReport(downloadUrl: string): Promise<void> {
+    try {
+      // Get the access token
+      const token = localStorage.getItem("access_token");
+
+      if (!downloadUrl.startsWith("http")) {
+        // If it's a relative path, ensure we're using the full API URL
+        if (!downloadUrl.startsWith("/")) {
+          downloadUrl = "/" + downloadUrl;
+        }
+        downloadUrl = BASE_URL + downloadUrl;
+      }
+
+      // Use Axios to get the file with proper authorization
+      const response = await axios({
+        url: downloadUrl,
+        method: "GET",
+        responseType: "blob", // Important for file downloads
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Extract filename from the URL or use a default name
+      const urlParts = downloadUrl.split("/");
+      const filename =
+        urlParts[urlParts.length - 1] || "attendance_report.xlsx";
+
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      throw error;
+    }
   }
 }
 
