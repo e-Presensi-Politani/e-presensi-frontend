@@ -16,7 +16,7 @@ import {
 import {
   CalendarToday,
   Description,
-  LocationOn,
+  Task,
   Person,
   AssignmentTurnedIn,
 } from "@mui/icons-material";
@@ -149,8 +149,8 @@ const DashboardPage: React.FC = () => {
     navigate("/leave-request");
   };
 
-  const handleLokasi = () => {
-    navigate("/under-development");
+  const handleKoreksi = () => {
+    navigate("/status-koreksi");
   };
 
   // Determine button states based on today's attendance
@@ -173,9 +173,9 @@ const DashboardPage: React.FC = () => {
       return [
         { name: "Hadir", value: 0, color: "#4CAF50" },
         { name: "Cuti", value: 0, color: "#FFC107" },
+        { name: "Remote", value: 0, color: "#ff7043" },
         { name: "DL", value: 0, color: "#03A9F4" },
         { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
-        { name: "Remote", value: 0, color: "#ff7043" },
         { name: "Other", value: 0, color: "#9E9E9E" },
       ];
     }
@@ -195,9 +195,9 @@ const DashboardPage: React.FC = () => {
       return [
         { name: "Hadir", value: 0, color: "#4CAF50" },
         { name: "Cuti", value: 0, color: "#FFC107" },
+        { name: "Remote", value: 0, color: "#ff7043" },
         { name: "DL", value: 0, color: "#03A9F4" },
         { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
-        { name: "Remote", value: 0, color: "#ff7043" },
         { name: "Other", value: 0, color: "#9E9E9E" },
       ];
     }
@@ -228,6 +228,11 @@ const DashboardPage: React.FC = () => {
         color: "#FFC107",
       },
       {
+        name: "Remote",
+        value: parseFloat(remoteWorkingPercentage.toFixed(1)),
+        color: "#ff7043",
+      },
+      {
         name: "DL",
         value: parseFloat(officialTravelPercentage.toFixed(1)),
         color: "#03A9F4",
@@ -236,11 +241,6 @@ const DashboardPage: React.FC = () => {
         name: "Tanpa Keterangan",
         value: parseFloat(absentPercentage.toFixed(1)),
         color: "#F44336",
-      },
-      {
-        name: "Remote",
-        value: parseFloat(remoteWorkingPercentage.toFixed(1)),
-        color: "#ff7043",
       },
       {
         name: "Other",
@@ -388,11 +388,11 @@ const DashboardPage: React.FC = () => {
                 </Typography>
               </Grid>
               <Grid sx={{ textAlign: "center" }}>
-                <IconButton color="info" onClick={handleLokasi}>
-                  <LocationOn />
+                <IconButton color="info" onClick={handleKoreksi}>
+                  <Task />
                 </IconButton>
                 <Typography variant="body2" color="textSecondary">
-                  Lokasi
+                  Koreksi
                 </Typography>
               </Grid>
             </Grid>
@@ -511,7 +511,12 @@ const DashboardPage: React.FC = () => {
             bgcolor: "white",
           }}
         >
-          <Typography variant="body1" gutterBottom fontWeight="medium" align="center">
+          <Typography
+            variant="body1"
+            gutterBottom
+            fontWeight="medium"
+            align="center"
+          >
             Rekap Kehadiran {currentMonth}
           </Typography>
           {loadingStatistics ? (

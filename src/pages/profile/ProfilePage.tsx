@@ -55,22 +55,32 @@ const ProfilePage: React.FC = () => {
       };
     }
 
-    // Calculate total attendance as a fraction
-    const totalDays = statistics.totalDays || 0;
+    // Count remote, dl (dinas luar), and cuti as present
     const presentDays = statistics.present || 0;
-    const totalAttendance = `${presentDays}/${totalDays} hari`;
+    const remoteDays = statistics.remoteWorking || 0;
+    const dlDays = statistics.officialTravel || 0;
+    const cutiDays = statistics.onLeave || 0;
+
+    // Total days that count as "present" now includes remote, dl, and cuti
+    const effectivePresentDays = presentDays + remoteDays + dlDays + cutiDays;
+
+    // Total days is unchanged
+    const totalDays = statistics.totalDays || 0;
+
+    // Format the attendance fraction
+    const totalAttendance = `${effectivePresentDays}/${totalDays} hari`;
 
     // Calculate average work hours
     const averageWorkHours = statistics.averageWorkHours
       ? `${statistics.averageWorkHours.toFixed(1)} Jam`
       : "N/A";
 
-    // Calculate missed or permit absences (combining onLeave and absent)
-    const missedOrPermit = (statistics.onLeave || 0) + (statistics.absent || 0);
+    // Only count "absent" as missed absences (not cuti, remote, or dl)
+    const missedOrPermit = statistics.absent || 0;
 
-    // Calculate attendance percentage
+    // Calculate attendance percentage with our new definition of "present"
     const attendancePercentage =
-      totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+      totalDays > 0 ? Math.round((effectivePresentDays / totalDays) * 100) : 0;
 
     return {
       totalKehadiran: totalAttendance,
@@ -191,8 +201,8 @@ const ProfilePage: React.FC = () => {
               { label: "Nama", value: selectedUser?.fullName || "N/A" },
               { label: "NIP", value: selectedUser?.nip || "N/A" },
               { label: "Email", value: selectedUser?.email || "N/A" },
-              { label: "Department", value: selectedUser?.department || "N/A" },
-              { label: "Position", value: selectedUser?.position || "N/A" },
+              { label: "Jurusan", value: selectedUser?.department || "N/A" },
+              { label: "Jabatan", value: selectedUser?.position || "N/A" },
             ].map((item, index) => (
               <React.Fragment key={index}>
                 <ListItem>
@@ -268,7 +278,7 @@ const ProfilePage: React.FC = () => {
             >
               <CardContent sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
                 <Typography variant="body2" sx={{ mb: 1 }} noWrap>
-                  Izin/Lupa Absen
+                  Tidak Hadir
                 </Typography>
                 <Typography variant="h5" fontWeight="bold">
                   {statsData.izinLupaAbsen}

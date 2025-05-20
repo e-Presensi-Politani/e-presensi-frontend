@@ -195,9 +195,9 @@ const KajurDashboardPage: React.FC = () => {
       return [
         { name: "Hadir", value: 0, color: "#4CAF50" },
         { name: "Cuti", value: 0, color: "#FFC107" },
+        { name: "Remote", value: 0, color: "#ff7043" },
         { name: "DL", value: 0, color: "#03A9F4" },
         { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
-        { name: "Remote", value: 0, color: "#ff7043" },
         { name: "Other", value: 0, color: "#9E9E9E" },
       ];
     }
@@ -217,9 +217,9 @@ const KajurDashboardPage: React.FC = () => {
       return [
         { name: "Hadir", value: 0, color: "#4CAF50" },
         { name: "Cuti", value: 0, color: "#FFC107" },
+        { name: "Remote", value: 0, color: "#ff7043" },
         { name: "DL", value: 0, color: "#03A9F4" },
         { name: "Tanpa Keterangan", value: 0, color: "#F44336" },
-        { name: "Remote", value: 0, color: "#ff7043" },
         { name: "Other", value: 0, color: "#9E9E9E" },
       ];
     }
@@ -250,6 +250,11 @@ const KajurDashboardPage: React.FC = () => {
         color: "#FFC107",
       },
       {
+        name: "Remote",
+        value: parseFloat(remoteWorkingPercentage.toFixed(1)),
+        color: "#ff7043",
+      },
+      {
         name: "DL",
         value: parseFloat(officialTravelPercentage.toFixed(1)),
         color: "#03A9F4",
@@ -258,11 +263,6 @@ const KajurDashboardPage: React.FC = () => {
         name: "Tanpa Keterangan",
         value: parseFloat(absentPercentage.toFixed(1)),
         color: "#F44336",
-      },
-      {
-        name: "Remote",
-        value: parseFloat(remoteWorkingPercentage.toFixed(1)),
-        color: "#ff7043",
       },
       {
         name: "Other",
