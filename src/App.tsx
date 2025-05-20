@@ -32,6 +32,7 @@ import StatusCorrectionPage from "./pages/correction/StatusCorrectionPage";
 import CorrectionDetailPage from "./pages/correction/DetailCorrectionPage";
 import PersetujuanKoreksiPage from "./pages/correction/PersetujuanKoreksiPage";
 import PersetujuanKoreksiDetailPage from "./pages/correction/PersetujuanKoreksiDetail";
+import EditProfilePage from "./pages/profile/EditProfilePage";
 
 function App() {
   return (
@@ -121,6 +122,10 @@ function App() {
                           <Route
                             path="/persetujuan-koreksi-detail/:guid"
                             element={<PersetujuanKoreksiDetailPage />}
+                          />
+                          <Route
+                            path="/edit-profile"
+                            element={<EditProfilePage />}
                           />
                         </Route>
 

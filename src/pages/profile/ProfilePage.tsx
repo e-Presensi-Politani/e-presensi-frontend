@@ -18,6 +18,7 @@ import {
   Alert,
 } from "@mui/material";
 import LockIcon from "@mui/icons-material/Lock";
+import EditIcon from "@mui/icons-material/Edit";
 import LogoutIcon from "@mui/icons-material/Logout";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import { useNavigate } from "react-router-dom";
@@ -330,6 +331,26 @@ const ProfilePage: React.FC = () => {
           <ReportGenerator />
         </Box>
 
+        {/* Edit Profile Button */}
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            startIcon={<EditIcon />}
+            onClick={() => navigate("/edit-profile")}
+            sx={{
+              width: "100%",
+              py: 1.5,
+              textTransform: "none",
+              borderRadius: 1,
+              boxShadow: 2,
+            }}
+          >
+            Edit Profile
+          </Button>
+        </Box>
+        
         {/* Change Password Button */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
           <Button
