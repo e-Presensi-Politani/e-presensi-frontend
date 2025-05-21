@@ -1,4 +1,4 @@
-// Fixed ProfilePage.tsx
+// Updated ProfilePage.tsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -31,12 +31,10 @@ import BottomNav from "../../components/BottomNav";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
 import { useStatistics } from "../../contexts/StatisticsContext";
-import { useFiles } from "../../contexts/FileContext";
 import { ReportPeriod } from "../../types/statistics";
-import { FileCategory } from "../../types/enums";
-import ReportGenerator from "../../components/ReportGenerator";
 import FileService from "../../services/FileService";
 import defaultProfileImage from "../../assets/pp.png";
+import ReportGenerator from "../../components/ReportGenerator";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +46,7 @@ const ProfilePage: React.FC = () => {
     error: userError,
     clearError: clearUserError,
     removeUserProfilePhoto,
+    uploadProfilePhoto,
   } = useUsers();
   const {
     statistics,
@@ -56,14 +55,6 @@ const ProfilePage: React.FC = () => {
     fetchMyStatistics,
     clearError: clearStatisticsError,
   } = useStatistics();
-
-  // Use the Files Context
-  const {
-    uploadFile,
-    isLoading: loadingFiles,
-    error: fileError,
-    clearError: clearFileError,
-  } = useFiles();
 
   // State for profile photo
   const [photoURL, setPhotoURL] = useState<string | null>(null);
@@ -119,7 +110,7 @@ const ProfilePage: React.FC = () => {
     };
   };
 
-  // Load profile photo - IMPROVED VERSION
+  // Load profile photo
   const loadProfilePhoto = async () => {
     try {
       if (!selectedUser?.guid) return;
@@ -178,7 +169,6 @@ const ProfilePage: React.FC = () => {
     return () => {
       clearUserError();
       clearStatisticsError();
-      clearFileError();
     };
   }, [authUser?.guid]);
 
@@ -203,10 +193,9 @@ const ProfilePage: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  // Handle photo file selection - IMPROVED VERSION
+  // Handle photo file selection - UPDATED to use UserContext
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0 || !authUser?.guid)
-      return;
+    if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
 
@@ -229,25 +218,13 @@ const ProfilePage: React.FC = () => {
     try {
       setUploadingPhoto(true);
 
-      // Upload the photo using the FileContext
-      const response = await uploadFile(
-        file,
-        FileCategory.PROFILE,
-        authUser.guid
-      );
+      // Use the uploadProfilePhoto function from UserContext
+      await uploadProfilePhoto(file);
+      console.log("Profile photo uploaded successfully");
 
-      if (response.success && response.data) {
-        // Update the photo URL directly from the response data
-        const url = FileService.getFileViewUrl(response.data.guid);
-
-        // Add timestamp to prevent caching issues
-        const urlWithTimestamp = `${url}?t=${new Date().getTime()}`;
-        setPhotoURL(urlWithTimestamp);
-
-        // Refresh user data to get updated profile image
+      // Refresh user data to get updated profile image
+      if (authUser?.guid) {
         await fetchUserByGuid(authUser.guid);
-      } else {
-        throw new Error(response.message || "Gagal mengunggah foto profil");
       }
     } catch (error: any) {
       console.error("Error uploading profile photo:", error);
@@ -261,7 +238,7 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Handle removing profile photo - FIXED VERSION
+  // Handle removing profile photo
   const handleRemovePhoto = async () => {
     if (!authUser?.guid) return;
 
@@ -291,13 +268,12 @@ const ProfilePage: React.FC = () => {
   // Get real statistics data
   const statsData = getStatsData();
 
-  const loading = loadingUser || loadingStatistics || loadingFiles;
-  const error = userError || statisticsError || fileError || photoError;
+  const loading = loadingUser || loadingStatistics;
+  const error = userError || statisticsError || photoError;
 
   const clearError = () => {
     clearUserError();
     clearStatisticsError();
-    clearFileError();
     setPhotoError(null);
   };
 
