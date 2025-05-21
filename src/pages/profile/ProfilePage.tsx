@@ -47,7 +47,7 @@ const ProfilePage: React.FC = () => {
     loading: loadingUser,
     error: userError,
     clearError: clearUserError,
-    removeProfilePhoto,
+    removeUserProfilePhoto,
   } = useUsers();
   const {
     statistics,
@@ -263,20 +263,22 @@ const ProfilePage: React.FC = () => {
 
   // Handle removing profile photo - FIXED VERSION
   const handleRemovePhoto = async () => {
-    if (!selectedUser?.guid) return;
+    if (!authUser?.guid) return;
 
     try {
       setUploadingPhoto(true);
+      setPhotoError(null);
 
-      // Use removeProfilePhoto from UserContext instead of deleteFile from FileContext
-      await removeProfilePhoto();
+      // Use removeProfilePhoto from UserContext
+      await removeUserProfilePhoto(authUser.guid);
+      console.log("Profile photo removed successfully");
 
-      // Clear photo URL
+      // Clear the photo URL to update UI immediately
       setPhotoURL(null);
 
-      // Refresh user data
-      if (selectedUser.guid) {
-        await fetchUserByGuid(selectedUser.guid);
+      // Refresh user data to ensure we have the latest profile state
+      if (authUser.guid) {
+        await fetchUserByGuid(authUser.guid);
       }
     } catch (error: any) {
       console.error("Error removing profile photo:", error);
