@@ -1,5 +1,5 @@
 // src/pages/profile/ProfilePage.tsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -16,10 +16,15 @@ import {
   Divider,
   CircularProgress,
   Alert,
+  Badge,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import LockIcon from "@mui/icons-material/Lock";
 import EditIcon from "@mui/icons-material/Edit";
 import LogoutIcon from "@mui/icons-material/Logout";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
@@ -28,6 +33,8 @@ import { useUsers } from "../../contexts/UserContext";
 import { useStatistics } from "../../contexts/StatisticsContext";
 import { ReportPeriod } from "../../types/statistics";
 import ReportGenerator from "../../components/ReportGenerator";
+import UsersService from "../../services/UsersService";
+import FileService from "../../services/FileService";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,6 +53,14 @@ const ProfilePage: React.FC = () => {
     fetchMyStatistics,
     clearError: clearStatisticsError,
   } = useStatistics();
+
+  // State for profile photo
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  // File input reference
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Calculate stats based on actual statistics data
   const getStatsData = () => {
@@ -93,6 +108,28 @@ const ProfilePage: React.FC = () => {
     };
   };
 
+  // Load profile photo
+  const loadProfilePhoto = async () => {
+    try {
+      if (selectedUser?.guid) {
+        if (selectedUser.profileImage) {
+          // If the user already has a profile image GUID, get its URL
+          const photoUrl = FileService.getFileViewUrl(
+            selectedUser.profileImage
+          );
+          setPhotoURL(photoUrl);
+        } else if (selectedUser.guid) {
+          // Otherwise check if there's a profile photo available for this user
+          const url = await FileService.getProfilePhotoUrl(selectedUser.guid);
+          setPhotoURL(url);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading profile photo:", error);
+      setPhotoError("Failed to load profile photo");
+    }
+  };
+
   // Fetch user details and statistics when component mounts
   useEffect(() => {
     if (authUser?.guid) {
@@ -117,6 +154,13 @@ const ProfilePage: React.FC = () => {
     };
   }, [authUser?.guid]);
 
+  // Load profile photo when selectedUser changes
+  useEffect(() => {
+    if (selectedUser) {
+      loadProfilePhoto();
+    }
+  }, [selectedUser]);
+
   const handleChangePassword = () => {
     navigate("/change-password");
   };
@@ -124,6 +168,84 @@ const ProfilePage: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate("/");
+  };
+
+  // Handle clicking the photo upload button
+  const handlePhotoButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Handle photo file selection
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const file = e.target.files[0];
+
+    // Reset error state
+    setPhotoError(null);
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setPhotoError("Only JPG, JPEG, PNG, and WEBP files are allowed.");
+      return;
+    }
+
+    // Validate file size (1MB limit)
+    if (file.size > 1024 * 1024) {
+      setPhotoError("File size must be less than 1MB.");
+      return;
+    }
+
+    try {
+      setUploadingPhoto(true);
+
+      // Upload the photo
+      const response = await UsersService.uploadProfilePhoto(file);
+
+      if (response) {
+        // Refresh user data to get updated profile image
+        if (authUser?.guid) {
+          await fetchUserByGuid(authUser.guid);
+        }
+
+        // Update the photo URL
+        if (response.guid) {
+          const url = FileService.getFileViewUrl(response.guid);
+          setPhotoURL(url);
+        }
+      }
+    } catch (error: any) {
+      console.error("Error uploading profile photo:", error);
+      setPhotoError(error.message || "Failed to upload profile photo");
+    } finally {
+      setUploadingPhoto(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // Handle removing profile photo
+  const handleRemovePhoto = async () => {
+    try {
+      setUploadingPhoto(true);
+      await UsersService.removeProfilePhoto();
+
+      // Refresh user data
+      if (authUser?.guid) {
+        await fetchUserByGuid(authUser.guid);
+      }
+
+      // Clear photo URL
+      setPhotoURL(null);
+    } catch (error) {
+      console.error("Error removing profile photo:", error);
+      setPhotoError("Failed to remove profile photo");
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   // Get real statistics data
@@ -135,6 +257,7 @@ const ProfilePage: React.FC = () => {
   const clearError = () => {
     clearUserError();
     clearStatisticsError();
+    setPhotoError(null);
   };
 
   if (loading) {
@@ -171,27 +294,84 @@ const ProfilePage: React.FC = () => {
 
       <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
         {/* Error Alert */}
-        {error && (
+        {(error || photoError) && (
           <Alert severity="error" sx={{ mt: 2, mb: 2 }} onClose={clearError}>
-            {error}
+            {error || photoError}
           </Alert>
         )}
 
-        {/* Avatar */}
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt: 2 }}>
-          <Avatar
-            sx={{
-              width: 100,
-              height: 100,
-              bgcolor: "#ff6347",
-              border: "4px solid white",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-            }}
-            alt={selectedUser?.fullName || "User"}
-            src={selectedUser?.profileImage}
+        {/* Avatar with Badge for photo upload */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            mb: 2,
+            mt: 3,
+          }}
+        >
+          <Badge
+            overlap="circular"
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            badgeContent={
+              <Tooltip title="Change profile photo">
+                <IconButton
+                  onClick={handlePhotoButtonClick}
+                  disabled={uploadingPhoto}
+                  sx={{
+                    bgcolor: "#1976D2",
+                    color: "white",
+                    "&:hover": { bgcolor: "#1565C0" },
+                  }}
+                  size="small"
+                >
+                  <PhotoCameraIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            }
           >
-            {selectedUser?.fullName?.charAt(0) || "U"}
-          </Avatar>
+            <Avatar
+              sx={{
+                width: 100,
+                height: 100,
+                bgcolor: "#ff6347",
+                border: "4px solid white",
+                boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+              }}
+              alt={selectedUser?.fullName || "User"}
+              src={photoURL || undefined}
+            >
+              {selectedUser?.fullName?.charAt(0) || "U"}
+            </Avatar>
+          </Badge>
+
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handlePhotoChange}
+            style={{ display: "none" }}
+            accept="image/jpeg,image/png,image/jpg,image/webp"
+          />
+
+          {/* Profile photo actions */}
+          <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
+            {photoURL && (
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                startIcon={<DeleteIcon />}
+                onClick={handleRemovePhoto}
+                disabled={uploadingPhoto}
+                sx={{ textTransform: "none", fontSize: "0.75rem" }}
+              >
+                Remove Photo
+              </Button>
+            )}
+            {uploadingPhoto && <CircularProgress size={24} sx={{ ml: 1 }} />}
+          </Box>
         </Box>
 
         {/* Info */}
@@ -350,7 +530,7 @@ const ProfilePage: React.FC = () => {
             Edit Profile
           </Button>
         </Box>
-        
+
         {/* Change Password Button */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
           <Button
