@@ -31,12 +31,11 @@ import BottomNav from "../../components/BottomNav";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
 import { useStatistics } from "../../contexts/StatisticsContext";
-import { useFiles } from "../../contexts/FileContext"; // Import FileContext
+import { useFiles } from "../../contexts/FileContext";
 import { ReportPeriod } from "../../types/statistics";
-import { FileCategory } from "../../types/enums"; // Import FileCategory
+import { FileCategory } from "../../types/enums";
 import ReportGenerator from "../../components/ReportGenerator";
 import FileService from "../../services/FileService";
-// Import default profile image
 import defaultProfileImage from "../../assets/pp.png";
 
 const ProfilePage: React.FC = () => {
@@ -48,6 +47,7 @@ const ProfilePage: React.FC = () => {
     loading: loadingUser,
     error: userError,
     clearError: clearUserError,
+    removeProfilePhoto,
   } = useUsers();
   const {
     statistics,
@@ -60,7 +60,6 @@ const ProfilePage: React.FC = () => {
   // Use the Files Context
   const {
     uploadFile,
-    deleteFile,
     isLoading: loadingFiles,
     error: fileError,
     clearError: clearFileError,
@@ -230,11 +229,6 @@ const ProfilePage: React.FC = () => {
     try {
       setUploadingPhoto(true);
 
-      // If there's an existing profile photo, delete it first
-      if (selectedUser?.profileImage) {
-        await deleteFile(selectedUser.profileImage);
-      }
-
       // Upload the photo using the FileContext
       const response = await uploadFile(
         file,
@@ -267,24 +261,22 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Handle removing profile photo - IMPROVED VERSION
+  // Handle removing profile photo - FIXED VERSION
   const handleRemovePhoto = async () => {
-    if (!selectedUser?.guid || !selectedUser?.profileImage) return;
+    if (!selectedUser?.guid) return;
 
     try {
       setUploadingPhoto(true);
 
-      // Delete the profile photo through FileContext
-      const success = await deleteFile(selectedUser.profileImage);
+      // Use removeProfilePhoto from UserContext instead of deleteFile from FileContext
+      await removeProfilePhoto();
 
-      if (success) {
-        // Clear photo URL
-        setPhotoURL(null);
+      // Clear photo URL
+      setPhotoURL(null);
 
-        // Refresh user data
+      // Refresh user data
+      if (selectedUser.guid) {
         await fetchUserByGuid(selectedUser.guid);
-      } else {
-        throw new Error("Gagal menghapus foto profil");
       }
     } catch (error: any) {
       console.error("Error removing profile photo:", error);
