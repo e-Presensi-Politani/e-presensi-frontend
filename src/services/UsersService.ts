@@ -126,10 +126,25 @@ const UsersService = {
   },
 
   /**
-   * Remove profile photo
+   * Remove profile photo for the current user
    */
   removeProfilePhoto: async (): Promise<void> => {
     await API.delete("/users/profile-photo");
+  },
+
+  /**
+   * Get profile photo by user GUID
+   */
+  getProfilePhoto: async (userGuid: string): Promise<any> => {
+    const response = await API.get(`/users/profile-photo/${userGuid}`);
+    return response.data;
+  },
+
+  /**
+   * Remove profile photo for a specified user (admin only)
+   */
+  removeUserProfilePhoto: async (userGuid: string): Promise<void> => {
+    await API.delete(`/users/profile-photo/${userGuid}`);
   },
 
   /**

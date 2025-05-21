@@ -16,6 +16,8 @@ interface UsersContextType {
   deleteUser: (guid: string) => Promise<void>;
   uploadProfilePhoto: (file: File) => Promise<void>;
   removeProfilePhoto: () => Promise<void>;
+  removeUserProfilePhoto: (userGuid: string) => Promise<void>;
+  getProfilePhoto: (userGuid: string) => Promise<any>;
   fetchProfile: () => Promise<void>;
   clearSelectedUser: () => void;
   clearError: () => void;
@@ -237,6 +239,64 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const removeUserProfilePhoto = async (userGuid: string): Promise<void> => {
+    if (!isAuthenticated || currentUser?.role !== "ADMIN") {
+      setError(
+        "Unauthorized: Only admins can remove other users' profile photos"
+      );
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await UsersService.removeUserProfilePhoto(userGuid);
+
+      // Update the selected user if it's the one being modified
+      if (selectedUser && selectedUser.guid === userGuid) {
+        setSelectedUser({
+          ...selectedUser,
+          profileImage: null,
+          profileImageUrl: null,
+        });
+      }
+
+      // Update user in the users list
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.guid === userGuid
+            ? { ...user, profileImage: null, profileImageUrl: null }
+            : user
+        )
+      );
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to remove user's profile photo";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getProfilePhoto = async (userGuid: string): Promise<any> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const photoData = await UsersService.getProfilePhoto(userGuid);
+      return photoData;
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to get profile photo";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const clearSelectedUser = (): void => {
     setSelectedUser(null);
   };
@@ -257,6 +317,8 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     deleteUser,
     uploadProfilePhoto,
     removeProfilePhoto,
+    removeUserProfilePhoto,
+    getProfilePhoto,
     fetchProfile,
     clearSelectedUser,
     clearError,
