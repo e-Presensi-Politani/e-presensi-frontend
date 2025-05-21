@@ -1,4 +1,4 @@
-// src/contexts/FileContext.tsx (Updated)
+// src/contexts/FileContext.tsx (Updated with profile photo handling)
 import React, {
   createContext,
   useState,
@@ -25,6 +25,11 @@ interface FileContextType {
     category?: FileCategory,
     relatedId?: string
   ) => Promise<FileUploadResponse>;
+  uploadProfilePhoto: (
+    file: File, 
+    userId: string
+  ) => Promise<FileUploadResponse>;
+  getProfilePhoto: (userId: string) => Promise<FileMetadata | null>;
   getFiles: (params?: FileQueryParams) => Promise<void>;
   getFile: (guid: string) => Promise<FileMetadata | null>;
   deleteFile: (guid: string) => Promise<boolean>;
@@ -114,6 +119,96 @@ export const FileProvider: React.FC<FileProviderProps> = ({ children }) => {
           isUploading: false,
           progress: 0,
         });
+      }
+    },
+    []
+  );
+
+  /**
+   * Upload a profile photo with special handling
+   */
+  const uploadProfilePhoto = useCallback(
+    async (file: File, userId: string): Promise<FileUploadResponse> => {
+      setUploadProgress({
+        isUploading: true,
+        progress: 0,
+        file,
+      });
+
+      try {
+        // First, check if the user already has a profile photo
+        const existingPhotos = await FileService.getFiles({
+          category: FileCategory.PROFILE,
+          relatedId: userId,
+        });
+
+        // If there's an existing profile photo, delete it first
+        if (existingPhotos && existingPhotos.length > 0) {
+          await FileService.deleteFile(existingPhotos[0].guid);
+        }
+
+        // Upload the new profile photo
+        const response = await FileService.uploadFile(
+          file,
+          FileCategory.PROFILE,
+          userId,
+          (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress((prev) => ({
+              ...prev,
+              progress: percentCompleted,
+            }));
+          }
+        );
+
+        if (response.success) {
+          setFiles((prevFiles) => [response.data, ...prevFiles]);
+        } else {
+          setError(response.message || "Error uploading profile photo");
+        }
+
+        return response;
+      } catch (error: any) {
+        const errorMessage =
+          error.response?.data?.message || "Error uploading profile photo";
+        setError(errorMessage);
+        return {
+          success: false,
+          data: {} as FileMetadata,
+          message: errorMessage,
+        };
+      } finally {
+        setUploadProgress({
+          isUploading: false,
+          progress: 0,
+        });
+      }
+    },
+    []
+  );
+
+  /**
+   * Get a user's profile photo
+   */
+  const getProfilePhoto = useCallback(
+    async (userId: string): Promise<FileMetadata | null> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const photos = await FileService.getFiles({
+          category: FileCategory.PROFILE,
+          relatedId: userId,
+        });
+
+        return photos && photos.length > 0 ? photos[0] : null;
+      } catch (error: any) {
+        setError(error.message || `Error fetching profile photo for user ${userId}`);
+        return null;
+      } finally {
+        setIsLoading(false);
       }
     },
     []
@@ -263,6 +358,8 @@ export const FileProvider: React.FC<FileProviderProps> = ({ children }) => {
     isLoading,
     error,
     uploadFile,
+    uploadProfilePhoto,
+    getProfilePhoto,
     getFiles,
     getFile,
     deleteFile,

@@ -1,4 +1,4 @@
-// src/services/FileService.ts
+// src/services/FileService.ts (Updated with profile photo handling)
 import axios from "axios";
 import {
   FileMetadata,
@@ -49,7 +49,7 @@ class FileService {
     }
 
     try {
-      const response = await apiClient.post("/files", formData, {
+      const response = await apiClient.post("/files/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -67,6 +67,82 @@ class FileService {
         data: {} as FileMetadata,
         message: error.response?.data?.message || "Error uploading file",
       };
+    }
+  }
+
+  /**
+   * Upload profile photo with specialized handling
+   */
+  static async uploadProfilePhoto(
+    file: File,
+    userId: string,
+    onUploadProgress?: (progressEvent: any) => void
+  ): Promise<FileUploadResponse> {
+    // Check file type for profile photos
+    const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      return {
+        success: false,
+        data: {} as FileMetadata,
+        message:
+          "Invalid file type. Only JPG, JPEG, PNG, and WEBP files are allowed for profile photos.",
+      };
+    }
+
+    // Limit file size for profile photos (1MB)
+    if (file.size > 1024 * 1024) {
+      return {
+        success: false,
+        data: {} as FileMetadata,
+        message: "Profile photo size must be less than 1MB",
+      };
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("category", FileCategory.PROFILE);
+    formData.append("relatedId", userId);
+
+    try {
+      const response = await apiClient.post("/files/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress,
+      });
+
+      return {
+        success: true,
+        data: response.data,
+        message: "Profile photo uploaded successfully",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: {} as FileMetadata,
+        message:
+          error.response?.data?.message || "Error uploading profile photo",
+      };
+    }
+  }
+
+  /**
+   * Get profile photo URL for a user (convenience method)
+   */
+  static async getProfilePhotoUrl(userId: string): Promise<string | null> {
+    try {
+      const files = await this.getFiles({
+        category: FileCategory.PROFILE,
+        relatedId: userId,
+      });
+
+      if (files && files.length > 0) {
+        return this.getFileViewUrl(files[0].guid);
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting profile photo URL:", error);
+      return null;
     }
   }
 
@@ -132,7 +208,7 @@ class FileService {
   static async downloadFile(guid: string, filename?: string): Promise<void> {
     try {
       // Get token from localStorage directly for this specific request
-      const token = localStorage.getItem("auth_token");
+      const token = localStorage.getItem("access_token");
 
       const response = await apiClient.get(`/files/${guid}/download`, {
         responseType: "blob",
