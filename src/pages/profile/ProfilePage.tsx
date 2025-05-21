@@ -31,9 +31,10 @@ import BottomNav from "../../components/BottomNav";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
 import { useStatistics } from "../../contexts/StatisticsContext";
+import { useFiles } from "../../contexts/FileContext"; // Import FileContext
 import { ReportPeriod } from "../../types/statistics";
+import { FileCategory } from "../../types/enums"; // Import FileCategory
 import ReportGenerator from "../../components/ReportGenerator";
-import UsersService from "../../services/UsersService";
 import FileService from "../../services/FileService";
 // Import default profile image
 import defaultProfileImage from "../../assets/pp.png";
@@ -55,6 +56,15 @@ const ProfilePage: React.FC = () => {
     fetchMyStatistics,
     clearError: clearStatisticsError,
   } = useStatistics();
+
+  // Use the Files Context
+  const {
+    uploadFile,
+    deleteFile,
+    isLoading: loadingFiles,
+    error: fileError,
+    clearError: clearFileError,
+  } = useFiles();
 
   // State for profile photo
   const [photoURL, setPhotoURL] = useState<string | null>(null);
@@ -110,32 +120,41 @@ const ProfilePage: React.FC = () => {
     };
   };
 
-  // Load profile photo - FIXED FUNCTION
+  // Load profile photo - IMPROVED VERSION
   const loadProfilePhoto = async () => {
     try {
-      if (selectedUser?.guid) {
-        if (selectedUser.profileImage) {
-          // If the user already has a profile image GUID, get its URL
-          const photoUrl = FileService.getFileViewUrl(
-            selectedUser.profileImage
-          );
-          console.log("Profile photo URL:", photoUrl);
-          setPhotoURL(photoUrl);
-        } else if (selectedUser.guid) {
-          // Otherwise check if there's a profile photo available for this user
-          const url = await FileService.getProfilePhotoUrl(selectedUser.guid);
-          if (url) {
-            console.log("Retrieved profile photo URL:", url);
-            setPhotoURL(url);
-          } else {
-            console.log("No profile photo available for user");
-            setPhotoURL(null);
-          }
-        }
+      if (!selectedUser?.guid) return;
+
+      // Reset photo error if any
+      setPhotoError(null);
+
+      // First try to use the profileImage field if it exists
+      if (selectedUser.profileImage) {
+        const photoUrl = FileService.getFileViewUrl(selectedUser.profileImage);
+        console.log("Using profile image GUID:", selectedUser.profileImage);
+        console.log("Profile photo URL:", photoUrl);
+
+        // Add timestamp to prevent caching issues
+        const urlWithTimestamp = `${photoUrl}?t=${new Date().getTime()}`;
+        setPhotoURL(urlWithTimestamp);
+        return;
+      }
+
+      // Otherwise check if there's a profile photo available for this user
+      const url = await FileService.getProfilePhotoUrl(selectedUser.guid);
+      if (url) {
+        console.log("Retrieved profile photo URL:", url);
+
+        // Add timestamp to prevent caching issues
+        const urlWithTimestamp = `${url}?t=${new Date().getTime()}`;
+        setPhotoURL(urlWithTimestamp);
+      } else {
+        console.log("No profile photo available for user");
+        setPhotoURL(null);
       }
     } catch (error) {
       console.error("Error loading profile photo:", error);
-      setPhotoError("Failed to load profile photo");
+      setPhotoError("Gagal memuat foto profil");
     }
   };
 
@@ -160,6 +179,7 @@ const ProfilePage: React.FC = () => {
     return () => {
       clearUserError();
       clearStatisticsError();
+      clearFileError();
     };
   }, [authUser?.guid]);
 
@@ -184,9 +204,10 @@ const ProfilePage: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  // Handle photo file selection
+  // Handle photo file selection - IMPROVED VERSION
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
+    if (!e.target.files || e.target.files.length === 0 || !authUser?.guid)
+      return;
 
     const file = e.target.files[0];
 
@@ -196,40 +217,47 @@ const ProfilePage: React.FC = () => {
     // Validate file type
     const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
     if (!validTypes.includes(file.type)) {
-      setPhotoError("Only JPG, JPEG, PNG, and WEBP files are allowed.");
+      setPhotoError("Hanya file JPG, JPEG, PNG, dan WEBP yang diperbolehkan.");
       return;
     }
 
     // Validate file size (1MB limit)
     if (file.size > 1024 * 1024) {
-      setPhotoError("File size must be less than 1MB.");
+      setPhotoError("Ukuran file harus kurang dari 1MB.");
       return;
     }
 
     try {
       setUploadingPhoto(true);
 
-      // Upload the photo
-      const response = await UsersService.uploadProfilePhoto(file);
+      // If there's an existing profile photo, delete it first
+      if (selectedUser?.profileImage) {
+        await deleteFile(selectedUser.profileImage);
+      }
 
-      if (response) {
+      // Upload the photo using the FileContext
+      const response = await uploadFile(
+        file,
+        FileCategory.PROFILE,
+        authUser.guid
+      );
+
+      if (response.success && response.data) {
+        // Update the photo URL directly from the response data
+        const url = FileService.getFileViewUrl(response.data.guid);
+
+        // Add timestamp to prevent caching issues
+        const urlWithTimestamp = `${url}?t=${new Date().getTime()}`;
+        setPhotoURL(urlWithTimestamp);
+
         // Refresh user data to get updated profile image
-        if (authUser?.guid) {
-          await fetchUserByGuid(authUser.guid);
-        }
-
-        // Update the photo URL - FIXED
-        if (response.guid) {
-          const url = `${import.meta.env.VITE_API_URL || ""}/api/files/${
-            response.guid
-          }/view`;
-          console.log("New photo URL:", url);
-          setPhotoURL(url);
-        }
+        await fetchUserByGuid(authUser.guid);
+      } else {
+        throw new Error(response.message || "Gagal mengunggah foto profil");
       }
     } catch (error: any) {
       console.error("Error uploading profile photo:", error);
-      setPhotoError(error.message || "Failed to upload profile photo");
+      setPhotoError(error.message || "Gagal mengunggah foto profil");
     } finally {
       setUploadingPhoto(false);
       // Reset file input
@@ -239,22 +267,28 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Handle removing profile photo
+  // Handle removing profile photo - IMPROVED VERSION
   const handleRemovePhoto = async () => {
+    if (!selectedUser?.guid || !selectedUser?.profileImage) return;
+
     try {
       setUploadingPhoto(true);
-      await UsersService.removeProfilePhoto();
 
-      // Refresh user data
-      if (authUser?.guid) {
-        await fetchUserByGuid(authUser.guid);
+      // Delete the profile photo through FileContext
+      const success = await deleteFile(selectedUser.profileImage);
+
+      if (success) {
+        // Clear photo URL
+        setPhotoURL(null);
+
+        // Refresh user data
+        await fetchUserByGuid(selectedUser.guid);
+      } else {
+        throw new Error("Gagal menghapus foto profil");
       }
-
-      // Clear photo URL
-      setPhotoURL(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error removing profile photo:", error);
-      setPhotoError("Failed to remove profile photo");
+      setPhotoError(error.message || "Gagal menghapus foto profil");
     } finally {
       setUploadingPhoto(false);
     }
@@ -263,16 +297,17 @@ const ProfilePage: React.FC = () => {
   // Get real statistics data
   const statsData = getStatsData();
 
-  const loading = loadingUser || loadingStatistics;
-  const error = userError || statisticsError;
+  const loading = loadingUser || loadingStatistics || loadingFiles;
+  const error = userError || statisticsError || fileError || photoError;
 
   const clearError = () => {
     clearUserError();
     clearStatisticsError();
+    clearFileError();
     setPhotoError(null);
   };
 
-  if (loading) {
+  if (loading && !uploadingPhoto) {
     return (
       <Box
         sx={{
@@ -306,9 +341,9 @@ const ProfilePage: React.FC = () => {
 
       <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
         {/* Error Alert */}
-        {(error || photoError) && (
+        {error && (
           <Alert severity="error" sx={{ mt: 2, mb: 2 }} onClose={clearError}>
-            {error || photoError}
+            {error}
           </Alert>
         )}
 
@@ -343,7 +378,9 @@ const ProfilePage: React.FC = () => {
               </Tooltip>
             }
           >
+            {/* Add key to force re-render when photoURL changes */}
             <Avatar
+              key={photoURL || "default-image"}
               sx={{
                 width: 100,
                 height: 100,
@@ -353,6 +390,14 @@ const ProfilePage: React.FC = () => {
               }}
               alt={selectedUser?.fullName || "User"}
               src={photoURL || defaultProfileImage}
+              imgProps={{
+                // Add error handling in case image fails to load
+                onError: (e) => {
+                  console.log("Error loading image, using default");
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.src = defaultProfileImage;
+                },
+              }}
             />
           </Badge>
 
