@@ -79,8 +79,6 @@ const DashboardPage: React.FC = () => {
       // First try to use the profileImage field if it exists
       if (selectedUser.profileImage) {
         const photoUrl = FileService.getFileViewUrl(selectedUser.profileImage);
-        console.log("Using profile image GUID:", selectedUser.profileImage);
-        console.log("Profile photo URL:", photoUrl);
 
         // Add timestamp to prevent caching issues
         const urlWithTimestamp = `${photoUrl}?t=${new Date().getTime()}`;
@@ -91,17 +89,13 @@ const DashboardPage: React.FC = () => {
       // Otherwise check if there's a profile photo available for this user
       const url = await FileService.getProfilePhotoUrl(selectedUser.guid);
       if (url) {
-        console.log("Retrieved profile photo URL:", url);
-
         // Add timestamp to prevent caching issues
         const urlWithTimestamp = `${url}?t=${new Date().getTime()}`;
         setPhotoURL(urlWithTimestamp);
       } else {
-        console.log("No profile photo available for user");
         setPhotoURL(null);
       }
     } catch (error) {
-      console.error("Error loading profile photo:", error);
       setPhotoError("Gagal memuat foto profil");
     }
   };
@@ -177,7 +171,6 @@ const DashboardPage: React.FC = () => {
         minute: "2-digit",
       });
     } catch (error) {
-      console.error("Error formatting time:", error);
       return "--:--";
     }
   };
@@ -388,12 +381,11 @@ const DashboardPage: React.FC = () => {
         <Container maxWidth="lg">
           <Box display="flex" alignItems="center" mb={2}>
             <Avatar
-              sx={{ width: 60, height: 60}}
+              sx={{ width: 60, height: 60 }}
               src={photoURL || defaultProfileImage}
               imgProps={{
                 // Add error handling in case image fails to load
                 onError: (e) => {
-                  console.log("Error loading image, using default");
                   const imgElement = e.target as HTMLImageElement;
                   imgElement.src = defaultProfileImage;
                 },

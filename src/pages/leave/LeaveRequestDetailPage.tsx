@@ -90,7 +90,6 @@ const LeaveRequestDetailPage: React.FC = () => {
     };
   }, [id]);
 
-  // Modified useEffect for fetching user data - remove console.logs
   useEffect(() => {
     if (
       selectedRequest?.userId &&
@@ -142,7 +141,6 @@ const LeaveRequestDetailPage: React.FC = () => {
         setPhotoURL(null);
       }
     } catch (error) {
-      console.error("Error loading profile photo:", error);
       setPhotoError("Gagal memuat foto profil");
     }
   };
@@ -164,7 +162,6 @@ const LeaveRequestDetailPage: React.FC = () => {
           selectedRequest.attachment?.originalName
         );
       } catch (error: any) {
-        console.error("Error downloading attachment:", error);
         setDownloadError(error.message || "Failed to download attachment");
       } finally {
         setDownloadingFile(false);
@@ -307,7 +304,6 @@ const LeaveRequestDetailPage: React.FC = () => {
               imgProps={{
                 // Add error handling in case image fails to load
                 onError: (e) => {
-                  console.log("Error loading image, falling back to initials");
                   const imgElement = e.target as HTMLImageElement;
                   imgElement.src = ""; // Clear the src to show the fallback
                 },
