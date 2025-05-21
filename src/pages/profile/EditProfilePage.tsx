@@ -17,6 +17,7 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SaveIcon from "@mui/icons-material/Save";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
@@ -29,6 +30,8 @@ const EditProfilePage: React.FC = () => {
     fetchUserByGuid,
     selectedUser,
     updateUser,
+    uploadProfilePhoto,
+    removeProfilePhoto,
     loading,
     error,
     clearError,
@@ -44,8 +47,10 @@ const EditProfilePage: React.FC = () => {
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [_, setProfileImage] = useState<File | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
+  const [photoChanged, setPhotoChanged] = useState<boolean>(false);
 
   // Fetch user details when component mounts
   useEffect(() => {
@@ -69,8 +74,8 @@ const EditProfilePage: React.FC = () => {
         position: selectedUser.position || "",
       });
 
-      if (selectedUser.profileImage) {
-        setPreviewUrl(selectedUser.profileImage);
+      if (selectedUser.profileImageUrl) {
+        setPreviewUrl(selectedUser.profileImageUrl);
       }
     }
   }, [selectedUser]);
@@ -114,7 +119,8 @@ const EditProfilePage: React.FC = () => {
         return;
       }
 
-      setProfileImage(file);
+      setPhotoFile(file);
+      setPhotoChanged(true);
 
       // Create preview URL
       const reader = new FileReader();
@@ -128,6 +134,25 @@ const EditProfilePage: React.FC = () => {
         const { profileImage, ...rest } = formErrors;
         setFormErrors(rest);
       }
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    try {
+      setUploadingPhoto(true);
+      await removeProfilePhoto();
+      setPreviewUrl(null);
+      setPhotoFile(null);
+      setPhotoChanged(true);
+      setSuccessMessage("Profile photo removed successfully");
+    } catch (err) {
+      console.error("Failed to remove profile photo:", err);
+      setFormErrors({
+        ...formErrors,
+        profileImage: "Failed to remove profile photo",
+      });
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -156,7 +181,16 @@ const EditProfilePage: React.FC = () => {
   const handleSubmit = async () => {
     if (validateForm() && selectedUser) {
       try {
-        // Prepare update data
+        // First, handle the profile photo if it has changed
+        if (photoChanged) {
+          setUploadingPhoto(true);
+          if (photoFile) {
+            await uploadProfilePhoto(photoFile);
+          }
+          setUploadingPhoto(false);
+        }
+
+        // Prepare update data for text fields
         const updateData: UpdateUserDto = {
           fullName: formData.fullName,
           email: formData.email,
@@ -165,10 +199,7 @@ const EditProfilePage: React.FC = () => {
           position: formData.position || undefined,
         };
 
-        // TODO: Handle profile image upload
-        // This would typically require a separate API call or including
-        // the image in a FormData object. For now, we're just updating the text fields.
-
+        // Update user profile
         await updateUser(selectedUser.guid, updateData);
 
         setSuccessMessage("Profile updated successfully!");
@@ -257,19 +288,36 @@ const EditProfilePage: React.FC = () => {
           }}
         >
           <Box sx={{ position: "relative" }}>
-            <Avatar
-              sx={{
-                width: 100,
-                height: 100,
-                bgcolor: "#ff6347",
-                border: "4px solid white",
-                boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-              }}
-              alt={formData.fullName || "User"}
-              src={previewUrl || undefined}
-            >
-              {formData.fullName?.charAt(0) || "U"}
-            </Avatar>
+            {uploadingPhoto ? (
+              <Box
+                sx={{
+                  width: 100,
+                  height: 100,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "4px solid white",
+                  borderRadius: "50%",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                }}
+              >
+                <CircularProgress size={40} />
+              </Box>
+            ) : (
+              <Avatar
+                sx={{
+                  width: 100,
+                  height: 100,
+                  bgcolor: "#ff6347",
+                  border: "4px solid white",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                }}
+                alt={formData.fullName || "User"}
+                src={previewUrl || undefined}
+              >
+                {formData.fullName?.charAt(0) || "U"}
+              </Avatar>
+            )}
             <IconButton
               sx={{
                 position: "absolute",
@@ -283,6 +331,7 @@ const EditProfilePage: React.FC = () => {
                 padding: "8px",
               }}
               component="label"
+              disabled={uploadingPhoto}
             >
               <CameraAltIcon fontSize="small" />
               <input
@@ -293,6 +342,21 @@ const EditProfilePage: React.FC = () => {
               />
             </IconButton>
           </Box>
+
+          {/* Remove photo button */}
+          {(previewUrl || selectedUser?.profileImageUrl) && (
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              startIcon={<DeleteIcon />}
+              onClick={handleRemovePhoto}
+              disabled={uploadingPhoto}
+              sx={{ mt: 2, borderRadius: 2 }}
+            >
+              Remove Photo
+            </Button>
+          )}
 
           {formErrors.profileImage && (
             <FormHelperText error sx={{ mt: 1 }}>
@@ -308,7 +372,7 @@ const EditProfilePage: React.FC = () => {
         {/* Profile Form */}
         <Paper elevation={1} sx={{ borderRadius: 2, padding: 3, mb: 2 }}>
           <Grid container spacing={2}>
-            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
+            <Grid>
               <TextField
                 fullWidth
                 label="Full Name"
@@ -317,10 +381,13 @@ const EditProfilePage: React.FC = () => {
                 onChange={handleInputChange}
                 error={!!formErrors.fullName}
                 helperText={formErrors.fullName}
+                InputProps={{
+                  sx: { borderRadius: 1.5 },
+                }}
               />
             </Grid>
 
-            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
+            <Grid>
               <TextField
                 fullWidth
                 label="Email"
@@ -336,7 +403,7 @@ const EditProfilePage: React.FC = () => {
               />
             </Grid>
 
-            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
+            <Grid>
               <TextField
                 fullWidth
                 label="Phone Number"
@@ -351,7 +418,7 @@ const EditProfilePage: React.FC = () => {
               />
             </Grid>
 
-            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
+            <Grid>
               <TextField
                 fullWidth
                 label="Department"
@@ -364,7 +431,7 @@ const EditProfilePage: React.FC = () => {
               />
             </Grid>
 
-            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
+            <Grid>
               <TextField
                 fullWidth
                 label="Position"
@@ -378,7 +445,7 @@ const EditProfilePage: React.FC = () => {
             </Grid>
 
             {/* NIP is displayed as read-only */}
-            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
+            <Grid>
               <TextField
                 fullWidth
                 label="NIP"
@@ -400,7 +467,7 @@ const EditProfilePage: React.FC = () => {
           size="large"
           startIcon={<SaveIcon />}
           onClick={handleSubmit}
-          disabled={loading}
+          disabled={loading || uploadingPhoto}
           sx={{
             py: 1.5,
             textTransform: "none",
@@ -408,7 +475,7 @@ const EditProfilePage: React.FC = () => {
             boxShadow: 2,
           }}
         >
-          {loading ? (
+          {loading || uploadingPhoto ? (
             <CircularProgress size={24} color="inherit" />
           ) : (
             "Save Changes"
