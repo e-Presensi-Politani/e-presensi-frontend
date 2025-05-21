@@ -1,4 +1,4 @@
-// src/pages/profile/ProfilePage.tsx
+// Fix for ProfilePage.tsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -35,6 +35,8 @@ import { ReportPeriod } from "../../types/statistics";
 import ReportGenerator from "../../components/ReportGenerator";
 import UsersService from "../../services/UsersService";
 import FileService from "../../services/FileService";
+// Import default profile image
+import defaultProfileImage from "../../assets/pp.png";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -108,20 +110,27 @@ const ProfilePage: React.FC = () => {
     };
   };
 
-  // Load profile photo
+  // Load profile photo - FIXED FUNCTION
   const loadProfilePhoto = async () => {
     try {
       if (selectedUser?.guid) {
         if (selectedUser.profileImage) {
           // If the user already has a profile image GUID, get its URL
-          const photoUrl = FileService.getFileViewUrl(
+          const photoUrl = `${process.env.VITE_API_URL || ""}/api/files/${
             selectedUser.profileImage
-          );
+          }/view`;
+          console.log("Profile photo URL:", photoUrl);
           setPhotoURL(photoUrl);
         } else if (selectedUser.guid) {
           // Otherwise check if there's a profile photo available for this user
           const url = await FileService.getProfilePhotoUrl(selectedUser.guid);
-          setPhotoURL(url);
+          if (url) {
+            console.log("Retrieved profile photo URL:", url);
+            setPhotoURL(url);
+          } else {
+            console.log("No profile photo available for user");
+            setPhotoURL(null);
+          }
         }
       }
     } catch (error) {
@@ -209,9 +218,12 @@ const ProfilePage: React.FC = () => {
           await fetchUserByGuid(authUser.guid);
         }
 
-        // Update the photo URL
+        // Update the photo URL - FIXED
         if (response.guid) {
-          const url = FileService.getFileViewUrl(response.guid);
+          const url = `${process.env.REACT_APP_API_URL || ""}/api/files/${
+            response.guid
+          }/view`;
+          console.log("New photo URL:", url);
           setPhotoURL(url);
         }
       }
@@ -340,10 +352,8 @@ const ProfilePage: React.FC = () => {
                 boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
               }}
               alt={selectedUser?.fullName || "User"}
-              src={photoURL || undefined}
-            >
-              {selectedUser?.fullName?.charAt(0) || "U"}
-            </Avatar>
+              src={photoURL || defaultProfileImage}
+            />
           </Badge>
 
           {/* Hidden file input */}
@@ -408,6 +418,7 @@ const ProfilePage: React.FC = () => {
           </List>
         </Paper>
 
+        {/* Rest of the component remains the same... */}
         {/* Stats */}
         <Grid
           container
