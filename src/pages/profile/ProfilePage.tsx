@@ -121,8 +121,6 @@ const ProfilePage: React.FC = () => {
       // First try to use the profileImage field if it exists
       if (selectedUser.profileImage) {
         const photoUrl = FileService.getFileViewUrl(selectedUser.profileImage);
-        console.log("Using profile image GUID:", selectedUser.profileImage);
-        console.log("Profile photo URL:", photoUrl);
 
         // Add timestamp to prevent caching issues
         const urlWithTimestamp = `${photoUrl}?t=${new Date().getTime()}`;
@@ -133,17 +131,13 @@ const ProfilePage: React.FC = () => {
       // Otherwise check if there's a profile photo available for this user
       const url = await FileService.getProfilePhotoUrl(selectedUser.guid);
       if (url) {
-        console.log("Retrieved profile photo URL:", url);
-
         // Add timestamp to prevent caching issues
         const urlWithTimestamp = `${url}?t=${new Date().getTime()}`;
         setPhotoURL(urlWithTimestamp);
       } else {
-        console.log("No profile photo available for user");
         setPhotoURL(null);
       }
     } catch (error) {
-      console.error("Error loading profile photo:", error);
       setPhotoError("Gagal memuat foto profil");
     }
   };
@@ -220,14 +214,12 @@ const ProfilePage: React.FC = () => {
 
       // Use the uploadProfilePhoto function from UserContext
       await uploadProfilePhoto(file);
-      console.log("Profile photo uploaded successfully");
 
       // Refresh user data to get updated profile image
       if (authUser?.guid) {
         await fetchUserByGuid(authUser.guid);
       }
     } catch (error: any) {
-      console.error("Error uploading profile photo:", error);
       setPhotoError(error.message || "Gagal mengunggah foto profil");
     } finally {
       setUploadingPhoto(false);
@@ -248,7 +240,6 @@ const ProfilePage: React.FC = () => {
 
       // Use removeProfilePhoto from UserContext
       await removeUserProfilePhoto(authUser.guid);
-      console.log("Profile photo removed successfully");
 
       // Clear the photo URL to update UI immediately
       setPhotoURL(null);
@@ -258,7 +249,6 @@ const ProfilePage: React.FC = () => {
         await fetchUserByGuid(authUser.guid);
       }
     } catch (error: any) {
-      console.error("Error removing profile photo:", error);
       setPhotoError(error.message || "Gagal menghapus foto profil");
     } finally {
       setUploadingPhoto(false);
@@ -363,7 +353,6 @@ const ProfilePage: React.FC = () => {
               imgProps={{
                 // Add error handling in case image fails to load
                 onError: (e) => {
-                  console.log("Error loading image, using default");
                   const imgElement = e.target as HTMLImageElement;
                   imgElement.src = defaultProfileImage;
                 },
