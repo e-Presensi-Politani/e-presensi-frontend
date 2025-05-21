@@ -1,4 +1,4 @@
-// Fix for ProfilePage.tsx
+// Fixed ProfilePage.tsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -116,7 +116,7 @@ const ProfilePage: React.FC = () => {
       if (selectedUser?.guid) {
         if (selectedUser.profileImage) {
           // If the user already has a profile image GUID, get its URL
-          const photoUrl = `${process.env.VITE_API_URL || ""}/api/files/${
+          const photoUrl = `${import.meta.env.VITE_API_URL || ""}/api/files/${
             selectedUser.profileImage
           }/view`;
           console.log("Profile photo URL:", photoUrl);
@@ -220,7 +220,7 @@ const ProfilePage: React.FC = () => {
 
         // Update the photo URL - FIXED
         if (response.guid) {
-          const url = `${process.env.REACT_APP_API_URL || ""}/api/files/${
+          const url = `${import.meta.env.VITE_API_URL || ""}/api/files/${
             response.guid
           }/view`;
           console.log("New photo URL:", url);
@@ -418,7 +418,6 @@ const ProfilePage: React.FC = () => {
           </List>
         </Paper>
 
-        {/* Rest of the component remains the same... */}
         {/* Stats */}
         <Grid
           container
