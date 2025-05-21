@@ -7,7 +7,8 @@ export interface User {
   email: string;
   nip: string;
   phoneNumber?: string;
-  profileImage?: string;
+  profileImage?: string | null;
+  profileImageUrl?: string | null; // Added for frontend convenience - URL to display profile image
   role: string;
   department?: string;
   position?: string;
