@@ -1,4 +1,3 @@
-// src/pages/profile/EditProfilePage.tsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -12,16 +11,19 @@ import {
   Grid,
   CircularProgress,
   Alert,
-  FormHelperText,
+  Badge,
+  Tooltip,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SaveIcon from "@mui/icons-material/Save";
-import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import DeleteIcon from "@mui/icons-material/Delete";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UserContext";
 import { UpdateUserDto } from "../../types/users";
+import FileService from "../../services/FileService";
+import defaultProfileImage from "../../assets/default-pp.png";
 
 const EditProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,7 +33,7 @@ const EditProfilePage: React.FC = () => {
     selectedUser,
     updateUser,
     uploadProfilePhoto,
-    removeProfilePhoto,
+    removeUserProfilePhoto,
     loading,
     error,
     clearError,
@@ -47,10 +49,13 @@ const EditProfilePage: React.FC = () => {
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
-  const [photoChanged, setPhotoChanged] = useState<boolean>(false);
+  const [_, setPhotoChanged] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // Renamed from photoError
+
+  // File input reference
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Fetch user details when component mounts
   useEffect(() => {
@@ -63,6 +68,35 @@ const EditProfilePage: React.FC = () => {
     };
   }, []);
 
+  // Load profile photo
+  const loadProfilePhoto = async () => {
+    try {
+      if (!selectedUser?.guid) return;
+
+      // Reset error message if any
+      setErrorMessage(null);
+
+      // First try to use the profileImage field if it exists
+      if (selectedUser.profileImage) {
+        const photoUrl = FileService.getFileViewUrl(selectedUser.profileImage);
+        const urlWithTimestamp = `${photoUrl}?t=${new Date().getTime()}`;
+        setPhotoURL(urlWithTimestamp);
+        return;
+      }
+
+      // Otherwise check if there's a profile photo available for this user
+      const url = await FileService.getProfilePhotoUrl(selectedUser.guid);
+      if (url) {
+        const urlWithTimestamp = `${url}?t=${new Date().getTime()}`;
+        setPhotoURL(urlWithTimestamp);
+      } else {
+        setPhotoURL(null);
+      }
+    } catch (error) {
+      setErrorMessage("Failed to load profile photo");
+    }
+  };
+
   // Set form data when user details are loaded
   useEffect(() => {
     if (selectedUser) {
@@ -74,9 +108,8 @@ const EditProfilePage: React.FC = () => {
         position: selectedUser.position || "",
       });
 
-      if (selectedUser.profileImageUrl) {
-        setPreviewUrl(selectedUser.profileImageUrl);
-      }
+      // Load the profile photo
+      loadProfilePhoto();
     }
   }, [selectedUser]);
 
@@ -95,62 +128,79 @@ const EditProfilePage: React.FC = () => {
     }
   };
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle clicking the photo upload button
+  const handlePhotoButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
+    if (!files || files.length === 0) return;
 
-      // Validate file type
-      const validTypes = ["image/jpeg", "image/jpg", "image/png"];
-      if (!validTypes.includes(file.type)) {
-        setFormErrors({
-          ...formErrors,
-          profileImage: "Only JPG, JPEG, and PNG files are allowed",
-        });
-        return;
+    const file = files[0];
+
+    // Reset error state
+    setErrorMessage(null);
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setErrorMessage("Only JPG, JPEG, PNG, and WEBP files are allowed");
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setErrorMessage("File size exceeds 2MB limit");
+      return;
+    }
+
+    try {
+      setUploadingPhoto(true);
+
+      // Upload the photo
+      await uploadProfilePhoto(file);
+
+      // Refresh user data to get updated profile image
+      if (authUser?.guid) {
+        await fetchUserByGuid(authUser.guid);
       }
 
-      // Validate file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        setFormErrors({
-          ...formErrors,
-          profileImage: "File size exceeds 2MB limit",
-        });
-        return;
-      }
-
-      setPhotoFile(file);
       setPhotoChanged(true);
-
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-
-      // Clear error if any
-      if (formErrors.profileImage) {
-        const { profileImage, ...rest } = formErrors;
-        setFormErrors(rest);
+      setSuccessMessage("Profile photo uploaded successfully");
+    } catch (error: any) {
+      setErrorMessage(error.message || "Failed to upload profile photo");
+    } finally {
+      setUploadingPhoto(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
     }
   };
 
+  // Handle removing profile photo
   const handleRemovePhoto = async () => {
+    if (!authUser?.guid) return;
+
     try {
       setUploadingPhoto(true);
-      await removeProfilePhoto();
-      setPreviewUrl(null);
-      setPhotoFile(null);
-      setPhotoChanged(true);
-      setSuccessMessage("Profile photo removed successfully");
-    } catch (err) {
-      console.error("Failed to remove profile photo:", err);
-      setFormErrors({
-        ...formErrors,
-        profileImage: "Failed to remove profile photo",
-      });
+      setErrorMessage(null);
+
+      // Use removeProfilePhoto from UserContext
+      await removeUserProfilePhoto(authUser.guid);
+
+      // Clear the photo URL to update UI immediately
+      setPhotoURL(null);
+
+      // Refresh user data to ensure we have the latest profile state
+      if (authUser.guid) {
+        await fetchUserByGuid(authUser.guid);
+      }
+    } catch (error: any) {
+      setErrorMessage(error.message || "Failed to remove profile photo");
     } finally {
       setUploadingPhoto(false);
     }
@@ -181,16 +231,6 @@ const EditProfilePage: React.FC = () => {
   const handleSubmit = async () => {
     if (validateForm() && selectedUser) {
       try {
-        // First, handle the profile photo if it has changed
-        if (photoChanged) {
-          setUploadingPhoto(true);
-          if (photoFile) {
-            await uploadProfilePhoto(photoFile);
-          }
-          setUploadingPhoto(false);
-        }
-
-        // Prepare update data for text fields
         const updateData: UpdateUserDto = {
           fullName: formData.fullName,
           email: formData.email,
@@ -199,17 +239,14 @@ const EditProfilePage: React.FC = () => {
           position: formData.position || undefined,
         };
 
-        // Update user profile
         await updateUser(selectedUser.guid, updateData);
-
         setSuccessMessage("Profile updated successfully!");
 
-        // Navigate back to profile after short delay
         setTimeout(() => {
           navigate("/profile");
         }, 1500);
       } catch (err) {
-        console.error("Failed to update profile:", err);
+        setErrorMessage("Failed to update profile. Please try again.");
       }
     }
   };
@@ -218,7 +255,9 @@ const EditProfilePage: React.FC = () => {
     navigate("/profile");
   };
 
-  if (loading && !selectedUser) {
+  const displayError = error || errorMessage;
+
+  if (loading && !selectedUser && !uploadingPhoto) {
     return (
       <Box
         sx={{
@@ -272,9 +311,16 @@ const EditProfilePage: React.FC = () => {
         )}
 
         {/* Error Message */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={clearError}>
-            {error}
+        {displayError && (
+          <Alert
+            severity="error"
+            sx={{ mb: 2 }}
+            onClose={() => {
+              clearError();
+              setErrorMessage(null);
+            }}
+          >
+            {displayError}
           </Alert>
         )}
 
@@ -287,7 +333,26 @@ const EditProfilePage: React.FC = () => {
             mb: 3,
           }}
         >
-          <Box sx={{ position: "relative" }}>
+          <Badge
+            overlap="circular"
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            badgeContent={
+              <Tooltip title="Change profile photo">
+                <IconButton
+                  onClick={handlePhotoButtonClick}
+                  disabled={uploadingPhoto}
+                  sx={{
+                    bgcolor: "#1976D2",
+                    color: "white",
+                    "&:hover": { bgcolor: "#0d5ca9" },
+                  }}
+                  size="small"
+                >
+                  <PhotoCameraIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            }
+          >
             {uploadingPhoto ? (
               <Box
                 sx={{
@@ -305,46 +370,38 @@ const EditProfilePage: React.FC = () => {
               </Box>
             ) : (
               <Avatar
+                key={photoURL || "default-image"}
                 sx={{
                   width: 100,
                   height: 100,
-                  bgcolor: "#ff6347",
                   border: "4px solid white",
                   boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
                 }}
                 alt={formData.fullName || "User"}
-                src={previewUrl || undefined}
+                src={photoURL || defaultProfileImage}
+                imgProps={{
+                  onError: (e) => {
+                    const imgElement = e.target as HTMLImageElement;
+                    imgElement.src = defaultProfileImage;
+                  },
+                }}
               >
                 {formData.fullName?.charAt(0) || "U"}
               </Avatar>
             )}
-            <IconButton
-              sx={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                bgcolor: "#1976D2",
-                color: "white",
-                "&:hover": {
-                  bgcolor: "#0d5ca9",
-                },
-                padding: "8px",
-              }}
-              component="label"
-              disabled={uploadingPhoto}
-            >
-              <CameraAltIcon fontSize="small" />
-              <input
-                type="file"
-                hidden
-                accept="image/png, image/jpeg, image/jpg"
-                onChange={handleImageChange}
-              />
-            </IconButton>
-          </Box>
+          </Badge>
+
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageChange}
+            style={{ display: "none" }}
+            accept="image/jpeg,image/png,image/jpg,image/webp"
+          />
 
           {/* Remove photo button */}
-          {(previewUrl || selectedUser?.profileImageUrl) && (
+          {photoURL && (
             <Button
               variant="outlined"
               color="error"
@@ -358,12 +415,6 @@ const EditProfilePage: React.FC = () => {
             </Button>
           )}
 
-          {formErrors.profileImage && (
-            <FormHelperText error sx={{ mt: 1 }}>
-              {formErrors.profileImage}
-            </FormHelperText>
-          )}
-
           <Typography variant="caption" sx={{ mt: 1, color: "text.secondary" }}>
             Tap the camera icon to change profile photo
           </Typography>
@@ -372,7 +423,7 @@ const EditProfilePage: React.FC = () => {
         {/* Profile Form */}
         <Paper elevation={1} sx={{ borderRadius: 2, padding: 3, mb: 2 }}>
           <Grid container spacing={2}>
-            <Grid>
+            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
               <TextField
                 fullWidth
                 label="Full Name"
@@ -387,7 +438,7 @@ const EditProfilePage: React.FC = () => {
               />
             </Grid>
 
-            <Grid>
+            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
               <TextField
                 fullWidth
                 label="Email"
@@ -403,7 +454,7 @@ const EditProfilePage: React.FC = () => {
               />
             </Grid>
 
-            <Grid>
+            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
               <TextField
                 fullWidth
                 label="Phone Number"
@@ -418,7 +469,7 @@ const EditProfilePage: React.FC = () => {
               />
             </Grid>
 
-            <Grid>
+            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
               <TextField
                 fullWidth
                 label="Department"
@@ -431,7 +482,7 @@ const EditProfilePage: React.FC = () => {
               />
             </Grid>
 
-            <Grid>
+            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
               <TextField
                 fullWidth
                 label="Position"
@@ -445,7 +496,7 @@ const EditProfilePage: React.FC = () => {
             </Grid>
 
             {/* NIP is displayed as read-only */}
-            <Grid>
+            <Grid sx={{ width: { xs: "100%", sm: "48%" } }}>
               <TextField
                 fullWidth
                 label="NIP"
@@ -475,7 +526,7 @@ const EditProfilePage: React.FC = () => {
             boxShadow: 2,
           }}
         >
-          {loading || uploadingPhoto ? (
+          {loading ? (
             <CircularProgress size={24} color="inherit" />
           ) : (
             "Save Changes"

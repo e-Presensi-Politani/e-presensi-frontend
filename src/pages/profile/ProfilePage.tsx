@@ -33,7 +33,7 @@ import { useUsers } from "../../contexts/UserContext";
 import { useStatistics } from "../../contexts/StatisticsContext";
 import { ReportPeriod } from "../../types/statistics";
 import FileService from "../../services/FileService";
-import defaultProfileImage from "../../assets/pp.png";
+import defaultProfileImage from "../../assets/default-pp.png";
 import ReportGenerator from "../../components/ReportGenerator";
 
 const ProfilePage: React.FC = () => {
@@ -354,7 +354,7 @@ const ProfilePage: React.FC = () => {
               sx={{
                 width: 100,
                 height: 100,
-                bgcolor: "#ff6347",
+                // bgcolor: "#ff6347",
                 border: "4px solid white",
                 boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
               }}
