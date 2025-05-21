@@ -35,6 +35,8 @@ import { useUsers } from "../../contexts/UserContext";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { useStatistics } from "../../contexts/StatisticsContext";
 import { ReportPeriod } from "../../types/statistics";
+import FileService from "../../services/FileService";
+import defaultProfileImage from "../../assets/default-pp.png";
 
 const DashboardPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
@@ -62,6 +64,48 @@ const DashboardPage: React.FC = () => {
   } = useStatistics();
   const navigate = useNavigate();
 
+  // Add state for profile photo
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  // Load profile photo
+  const loadProfilePhoto = async () => {
+    try {
+      if (!selectedUser?.guid) return;
+
+      // Reset photo error if any
+      setPhotoError(null);
+
+      // First try to use the profileImage field if it exists
+      if (selectedUser.profileImage) {
+        const photoUrl = FileService.getFileViewUrl(selectedUser.profileImage);
+        console.log("Using profile image GUID:", selectedUser.profileImage);
+        console.log("Profile photo URL:", photoUrl);
+
+        // Add timestamp to prevent caching issues
+        const urlWithTimestamp = `${photoUrl}?t=${new Date().getTime()}`;
+        setPhotoURL(urlWithTimestamp);
+        return;
+      }
+
+      // Otherwise check if there's a profile photo available for this user
+      const url = await FileService.getProfilePhotoUrl(selectedUser.guid);
+      if (url) {
+        console.log("Retrieved profile photo URL:", url);
+
+        // Add timestamp to prevent caching issues
+        const urlWithTimestamp = `${url}?t=${new Date().getTime()}`;
+        setPhotoURL(urlWithTimestamp);
+      } else {
+        console.log("No profile photo available for user");
+        setPhotoURL(null);
+      }
+    } catch (error) {
+      console.error("Error loading profile photo:", error);
+      setPhotoError("Gagal memuat foto profil");
+    }
+  };
+
   // Fetch user details, today's attendance, and statistics when component mounts
   useEffect(() => {
     if (authUser?.guid) {
@@ -86,6 +130,13 @@ const DashboardPage: React.FC = () => {
       clearStatisticsError();
     };
   }, [authUser?.guid]);
+
+  // Load profile photo when selectedUser changes
+  useEffect(() => {
+    if (selectedUser) {
+      loadProfilePhoto();
+    }
+  }, [selectedUser]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -282,10 +333,11 @@ const DashboardPage: React.FC = () => {
   const attendanceData = getAttendanceChartData();
 
   const loading = loadingUser || loadingAttendance || loadingStatistics;
-  const error = userError || attendanceError || statisticsError;
+  const error = userError || attendanceError || statisticsError || photoError;
   const clearError = () => {
     clearUserError();
     clearStatisticsError();
+    setPhotoError(null);
   };
 
   if (loading) {
@@ -336,8 +388,16 @@ const DashboardPage: React.FC = () => {
         <Container maxWidth="lg">
           <Box display="flex" alignItems="center" mb={2}>
             <Avatar
-              sx={{ width: 60, height: 60, bgcolor: "#ff7043" }}
-              src={selectedUser?.profileImage}
+              sx={{ width: 60, height: 60}}
+              src={photoURL || defaultProfileImage}
+              imgProps={{
+                // Add error handling in case image fails to load
+                onError: (e) => {
+                  console.log("Error loading image, using default");
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.src = defaultProfileImage;
+                },
+              }}
             >
               {selectedUser?.fullName?.charAt(0) || "U"}
             </Avatar>
