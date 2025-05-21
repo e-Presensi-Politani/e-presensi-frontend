@@ -116,9 +116,9 @@ const ProfilePage: React.FC = () => {
       if (selectedUser?.guid) {
         if (selectedUser.profileImage) {
           // If the user already has a profile image GUID, get its URL
-          const photoUrl = `${import.meta.env.VITE_API_URL || ""}/api/files/${
+          const photoUrl = FileService.getFileViewUrl(
             selectedUser.profileImage
-          }/view`;
+          );
           console.log("Profile photo URL:", photoUrl);
           setPhotoURL(photoUrl);
         } else if (selectedUser.guid) {
