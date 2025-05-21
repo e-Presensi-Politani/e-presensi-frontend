@@ -240,7 +240,7 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const removeUserProfilePhoto = async (userGuid: string): Promise<void> => {
-    if (!isAuthenticated || currentUser?.role !== "ADMIN") {
+    if (!isAuthenticated) {
       setError(
         "Unauthorized: Only admins can remove other users' profile photos"
       );
