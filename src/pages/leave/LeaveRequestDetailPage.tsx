@@ -21,12 +21,18 @@ import { useUsers } from "../../contexts/UserContext";
 import { useFiles } from "../../contexts/FileContext"; // Import useFiles hook
 import { format } from "date-fns";
 import { LeaveRequestTypeLabels } from "../../types/leave-request-enums";
+import FileService from "../../services/FileService";
+import defaultProfileImage from "../../assets/default-pp.png";
 
 const LeaveRequestDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [downloadingFile, setDownloadingFile] = useState<boolean>(false); // Add state for download indication
   const [downloadError, setDownloadError] = useState<string | null>(null); // Add state for download errors
+
+  // Add state for profile photo
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const {
     selectedRequest,
@@ -84,7 +90,6 @@ const LeaveRequestDetailPage: React.FC = () => {
     };
   }, [id]);
 
-  // Modified useEffect for fetching user data - remove console.logs
   useEffect(() => {
     if (
       selectedRequest?.userId &&
@@ -100,6 +105,45 @@ const LeaveRequestDetailPage: React.FC = () => {
       }
     }
   }, [selectedRequest?.userId]);
+
+  // Load profile photo when selectedUser changes
+  useEffect(() => {
+    if (selectedUser) {
+      loadProfilePhoto();
+    }
+  }, [selectedUser]);
+
+  // Load profile photo function
+  const loadProfilePhoto = async () => {
+    try {
+      if (!selectedUser?.guid) return;
+
+      // Reset photo error if any
+      setPhotoError(null);
+
+      // First try to use the profileImage field if it exists
+      if (selectedUser.profileImage) {
+        const photoUrl = FileService.getFileViewUrl(selectedUser.profileImage);
+
+        // Add timestamp to prevent caching issues
+        const urlWithTimestamp = `${photoUrl}?t=${new Date().getTime()}`;
+        setPhotoURL(urlWithTimestamp);
+        return;
+      }
+
+      // Otherwise check if there's a profile photo available for this user
+      const url = await FileService.getProfilePhotoUrl(selectedUser.guid);
+      if (url) {
+        // Add timestamp to prevent caching issues
+        const urlWithTimestamp = `${url}?t=${new Date().getTime()}`;
+        setPhotoURL(urlWithTimestamp);
+      } else {
+        setPhotoURL(null);
+      }
+    } catch (error) {
+      setPhotoError("Gagal memuat foto profil");
+    }
+  };
 
   const handleBack = () => {
     navigate("/leave-request");
@@ -118,7 +162,6 @@ const LeaveRequestDetailPage: React.FC = () => {
           selectedRequest.attachment?.originalName
         );
       } catch (error: any) {
-        console.error("Error downloading attachment:", error);
         setDownloadError(error.message || "Failed to download attachment");
       } finally {
         setDownloadingFile(false);
@@ -127,7 +170,7 @@ const LeaveRequestDetailPage: React.FC = () => {
   };
 
   const loading = leaveLoading || userLoading || downloadingFile;
-  const error = leaveError || userError || downloadError;
+  const error = leaveError || userError || downloadError || photoError;
 
   if (loading && !downloadingFile) {
     return (
@@ -190,7 +233,7 @@ const LeaveRequestDetailPage: React.FC = () => {
   const userDepartment =
     selectedUser?.department || selectedRequest.departmentName || "Department";
 
-  // Get first letter for avatar
+  // Get first letter for avatar if no photo is available
   const userInitial = userFullName ? userFullName.charAt(0) : "U";
 
   return (
@@ -227,6 +270,16 @@ const LeaveRequestDetailPage: React.FC = () => {
           </Alert>
         )}
 
+        {photoError && (
+          <Alert
+            severity="error"
+            sx={{ mb: 2 }}
+            onClose={() => setPhotoError(null)}
+          >
+            {photoError}
+          </Alert>
+        )}
+
         <Paper elevation={1} sx={{ borderRadius: 2, overflow: "hidden" }}>
           <Box
             sx={{
@@ -238,19 +291,30 @@ const LeaveRequestDetailPage: React.FC = () => {
               position: "relative",
             }}
           >
+            {/* Updated Avatar to use photoURL or default image */}
             <Avatar
-              src={selectedUser?.profileImage}
-              alt="Profile"
+              key={photoURL || "default-image"}
+              src={photoURL || defaultProfileImage}
+              alt={userFullName}
               sx={{
                 width: 80,
                 height: 80,
-                bgcolor: "#ff5722",
-                border: "3px solid #ff5722",
+                border: "3px solid #ff",
+              }}
+              imgProps={{
+                // Add error handling in case image fails to load
+                onError: (e) => {
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.src = ""; // Clear the src to show the fallback
+                },
               }}
             >
-              <Typography sx={{ color: "#555", fontWeight: "bold" }}>
-                {userInitial}
-              </Typography>
+              {/* Only show initial if no image is loaded */}
+              {!photoURL && (
+                <Typography sx={{ color: "#fff", fontWeight: "bold" }}>
+                  {userInitial}
+                </Typography>
+              )}
             </Avatar>
           </Box>
 

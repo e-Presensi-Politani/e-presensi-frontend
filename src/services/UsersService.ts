@@ -78,6 +78,14 @@ const UsersService = {
   },
 
   /**
+   * Get current user's profile
+   */
+  getProfile: async (): Promise<User> => {
+    const response = await API.get<User>("/users/profile");
+    return response.data;
+  },
+
+  /**
    * Create a new user (admin only)
    */
   createUser: async (userData: CreateUserDto): Promise<User> => {
@@ -98,6 +106,45 @@ const UsersService = {
    */
   deleteUser: async (guid: string): Promise<void> => {
     await API.delete(`/users/${guid}`);
+  },
+
+  /**
+   * Upload profile photo
+   */
+  uploadProfilePhoto: async (file: File): Promise<any> => {
+    // Create form data
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await API.post("/users/profile-photo/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data;
+  },
+
+  /**
+   * Remove profile photo for the current user
+   */
+  removeProfilePhoto: async (): Promise<void> => {
+    await API.delete("/users/profile-photo");
+  },
+
+  /**
+   * Get profile photo by user GUID
+   */
+  getProfilePhoto: async (userGuid: string): Promise<any> => {
+    const response = await API.get(`/users/profile-photo/${userGuid}`);
+    return response.data;
+  },
+
+  /**
+   * Remove profile photo for a specified user (admin only)
+   */
+  removeUserProfilePhoto: async (userGuid: string): Promise<void> => {
+    await API.delete(`/users/profile-photo/${userGuid}`);
   },
 
   /**

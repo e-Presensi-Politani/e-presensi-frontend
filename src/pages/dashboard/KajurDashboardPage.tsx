@@ -37,6 +37,8 @@ import { useLeaveRequests } from "../../contexts/LeaveRequestsContext";
 import { useCorrections } from "../../contexts/CorrectionsContext";
 import { useStatistics } from "../../contexts/StatisticsContext";
 import { ReportPeriod } from "../../types/statistics";
+import FileService from "../../services/FileService";
+import defaultProfileImage from "../../assets/default-pp.png";
 
 const KajurDashboardPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
@@ -76,6 +78,42 @@ const KajurDashboardPage: React.FC = () => {
   } = useStatistics();
   const navigate = useNavigate();
 
+  // New state for profile photo
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  // Load profile photo function
+  const loadProfilePhoto = async () => {
+    try {
+      if (!selectedUser?.guid) return;
+
+      // Reset photo error if any
+      setPhotoError(null);
+
+      // First try to use the profileImage field if it exists
+      if (selectedUser.profileImage) {
+        const photoUrl = FileService.getFileViewUrl(selectedUser.profileImage);
+
+        // Add timestamp to prevent caching issues
+        const urlWithTimestamp = `${photoUrl}?t=${new Date().getTime()}`;
+        setPhotoURL(urlWithTimestamp);
+        return;
+      }
+
+      // Otherwise check if there's a profile photo available for this user
+      const url = await FileService.getProfilePhotoUrl(selectedUser.guid);
+      if (url) {
+        // Add timestamp to prevent caching issues
+        const urlWithTimestamp = `${url}?t=${new Date().getTime()}`;
+        setPhotoURL(urlWithTimestamp);
+      } else {
+        setPhotoURL(null);
+      }
+    } catch (error) {
+      setPhotoError("Gagal memuat foto profil");
+    }
+  };
+
   // Fetch user details, today's attendance, pending leave requests, and pending corrections when component mounts
   useEffect(() => {
     if (authUser?.guid) {
@@ -102,6 +140,13 @@ const KajurDashboardPage: React.FC = () => {
       clearStatisticsError();
     };
   }, [authUser?.guid]);
+
+  // Load profile photo when selectedUser changes
+  useEffect(() => {
+    if (selectedUser) {
+      loadProfilePhoto();
+    }
+  }, [selectedUser]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -142,7 +187,6 @@ const KajurDashboardPage: React.FC = () => {
         minute: "2-digit",
       });
     } catch (error) {
-      console.error("Error formatting time:", error);
       return "--:--";
     }
   };
@@ -314,11 +358,13 @@ const KajurDashboardPage: React.FC = () => {
     attendanceError ||
     leaveRequestsError ||
     correctionsError ||
-    statisticsError;
+    statisticsError ||
+    photoError;
 
   const clearError = () => {
     clearUserError();
     clearStatisticsError();
+    setPhotoError(null);
   };
 
   if (loading) {
@@ -369,8 +415,16 @@ const KajurDashboardPage: React.FC = () => {
         <Container maxWidth="lg">
           <Box display="flex" alignItems="center" mb={2}>
             <Avatar
-              sx={{ width: 60, height: 60, bgcolor: "#ff7043" }}
-              src={selectedUser?.profileImage}
+              sx={{ width: 60, height: 60 }}
+              src={photoURL || defaultProfileImage}
+              alt={selectedUser?.fullName || "User"}
+              imgProps={{
+                // Add error handling in case image fails to load
+                onError: (e) => {
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.src = defaultProfileImage;
+                },
+              }}
             >
               {selectedUser?.fullName?.charAt(0) || "U"}
             </Avatar>
