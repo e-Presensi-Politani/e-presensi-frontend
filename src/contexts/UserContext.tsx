@@ -14,6 +14,9 @@ interface UsersContextType {
   createUser: (userData: CreateUserDto) => Promise<void>;
   updateUser: (guid: string, userData: UpdateUserDto) => Promise<void>;
   deleteUser: (guid: string) => Promise<void>;
+  uploadProfilePhoto: (file: File) => Promise<void>;
+  removeProfilePhoto: () => Promise<void>;
+  fetchProfile: () => Promise<void>;
   clearSelectedUser: () => void;
   clearError: () => void;
 }
@@ -29,16 +32,19 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
   const [error, setError] = useState<string | null>(null);
   const { user: currentUser, isAuthenticated } = useAuth();
 
-  // Load users data if the current user is an admin
+  // Load users data if the current user is an admin or kajur
   useEffect(() => {
-    if (isAuthenticated && currentUser?.role === "ADMIN") {
+    if (
+      isAuthenticated &&
+      (currentUser?.role === "ADMIN" || currentUser?.role === "KAJUR")
+    ) {
       fetchUsers();
     }
   }, [isAuthenticated, currentUser]);
 
   const fetchUsers = async (): Promise<void> => {
     if (!isAuthenticated) {
-      setError("Unauthorized: Only admins can view all users");
+      setError("Unauthorized: Only admins and kajur can view all users");
       return;
     }
 
@@ -67,6 +73,27 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || "Failed to fetch user";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProfile = async (): Promise<void> => {
+    if (!isAuthenticated) {
+      setError("Unauthorized: You must be logged in to view your profile");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const profileData = await UsersService.getProfile();
+      setSelectedUser(profileData);
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch profile";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -154,6 +181,62 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const uploadProfilePhoto = async (file: File): Promise<void> => {
+    if (!isAuthenticated) {
+      setError("Unauthorized: You must be logged in to upload a profile photo");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await UsersService.uploadProfilePhoto(file);
+
+      // Refresh profile to get updated photo URL
+      await fetchProfile();
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to upload profile photo";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeProfilePhoto = async (): Promise<void> => {
+    if (!isAuthenticated) {
+      setError(
+        "Unauthorized: You must be logged in to remove your profile photo"
+      );
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await UsersService.removeProfilePhoto();
+
+      // Update the selected user (profile) to reflect photo removal
+      if (selectedUser) {
+        setSelectedUser({
+          ...selectedUser,
+          profileImage: null,
+          profileImageUrl: null,
+        });
+      }
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to remove profile photo";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const clearSelectedUser = (): void => {
     setSelectedUser(null);
   };
@@ -172,6 +255,9 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     createUser,
     updateUser,
     deleteUser,
+    uploadProfilePhoto,
+    removeProfilePhoto,
+    fetchProfile,
     clearSelectedUser,
     clearError,
   };
