@@ -11,6 +11,7 @@ interface UsersContextType {
   error: string | null;
   fetchUsers: () => Promise<void>;
   fetchUserByGuid: (guid: string) => Promise<void>;
+  fetchUsersByDepartment: (department: string) => Promise<User[]>;
   createUser: (userData: CreateUserDto) => Promise<void>;
   updateUser: (guid: string, userData: UpdateUserDto) => Promise<void>;
   deleteUser: (guid: string) => Promise<void>;
@@ -76,6 +77,39 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
       const errorMessage =
         err.response?.data?.message || "Failed to fetch user";
       setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUsersByDepartment = async (
+    department: string
+  ): Promise<User[]> => {
+    if (
+      !isAuthenticated ||
+      (currentUser?.role !== "ADMIN" && currentUser?.role !== "KAJUR")
+    ) {
+      setError(
+        "Unauthorized: Only admins and kajur can view users by department"
+      );
+      throw new Error(
+        "Unauthorized: Only admins and kajur can view users by department"
+      );
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const departmentUsers = await UsersService.getUsersByDepartment(
+        department
+      );
+      return departmentUsers;
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch users by department";
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -312,6 +346,7 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     error,
     fetchUsers,
     fetchUserByGuid,
+    fetchUsersByDepartment,
     createUser,
     updateUser,
     deleteUser,
