@@ -103,14 +103,6 @@ const UsersService = {
   },
 
   /**
-   * Create first admin user (no auth required - for initial setup)
-   */
-  createFirstAdmin: async (userData: CreateUserDto): Promise<User> => {
-    const response = await API.post<User>("/users/first-admin", userData);
-    return response.data;
-  },
-
-  /**
    * Update user details
    */
   updateUser: async (guid: string, userData: UpdateUserDto): Promise<User> => {

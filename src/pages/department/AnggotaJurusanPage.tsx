@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Container,
@@ -10,52 +10,56 @@ import {
   ListItem,
   AppBar,
   Toolbar,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BottomNav from "../../components/BottomNav";
 import { useNavigate } from "react-router-dom";
-
-
-
-// Sample data for demonstration
-const anggotaJurusan = [
-  {
-    id: 1,
-    name: "M. Ghozi Syah Putra",
-    nip: "2124323029",
-  },
-  {
-    id: 2,
-    name: "M. Ghozi Syah Putra",
-    nip: "2124323029",
-  },
-  {
-    id: 3,
-    name: "M. Ghozi Syah Putra",
-    nip: "2124323029",
-  },
-  {
-    id: 4,
-    name: "M. Ghozi Syah Putra",
-    nip: "2124323029",
-  },
-];
+import { useUsers } from "../../contexts/UserContext";
 
 const AnggotaJurusanPage: React.FC = () => {
   const navigate = useNavigate();
+
+  const {
+    users,
+    loading,
+    error,
+    fetchUsersByDepartment,
+    clearError,
+    selectedUser,
+  } = useUsers();
+
+  useEffect(() => {
+    // Clear any previous errors when component mounts
+    clearError();
+
+    // Fetch users by department if current user has a department
+    if (selectedUser?.department) {
+      fetchUsersByDepartment(selectedUser.department);
+    }
+  }, []);
+
   const handleBack = () => {
     navigate("/kajur-dashboard");
   };
 
-  const handleAnggotaClick = (id: number) => {
-    // Handle member click
-    console.log("Clicked member:", id);
+  const handleAnggotaClick = (userGuid: string) => {
+    // Navigate to user detail page or handle member click
+    console.log("Clicked member:", userGuid);
+    // You can navigate to a user detail page if needed
+    // navigate(`/user/${userGuid}`);
   };
 
   // Get initial for avatar
   const getInitial = (name: string) => {
     return name ? name.charAt(0).toUpperCase() : "U";
   };
+
+  // Filter out the current user from the list to show only other department members
+  const departmentMembers = users.filter(
+    (user) => user.guid !== selectedUser?.guid
+  );
 
   return (
     <Box sx={{ bgcolor: "#f5f5f5", width: "100%", minHeight: "100vh", pb: 7 }}>
@@ -76,63 +80,130 @@ const AnggotaJurusanPage: React.FC = () => {
 
       {/* Content */}
       <Container maxWidth="sm" sx={{ mt: 2 }}>
-        <List sx={{ p: 0 }}>
-          {anggotaJurusan.map((anggota) => (
-            <Paper
-              onClick={() => handleAnggotaClick(anggota.id)}
-              key={anggota.id}
-              elevation={1}
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                overflow: "hidden",
-                cursor: "pointer",
-                "&:hover": {
-                  bgcolor: "#f8f9fa",
-                },
-              }}
-            >
-              <ListItem
+        {/* Error Display */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={clearError}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              py: 4,
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {/* Department Info */}
+            {selectedUser?.department && (
+              <Typography
+                variant="subtitle1"
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  py: 2,
-                  px: 2,
+                  mb: 2,
+                  fontWeight: 500,
+                  color: "#666",
+                  textAlign: "center",
                 }}
               >
-                <Avatar
+                {selectedUser.department}
+              </Typography>
+            )}
+
+            {/* Members List */}
+            <List sx={{ p: 0 }}>
+              {departmentMembers.length === 0 ? (
+                <Paper
+                  elevation={1}
                   sx={{
-                    width: 48,
-                    height: 48,
-                    bgcolor: "#ff7043",
-                    mr: 2,
+                    p: 3,
+                    textAlign: "center",
+                    borderRadius: 2,
                   }}
                 >
-                  {getInitial(anggota.name)}
-                </Avatar>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography
-                    variant="subtitle1"
+                  <Typography color="text.secondary">
+                    Tidak ada anggota jurusan lain yang ditemukan
+                  </Typography>
+                </Paper>
+              ) : (
+                departmentMembers.map((anggota) => (
+                  <Paper
+                    onClick={() => handleAnggotaClick(anggota.guid)}
+                    key={anggota.guid}
+                    elevation={1}
                     sx={{
-                      fontWeight: 500,
-                      color: "#333",
-                      mb: 0.5,
+                      mb: 2,
+                      borderRadius: 2,
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor: "#f8f9fa",
+                      },
                     }}
                   >
-                    {anggota.name}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ fontSize: "0.875rem" }}
-                  >
-                    {anggota.nip}
-                  </Typography>
-                </Box>
-              </ListItem>
-            </Paper>
-          ))}
-        </List>
+                    <ListItem
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        py: 2,
+                        px: 2,
+                      }}
+                    >
+                      <Avatar
+                        src={anggota.profileImageUrl || undefined}
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          bgcolor: "#ff7043",
+                          mr: 2,
+                        }}
+                      >
+                        {getInitial(anggota.fullName)}
+                      </Avatar>
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 500,
+                            color: "#333",
+                            mb: 0.5,
+                          }}
+                        >
+                          {anggota.fullName}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ fontSize: "0.875rem" }}
+                        >
+                          {anggota.nip}
+                        </Typography>
+                        {anggota.role && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "#666",
+                              fontSize: "0.75rem",
+                              display: "block",
+                            }}
+                          >
+                            {anggota.role}
+                          </Typography>
+                        )}
+                      </Box>
+                    </ListItem>
+                  </Paper>
+                ))
+              )}
+            </List>
+          </>
+        )}
       </Container>
 
       {/* Bottom Navigation */}

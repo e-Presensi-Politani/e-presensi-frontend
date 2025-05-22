@@ -13,7 +13,6 @@ interface UsersContextType {
   fetchUsersByDepartment: (department: string) => Promise<void>;
   fetchUserByGuid: (guid: string) => Promise<void>;
   createUser: (userData: CreateUserDto) => Promise<void>;
-  createFirstAdmin: (userData: CreateUserDto) => Promise<void>;
   updateUser: (guid: string, userData: UpdateUserDto) => Promise<void>;
   deleteUser: (guid: string) => Promise<void>;
   uploadProfilePhoto: (file: File) => Promise<void>;
@@ -159,25 +158,6 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || "Failed to create user";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createFirstAdmin = async (userData: CreateUserDto): Promise<void> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const newAdmin = await UsersService.createFirstAdmin(userData);
-
-      // Set the created admin as selected user for display
-      setSelectedUser(newAdmin);
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to create first admin";
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -378,7 +358,6 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     fetchUsersByDepartment,
     fetchUserByGuid,
     createUser,
-    createFirstAdmin,
     updateUser,
     deleteUser,
     uploadProfilePhoto,
