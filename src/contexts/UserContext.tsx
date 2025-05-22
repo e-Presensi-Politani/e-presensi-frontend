@@ -1,4 +1,4 @@
-// src/contexts/UserContext.tsx
+// src/contexts/UsersContext.tsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, CreateUserDto, UpdateUserDto } from "../types/users";
 import UsersService from "../services/UsersService";
@@ -10,7 +10,6 @@ interface UsersContextType {
   loading: boolean;
   error: string | null;
   fetchUsers: () => Promise<void>;
-  fetchUsersByDepartment: (department: string) => Promise<void>;
   fetchUserByGuid: (guid: string) => Promise<void>;
   createUser: (userData: CreateUserDto) => Promise<void>;
   updateUser: (guid: string, userData: UpdateUserDto) => Promise<void>;
@@ -47,11 +46,6 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchUsers = async (): Promise<void> => {
     if (!isAuthenticated) {
-      setError("Unauthorized: You must be logged in");
-      return;
-    }
-
-    if (currentUser?.role !== "ADMIN" && currentUser?.role !== "KAJUR") {
       setError("Unauthorized: Only admins and kajur can view all users");
       return;
     }
@@ -71,40 +65,7 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const fetchUsersByDepartment = async (department: string): Promise<void> => {
-    if (!isAuthenticated) {
-      setError("Unauthorized: You must be logged in");
-      return;
-    }
-
-    if (currentUser?.role !== "ADMIN" && currentUser?.role !== "KAJUR") {
-      setError(
-        "Unauthorized: Only admins and kajur can view users by department"
-      );
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const usersData = await UsersService.getUsersByDepartment(department);
-      setUsers(usersData);
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to fetch users by department";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchUserByGuid = async (guid: string): Promise<void> => {
-    if (!isAuthenticated) {
-      setError("Unauthorized: You must be logged in");
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -151,10 +112,9 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     setError(null);
 
     try {
-      const newUser = await UsersService.createUser(userData);
-
-      // Add the new user to the users list
-      setUsers((prevUsers) => [...prevUsers, newUser]);
+      await UsersService.createUser(userData);
+      // Refresh users list after creating a new user
+      await fetchUsers();
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || "Failed to create user";
@@ -169,11 +129,6 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     guid: string,
     userData: UpdateUserDto
   ): Promise<void> => {
-    if (!isAuthenticated) {
-      setError("Unauthorized: You must be logged in");
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -286,11 +241,12 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const removeUserProfilePhoto = async (userGuid: string): Promise<void> => {
     if (!isAuthenticated) {
-      setError("Unauthorized: You must be logged in");
+      setError(
+        "Unauthorized: Only admins can remove other users' profile photos"
+      );
       return;
     }
 
-    // Note: Backend handles role-based authorization for this action
     setLoading(true);
     setError(null);
 
@@ -355,7 +311,6 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     loading,
     error,
     fetchUsers,
-    fetchUsersByDepartment,
     fetchUserByGuid,
     createUser,
     updateUser,

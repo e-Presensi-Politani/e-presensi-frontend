@@ -3,7 +3,8 @@ import axios from "axios";
 import { CreateUserDto, UpdateUserDto, User } from "../types/users";
 import AuthService from "./AuthService";
 
-// Create API instance with base configuration
+// Reuse the API instance from AuthService to make use of the already
+// configured interceptors for authentication and token refresh
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
@@ -61,7 +62,7 @@ API.interceptors.response.use(
 
 const UsersService = {
   /**
-   * Get all users (admin and kajur only)
+   * Get all users (admin only)
    */
   getAllUsers: async (): Promise<User[]> => {
     const response = await API.get<User[]>("/users");
@@ -77,20 +78,10 @@ const UsersService = {
   },
 
   /**
-   * Get current user's profile (includes profileImageUrl)
+   * Get current user's profile
    */
   getProfile: async (): Promise<User> => {
     const response = await API.get<User>("/users/profile");
-    return response.data;
-  },
-
-  /**
-   * Get users by department (admin and kajur only)
-   */
-  getUsersByDepartment: async (department: string): Promise<User[]> => {
-    const response = await API.get<User[]>(
-      `/users/by-department/${department}`
-    );
     return response.data;
   },
 
@@ -118,40 +109,31 @@ const UsersService = {
   },
 
   /**
-   * Upload profile photo for current user
+   * Upload profile photo
    */
-  uploadProfilePhoto: async (
-    file: File
-  ): Promise<{ message: string; file: any }> => {
+  uploadProfilePhoto: async (file: File): Promise<any> => {
     // Create form data
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await API.post<{ message: string; file: any }>(
-      "/users/profile-photo/upload",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
+    const response = await API.post("/users/profile-photo/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
     return response.data;
   },
 
   /**
-   * Remove own profile photo
+   * Remove profile photo for the current user
    */
-  removeProfilePhoto: async (): Promise<{ message: string }> => {
-    const response = await API.delete<{ message: string }>(
-      "/users/profile-photo"
-    );
-    return response.data;
+  removeProfilePhoto: async (): Promise<void> => {
+    await API.delete("/users/profile-photo");
   },
 
   /**
-   * Get profile photo metadata by user GUID
+   * Get profile photo by user GUID
    */
   getProfilePhoto: async (userGuid: string): Promise<any> => {
     const response = await API.get(`/users/profile-photo/${userGuid}`);
@@ -161,13 +143,8 @@ const UsersService = {
   /**
    * Remove profile photo for a specified user (admin only)
    */
-  removeUserProfilePhoto: async (
-    userGuid: string
-  ): Promise<{ message: string }> => {
-    const response = await API.delete<{ message: string }>(
-      `/users/profile-photo/${userGuid}`
-    );
-    return response.data;
+  removeUserProfilePhoto: async (userGuid: string): Promise<void> => {
+    await API.delete(`/users/profile-photo/${userGuid}`);
   },
 
   /**
@@ -176,22 +153,6 @@ const UsersService = {
   isAdmin: (): boolean => {
     const user = AuthService.getUser();
     return user?.role === "ADMIN";
-  },
-
-  /**
-   * Check if the current user has kajur privileges
-   */
-  isKajur: (): boolean => {
-    const user = AuthService.getUser();
-    return user?.role === "KAJUR";
-  },
-
-  /**
-   * Check if the current user has admin or kajur privileges
-   */
-  canManageUsers: (): boolean => {
-    const user = AuthService.getUser();
-    return user?.role === "ADMIN" || user?.role === "KAJUR";
   },
 };
 
