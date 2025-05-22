@@ -3,8 +3,7 @@ import axios from "axios";
 import { CreateUserDto, UpdateUserDto, User } from "../types/users";
 import AuthService from "./AuthService";
 
-// Reuse the API instance from AuthService to make use of the already
-// configured interceptors for authentication and token refresh
+// Create API instance with base configuration
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
@@ -62,7 +61,7 @@ API.interceptors.response.use(
 
 const UsersService = {
   /**
-   * Get all users (admin only)
+   * Get all users (admin and kajur only)
    */
   getAllUsers: async (): Promise<User[]> => {
     const response = await API.get<User[]>("/users");
@@ -78,10 +77,20 @@ const UsersService = {
   },
 
   /**
-   * Get current user's profile
+   * Get current user's profile (includes profileImageUrl)
    */
   getProfile: async (): Promise<User> => {
     const response = await API.get<User>("/users/profile");
+    return response.data;
+  },
+
+  /**
+   * Get users by department (admin and kajur only)
+   */
+  getUsersByDepartment: async (department: string): Promise<User[]> => {
+    const response = await API.get<User[]>(
+      `/users/by-department/${department}`
+    );
     return response.data;
   },
 
@@ -90,6 +99,14 @@ const UsersService = {
    */
   createUser: async (userData: CreateUserDto): Promise<User> => {
     const response = await API.post<User>("/users", userData);
+    return response.data;
+  },
+
+  /**
+   * Create first admin user (no auth required - for initial setup)
+   */
+  createFirstAdmin: async (userData: CreateUserDto): Promise<User> => {
+    const response = await API.post<User>("/users/first-admin", userData);
     return response.data;
   },
 
@@ -109,31 +126,40 @@ const UsersService = {
   },
 
   /**
-   * Upload profile photo
+   * Upload profile photo for current user
    */
-  uploadProfilePhoto: async (file: File): Promise<any> => {
+  uploadProfilePhoto: async (
+    file: File
+  ): Promise<{ message: string; file: any }> => {
     // Create form data
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await API.post("/users/profile-photo/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await API.post<{ message: string; file: any }>(
+      "/users/profile-photo/upload",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
 
     return response.data;
   },
 
   /**
-   * Remove profile photo for the current user
+   * Remove own profile photo
    */
-  removeProfilePhoto: async (): Promise<void> => {
-    await API.delete("/users/profile-photo");
+  removeProfilePhoto: async (): Promise<{ message: string }> => {
+    const response = await API.delete<{ message: string }>(
+      "/users/profile-photo"
+    );
+    return response.data;
   },
 
   /**
-   * Get profile photo by user GUID
+   * Get profile photo metadata by user GUID
    */
   getProfilePhoto: async (userGuid: string): Promise<any> => {
     const response = await API.get(`/users/profile-photo/${userGuid}`);
@@ -143,8 +169,13 @@ const UsersService = {
   /**
    * Remove profile photo for a specified user (admin only)
    */
-  removeUserProfilePhoto: async (userGuid: string): Promise<void> => {
-    await API.delete(`/users/profile-photo/${userGuid}`);
+  removeUserProfilePhoto: async (
+    userGuid: string
+  ): Promise<{ message: string }> => {
+    const response = await API.delete<{ message: string }>(
+      `/users/profile-photo/${userGuid}`
+    );
+    return response.data;
   },
 
   /**
@@ -153,6 +184,22 @@ const UsersService = {
   isAdmin: (): boolean => {
     const user = AuthService.getUser();
     return user?.role === "ADMIN";
+  },
+
+  /**
+   * Check if the current user has kajur privileges
+   */
+  isKajur: (): boolean => {
+    const user = AuthService.getUser();
+    return user?.role === "KAJUR";
+  },
+
+  /**
+   * Check if the current user has admin or kajur privileges
+   */
+  canManageUsers: (): boolean => {
+    const user = AuthService.getUser();
+    return user?.role === "ADMIN" || user?.role === "KAJUR";
   },
 };
 
