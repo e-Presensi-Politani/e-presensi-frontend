@@ -26,6 +26,7 @@ export interface User {
   email: string;
   role: string;
   profileImage?: string;
+  department?: string;
 }
 
 export interface AuthTokens {
