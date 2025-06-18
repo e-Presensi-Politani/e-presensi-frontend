@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -17,26 +17,37 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BottomNav from "../../components/BottomNav";
 import { useNavigate } from "react-router-dom";
 import { useUsers } from "../../contexts/UserContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { User } from "../../types/users";
 
 const AnggotaJurusanPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  const { fetchUsersByDepartment, loading, error, clearError } = useUsers();
 
-  const {
-    users,
-    loading,
-    error,
-    fetchUsersByDepartment,
-    clearError,
-    selectedUser,
-  } = useUsers();
+  const [departmentMembers, setDepartmentMembers] = useState<User[]>([]);
 
   useEffect(() => {
     // Clear any previous errors when component mounts
     clearError();
 
     // Fetch users by department if current user has a department
-    if (selectedUser?.department) {
-      fetchUsersByDepartment(selectedUser.department);
+    if (currentUser?.department) {
+      const fetchMembers = async () => {
+        try {
+          const results = await fetchUsersByDepartment(currentUser.department!);
+          // Filter out the current user from the list to show only other department members
+          const filteredMembers = results.filter(
+            (user) => user.guid !== currentUser.guid
+          );
+          setDepartmentMembers(filteredMembers);
+        } catch (err) {
+          console.error("Error fetching department members:", err);
+          setDepartmentMembers([]);
+        }
+      };
+
+      fetchMembers();
     }
   }, []);
 
@@ -55,11 +66,6 @@ const AnggotaJurusanPage: React.FC = () => {
   const getInitial = (name: string) => {
     return name ? name.charAt(0).toUpperCase() : "U";
   };
-
-  // Filter out the current user from the list to show only other department members
-  const departmentMembers = users.filter(
-    (user) => user.guid !== selectedUser?.guid
-  );
 
   return (
     <Box sx={{ bgcolor: "#f5f5f5", width: "100%", minHeight: "100vh", pb: 7 }}>
@@ -102,7 +108,7 @@ const AnggotaJurusanPage: React.FC = () => {
         ) : (
           <>
             {/* Department Info */}
-            {selectedUser?.department && (
+            {currentUser?.department && (
               <Typography
                 variant="subtitle1"
                 sx={{
@@ -112,7 +118,7 @@ const AnggotaJurusanPage: React.FC = () => {
                   textAlign: "center",
                 }}
               >
-                {selectedUser.department}
+                {currentUser.department}
               </Typography>
             )}
 
