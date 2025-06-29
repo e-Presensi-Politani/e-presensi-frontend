@@ -16,7 +16,6 @@ import {
   Select,
   MenuItem,
   TextField,
-  Chip,
   Grid,
   Dialog,
   DialogTitle,
@@ -32,10 +31,8 @@ import {
 } from "@mui/material";
 import {
   ArrowBack,
-  Download,
   Assessment,
   People,
-  FileDownload,
   Settings,
   CheckCircle,
   Group,
@@ -52,6 +49,7 @@ import {
   BulkReportScope,
   GenerateBulkReportParams,
 } from "../../types/statistics";
+import Swal from "sweetalert2";
 
 const JurusanPage: React.FC = () => {
   const navigate = useNavigate();
@@ -84,15 +82,6 @@ const JurusanPage: React.FC = () => {
     includeSummary: true,
   });
   const [userSelectionDialog, setUserSelectionDialog] = useState(false);
-  const [recentReports, setRecentReports] = useState<
-    Array<{
-      id: string;
-      title: string;
-      format: string;
-      createdAt: string;
-      downloadUrl: string;
-    }>
-  >([]);
 
   useEffect(() => {
     clearUsersError();
@@ -202,34 +191,55 @@ const JurusanPage: React.FC = () => {
 
       if (reportParams.scope === BulkReportScope.SPECIFIC_USERS) {
         if (selectedUsers.length === 0) {
-          alert("Pilih minimal satu pengguna untuk laporan");
+          await Swal.fire({
+            icon: "warning",
+            title: "Perhatian!",
+            text: "Pilih minimal satu pengguna untuk laporan",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#4285f4",
+          });
           return;
         }
         finalParams.userIds = selectedUsers;
       }
 
+      // Show loading alert
+      Swal.fire({
+        title: "Generating Report...",
+        text: "Mohon tunggu, laporan sedang dibuat",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
       const response = await generateBulkReport(finalParams);
 
       if (response.success) {
-        // Add to recent reports
-        const newReport = {
-          id: Date.now().toString(),
-          title: finalParams.title || "Bulk Report",
-          format: finalParams.format.toUpperCase(),
-          createdAt: new Date().toLocaleString("id-ID"),
-          downloadUrl: response.data.downloadUrl,
-        };
-        setRecentReports((prev) => [newReport, ...prev.slice(0, 4)]);
+        // Automatically download the report
+        if (response.data.downloadUrl) {
+          downloadReport(response.data.downloadUrl);
+        }
 
-        alert("Laporan berhasil dibuat!");
+        await Swal.fire({
+          icon: "success",
+          title: "Berhasil!",
+          text: "Laporan berhasil dibuat dan sedang diunduh!",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#4285f4",
+        });
       }
     } catch (error) {
       console.error("Error generating report:", error);
-    }
-  };
 
-  const handleDownloadReport = (downloadUrl: string) => {
-    downloadReport(downloadUrl);
+      await Swal.fire({
+        icon: "error",
+        title: "Gagal!",
+        text: "Terjadi kesalahan saat membuat laporan. Silakan coba lagi.",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#4285f4",
+      });
+    }
   };
 
   const getInitial = (name: string) => {
@@ -287,55 +297,6 @@ const JurusanPage: React.FC = () => {
                   {departmentMembers.length} anggota terdaftar
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Recent Reports */}
-        {recentReports.length > 0 && (
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography
-                variant="h6"
-                sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}
-              >
-                <FileDownload />
-                Laporan Terbaru
-              </Typography>
-              <List dense>
-                {recentReports.map((report) => (
-                  <ListItem
-                    key={report.id}
-                    secondaryAction={
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<Download />}
-                        onClick={() => handleDownloadReport(report.downloadUrl)}
-                      >
-                        Download
-                      </Button>
-                    }
-                  >
-                    <ListItemIcon>
-                      <Assessment color="primary" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={report.title}
-                      secondary={
-                        <Box>
-                          <Chip
-                            label={report.format}
-                            size="small"
-                            sx={{ mr: 1 }}
-                          />
-                          {report.createdAt}
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
             </CardContent>
           </Card>
         )}
