@@ -44,7 +44,7 @@ export interface GenerateBulkReportParams {
   startDate?: string;
   endDate?: string;
   scope: BulkReportScope;
-  departmentId?: string;
+  departmentName?: string;
   userIds?: string[];
   title?: string;
   includeInactive?: boolean;

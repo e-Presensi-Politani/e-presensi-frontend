@@ -198,7 +198,7 @@ const KajurDashboardPage: React.FC = () => {
 
   // Handle Quick Access icon clicks
   const handleJurusan = () => {
-    navigate("/anggota-jurusan");
+    navigate("/jurusan");
   };
 
   const handleKoreksi = () => {
