@@ -33,6 +33,7 @@ import CorrectionDetailPage from "./pages/correction/DetailCorrectionPage";
 import PersetujuanKoreksiPage from "./pages/correction/PersetujuanKoreksiPage";
 import PersetujuanKoreksiDetailPage from "./pages/correction/PersetujuanKoreksiDetail";
 import EditProfilePage from "./pages/profile/EditProfilePage";
+import JurusanPage from "./pages/department/JurusanPage";
 
 function App() {
   return (
@@ -148,6 +149,10 @@ function App() {
                           <Route
                             path="/reject-pengajuan"
                             element={<RejectApplicationForm />}
+                          />
+                          <Route
+                            path="/jurusan"
+                            element={<JurusanPage />}
                           />
                         </Route>
 

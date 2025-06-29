@@ -78,6 +78,16 @@ const UsersService = {
   },
 
   /**
+   * Get users by department (admin and kajur only)
+   */
+  getUsersByDepartment: async (department: string): Promise<User[]> => {
+    const response = await API.get<User[]>(
+      `/users/by-department/${department}`
+    );
+    return response.data;
+  },
+
+  /**
    * Get current user's profile
    */
   getProfile: async (): Promise<User> => {

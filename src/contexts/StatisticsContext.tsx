@@ -11,6 +11,8 @@ import {
   StatisticsSummary,
   GenerateReportParams,
   GenerateReportResponse,
+  GenerateBulkReportParams,
+  GenerateBulkReportResponse,
 } from "../types/statistics";
 import statisticsService from "../services/StatisticsService";
 
@@ -26,6 +28,9 @@ interface StatisticsContextType {
   generateMyReport: (
     params: GenerateReportParams
   ) => Promise<GenerateReportResponse>;
+  generateBulkReport: (
+    params: GenerateBulkReportParams
+  ) => Promise<GenerateBulkReportResponse>;
   downloadReport: (downloadUrl: string) => void;
   clearError: () => void;
 }
@@ -123,6 +128,26 @@ export const StatisticsProvider: React.FC<StatisticsProviderProps> = ({
     }
   }, []);
 
+  const generateBulkReport = useCallback(
+    async (params: GenerateBulkReportParams) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await statisticsService.generateBulkReport(params);
+        return response;
+      } catch (err: any) {
+        const errorMessage =
+          err.response?.data?.message || "Failed to generate bulk report";
+        setError(errorMessage);
+        console.error("Error generating bulk report:", err);
+        throw new Error(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   const downloadReport = useCallback((downloadUrl: string) => {
     statisticsService.downloadReport(downloadUrl);
   }, []);
@@ -139,6 +164,7 @@ export const StatisticsProvider: React.FC<StatisticsProviderProps> = ({
     fetchMyStatistics,
     generateReport,
     generateMyReport,
+    generateBulkReport,
     downloadReport,
     clearError,
   };

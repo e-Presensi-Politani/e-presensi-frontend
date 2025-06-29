@@ -1,16 +1,22 @@
 // src/types/statistics.ts
 
 export enum ReportPeriod {
-  DAILY = 'daily',
-  WEEKLY = 'weekly',
-  MONTHLY = 'monthly',
-  CUSTOM = 'custom',
+  DAILY = "daily",
+  WEEKLY = "weekly",
+  MONTHLY = "monthly",
+  CUSTOM = "custom",
 }
 
 export enum ReportFormat {
-  EXCEL = 'excel',
-  PDF = 'pdf',
-  CSV = 'csv',
+  EXCEL = "excel",
+  PDF = "pdf",
+  CSV = "csv",
+}
+
+export enum BulkReportScope {
+  DEPARTMENT = "department",
+  ALL_USERS = "all_users",
+  SPECIFIC_USERS = "specific_users",
 }
 
 export interface StatisticsQueryParams {
@@ -30,6 +36,20 @@ export interface GenerateReportParams {
   userId?: string;
   departmentId?: string;
   title?: string;
+}
+
+export interface GenerateBulkReportParams {
+  format: ReportFormat;
+  period: ReportPeriod;
+  startDate?: string;
+  endDate?: string;
+  scope: BulkReportScope;
+  departmentName?: string;
+  userIds?: string[];
+  title?: string;
+  includeInactive?: boolean;
+  separateSheets?: boolean; // Whether to create separate sheets for each user/department
+  includeSummary?: boolean; // Whether to include summary sheet
 }
 
 export interface AttendanceRecord {
@@ -59,6 +79,15 @@ export interface StatisticsSummary {
 }
 
 export interface GenerateReportResponse {
+  success: boolean;
+  message: string;
+  data: {
+    fileName: string;
+    downloadUrl: string;
+  };
+}
+
+export interface GenerateBulkReportResponse {
   success: boolean;
   message: string;
   data: {
