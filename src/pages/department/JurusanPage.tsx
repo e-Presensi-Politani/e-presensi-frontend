@@ -246,11 +246,6 @@ const JurusanPage: React.FC = () => {
     return name ? name.charAt(0).toUpperCase() : "U";
   };
 
-  const isKajur =
-    currentUser?.role?.toLowerCase().includes("kajur") ||
-    currentUser?.role?.toLowerCase().includes("kepala") ||
-    currentUser?.role?.toLowerCase().includes("head");
-
   const loading = usersLoading || statsLoading;
   const error = usersError || statsError;
 
@@ -288,9 +283,9 @@ const JurusanPage: React.FC = () => {
 
         {/* Department Info */}
         {currentUser?.department && (
-          <Card sx={{ mb: 3, bgcolor: "primary.main", color: "white" }}>
+          <Card sx={{ mb: 2, bgcolor: "#4285F4", color: "white" }}>
             <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Group sx={{ fontSize: 40 }} />
+              <Group sx={{ fontSize: 35 }} />
               <Box>
                 <Typography variant="h6">{currentUser.department}</Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
@@ -306,13 +301,13 @@ const JurusanPage: React.FC = () => {
           <CardContent>
             <Typography
               variant="h6"
-              sx={{ mb: 3, display: "flex", alignItems: "center", gap: 1 }}
+              sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}
             >
               <Assessment />
               Generate Laporan Kehadiran
             </Typography>
 
-            <Grid container spacing={3}>
+            <Grid>
               {/* Report Title */}
               <Grid>
                 <TextField
@@ -321,12 +316,13 @@ const JurusanPage: React.FC = () => {
                   value={reportParams.title}
                   onChange={(e) => handleParamChange("title", e.target.value)}
                   placeholder="Masukkan judul laporan..."
+                  sx={{ mb: 2 }}
                 />
               </Grid>
 
               {/* Format and Period */}
               <Grid>
-                <FormControl fullWidth>
+                <FormControl fullWidth sx={{ mb: 2 }}>
                   <InputLabel>Format</InputLabel>
                   <Select
                     value={reportParams.format}
@@ -345,7 +341,7 @@ const JurusanPage: React.FC = () => {
               </Grid>
 
               <Grid>
-                <FormControl fullWidth>
+                <FormControl fullWidth sx={{ mb: 2 }}>
                   <InputLabel>Periode</InputLabel>
                   <Select
                     value={reportParams.period}
@@ -373,6 +369,7 @@ const JurusanPage: React.FC = () => {
                     handleParamChange("startDate", e.target.value)
                   }
                   InputLabelProps={{ shrink: true }}
+                  sx={{ mb: 2 }}
                 />
               </Grid>
 
@@ -384,12 +381,13 @@ const JurusanPage: React.FC = () => {
                   value={reportParams.endDate}
                   onChange={(e) => handleParamChange("endDate", e.target.value)}
                   InputLabelProps={{ shrink: true }}
+                  sx={{ mb: 2 }}
                 />
               </Grid>
 
               {/* Scope Selection */}
               <Grid>
-                <FormControl fullWidth>
+                <FormControl fullWidth sx={{ mb: 2 }}>
                   <InputLabel>Cakupan Laporan</InputLabel>
                   <Select
                     value={reportParams.scope}
@@ -402,11 +400,6 @@ const JurusanPage: React.FC = () => {
                     <MenuItem value={BulkReportScope.SPECIFIC_USERS}>
                       Pilih Pengguna Tertentu
                     </MenuItem>
-                    {isKajur && (
-                      <MenuItem value={BulkReportScope.ALL_USERS}>
-                        Semua Pengguna (Seluruh Sistem)
-                      </MenuItem>
-                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -431,13 +424,20 @@ const JurusanPage: React.FC = () => {
                 <Divider sx={{ my: 2 }} />
                 <Typography
                   variant="subtitle2"
-                  sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}
+                  sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}
                 >
                   <Settings fontSize="small" />
                   Opsi Lanjutan
                 </Typography>
 
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0,
+                    mb: 2,
+                  }}
+                >
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     <Checkbox
                       checked={reportParams.separateSheets || false}
@@ -498,18 +498,48 @@ const JurusanPage: React.FC = () => {
       </Container>
 
       {/* User Selection Dialog */}
+      {/* Mobile-Optimized User Selection Dialog */}
       <Dialog
         open={userSelectionDialog}
         onClose={() => setUserSelectionDialog(false)}
         maxWidth="sm"
         fullWidth
+        // fullScreen // Full screen on mobile
+        sx={{
+          "& .MuiDialog-paper": {
+            m: { xs: 0, sm: 2 },
+            borderRadius: { xs: 0, sm: 2 },
+            maxHeight: { xs: "90vh", sm: "80vh" },
+          },
+        }}
       >
-        <DialogTitle>Pilih Pengguna untuk Laporan</DialogTitle>
-        <DialogContent>
-          <List>
+        <DialogTitle
+          sx={{
+            py: { xs: 2, sm: 3 },
+            px: { xs: 2, sm: 3 },
+            fontSize: { xs: "1.1rem", sm: "1.25rem" },
+            fontWeight: 600,
+            textAlign: "center",
+          }}
+        >
+          Pilih Pengguna untuk Laporan
+        </DialogTitle>
+        <DialogContent sx={{ px: { xs: 1, sm: 3 } }}>
+          <List dense>
             {departmentMembers.map((user) => (
-              <ListItem key={user.guid} dense>
-                <ListItemIcon>
+              <ListItem
+                key={user.guid}
+                sx={{
+                  py: 1,
+                  px: { xs: 2, sm: 1 },
+                  // borderRadius: 2,
+                  mb: 0.5,
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>
                   <Checkbox
                     checked={selectedUsers.includes(user.guid)}
                     onChange={() => handleUserSelection(user.guid)}
@@ -517,26 +547,73 @@ const JurusanPage: React.FC = () => {
                 </ListItemIcon>
                 <Avatar
                   src={user.profileImageUrl || undefined}
-                  sx={{ width: 32, height: 32, mr: 2, bgcolor: "#ff7043" }}
+                  sx={{
+                    width: { xs: 36, sm: 40 },
+                    height: { xs: 36, sm: 40 },
+                    mr: 2,
+                    bgcolor: "#ff7043",
+                    fontSize: { xs: "1rem", sm: "1.1rem" },
+                  }}
                 >
                   {getInitial(user.fullName)}
                 </Avatar>
                 <ListItemText
-                  primary={user.fullName}
-                  secondary={`${user.nip} • ${user.role || "Staff"}`}
+                  primary={
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        fontSize: { xs: "0.9rem", sm: "1rem" },
+                        fontWeight: 500,
+                      }}
+                    >
+                      {user.fullName}
+                    </Typography>
+                  }
+                  secondary={
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: "0.8rem", sm: "0.875rem" },
+                        color: "text.secondary",
+                      }}
+                    >
+                      {user.nip}
+                    </Typography>
+                  }
                 />
               </ListItem>
             ))}
           </List>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setUserSelectionDialog(false)}>Batal</Button>
+        <DialogActions
+          sx={{
+            p: { xs: 2, sm: 3 },
+            gap: 1,
+          }}
+        >
+          <Button
+            onClick={() => setUserSelectionDialog(false)}
+            sx={{
+              px: { xs: 2, sm: 4 },
+              py: 1,
+              fontSize: { xs: "0.875rem", sm: "1rem" },
+            }}
+          >
+            Batal
+          </Button>
           <Button
             variant="contained"
             onClick={() => setUserSelectionDialog(false)}
             startIcon={<CheckCircle />}
+            sx={{
+              color: "#4285F4",
+              px: { xs: 2, sm: 4 },
+              py: 1,
+              fontSize: { xs: "0.875rem", sm: "1rem" },
+              fontWeight: 600,
+            }}
           >
-            Konfirmasi ({selectedUsers.length})
+            konfirmasi ({selectedUsers.length})
           </Button>
         </DialogActions>
       </Dialog>
