@@ -12,9 +12,16 @@ import {
   Toolbar,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import BottomNav from "../../components/BottomNav";
+import DepartmentReportGenerator from "../../components/DepartmentReportGenerator";
 import { useNavigate } from "react-router-dom";
 import { useUsers } from "../../contexts/UserContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -26,6 +33,8 @@ const AnggotaJurusanPage: React.FC = () => {
   const { fetchUsersByDepartment, loading, error, clearError } = useUsers();
 
   const [departmentMembers, setDepartmentMembers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
   useEffect(() => {
     // Clear any previous errors when component mounts
@@ -55,17 +64,44 @@ const AnggotaJurusanPage: React.FC = () => {
     navigate("/kajur-dashboard");
   };
 
-  const handleAnggotaClick = (userGuid: string) => {
-    // Navigate to user detail page or handle member click
-    console.log("Clicked member:", userGuid);
-    // You can navigate to a user detail page if needed
-    // navigate(`/user/${userGuid}`);
+  const handleAnggotaClick = (user: User) => {
+    // Check if current user is kajur (department head)
+    if (
+      currentUser?.role?.toLowerCase().includes("kajur") ||
+      currentUser?.role?.toLowerCase().includes("kepala") ||
+      currentUser?.role?.toLowerCase().includes("head")
+    ) {
+      // Open report generation dialog for the selected user
+      setSelectedUser(user);
+      setReportDialogOpen(true);
+    } else {
+      // For non-kajur users, just show user info or navigate to user detail
+      console.log("Clicked member:", user.guid);
+      // You can navigate to a user detail page if needed
+      // navigate(`/user/${user.guid}`);
+    }
+  };
+
+  const handleCloseReportDialog = () => {
+    setReportDialogOpen(false);
+    setSelectedUser(null);
+  };
+
+  const handleGenerateReportFromDialog = () => {
+    setReportDialogOpen(false);
+    // The DepartmentReportGenerator will handle the report generation
   };
 
   // Get initial for avatar
   const getInitial = (name: string) => {
     return name ? name.charAt(0).toUpperCase() : "U";
   };
+
+  // Check if current user is kajur
+  const isKajur =
+    currentUser?.role?.toLowerCase().includes("kajur") ||
+    currentUser?.role?.toLowerCase().includes("kepala") ||
+    currentUser?.role?.toLowerCase().includes("head");
 
   return (
     <Box sx={{ bgcolor: "#f5f5f5", width: "100%", minHeight: "100vh", pb: 7 }}>
@@ -91,6 +127,16 @@ const AnggotaJurusanPage: React.FC = () => {
           <Alert severity="error" sx={{ mb: 2 }} onClose={clearError}>
             {error}
           </Alert>
+        )}
+
+        {/* Department Report Generator - Only for Kajur */}
+        {isKajur && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              Generate Laporan Jurusan
+            </Typography>
+            <DepartmentReportGenerator />
+          </Box>
         )}
 
         {/* Loading State */}
@@ -140,7 +186,7 @@ const AnggotaJurusanPage: React.FC = () => {
               ) : (
                 departmentMembers.map((anggota) => (
                   <Paper
-                    onClick={() => handleAnggotaClick(anggota.guid)}
+                    onClick={() => handleAnggotaClick(anggota)}
                     key={anggota.guid}
                     elevation={1}
                     sx={{
@@ -148,6 +194,7 @@ const AnggotaJurusanPage: React.FC = () => {
                       borderRadius: 2,
                       overflow: "hidden",
                       cursor: "pointer",
+                      position: "relative",
                       "&:hover": {
                         bgcolor: "#f8f9fa",
                       },
@@ -203,6 +250,22 @@ const AnggotaJurusanPage: React.FC = () => {
                           </Typography>
                         )}
                       </Box>
+
+                      {/* Report Icon - Only visible for Kajur */}
+                      {isKajur && (
+                        <IconButton
+                          sx={{
+                            bgcolor: "#e3f2fd",
+                            color: "#1976d2",
+                            "&:hover": {
+                              bgcolor: "#bbdefb",
+                            },
+                          }}
+                          size="small"
+                        >
+                          <AssessmentIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </ListItem>
                   </Paper>
                 ))
@@ -211,6 +274,91 @@ const AnggotaJurusanPage: React.FC = () => {
           </>
         )}
       </Container>
+
+      {/* Report Generation Dialog */}
+      <Dialog
+        open={reportDialogOpen}
+        onClose={handleCloseReportDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ bgcolor: "#1976d2", color: "white" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <AssessmentIcon />
+            <Box>
+              <Typography variant="h6">Generate Laporan</Typography>
+              {selectedUser && (
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {selectedUser.fullName}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 3 }}>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Anda akan membuat laporan kehadiran untuk:
+          </Typography>
+
+          {selectedUser && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+              <Avatar
+                src={selectedUser.profileImageUrl || undefined}
+                sx={{ width: 48, height: 48, bgcolor: "#ff7043" }}
+              >
+                {getInitial(selectedUser.fullName)}
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                  {selectedUser.fullName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {selectedUser.nip}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {selectedUser.role}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
+          <Alert severity="info" sx={{ mt: 2 }}>
+            Klik "Lanjutkan" untuk membuka form generate laporan
+          </Alert>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCloseReportDialog} variant="outlined">
+            Batal
+          </Button>
+          <Button
+            onClick={handleGenerateReportFromDialog}
+            variant="contained"
+            startIcon={<AssessmentIcon />}
+          >
+            Lanjutkan
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Individual Report Generator - Rendered when user is selected */}
+      {selectedUser && !reportDialogOpen && (
+        <Box
+          sx={{
+            position: "fixed",
+            bottom: 80,
+            left: 16,
+            right: 16,
+            zIndex: 1000,
+          }}
+        >
+          <DepartmentReportGenerator
+            selectedUser={selectedUser}
+            onClose={() => setSelectedUser(null)}
+          />
+        </Box>
+      )}
 
       {/* Bottom Navigation */}
       <BottomNav />

@@ -1,10 +1,12 @@
-// src/services/statisticsService.ts
+// src/services/StatisticsService.ts
 import axios from "axios";
 import {
   StatisticsQueryParams,
   StatisticsSummary,
   GenerateReportParams,
   GenerateReportResponse,
+  GenerateBulkReportParams,
+  GenerateBulkReportResponse,
 } from "../types/statistics";
 import AuthService from "./AuthService";
 
@@ -130,6 +132,22 @@ class StatisticsService {
   ): Promise<GenerateReportResponse> {
     try {
       const response = await API.post("/statistics/generate-my-report", data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Generate a bulk report (Admin/Kajur only)
+   * @param data Parameters for generating the bulk report
+   * @returns Promise with bulk report generation result
+   */
+  async generateBulkReport(
+    data: GenerateBulkReportParams
+  ): Promise<GenerateBulkReportResponse> {
+    try {
+      const response = await API.post("/statistics/generate-bulk-report", data);
       return response.data;
     } catch (error) {
       throw error;
