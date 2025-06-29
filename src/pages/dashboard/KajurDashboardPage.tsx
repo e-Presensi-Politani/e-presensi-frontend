@@ -197,8 +197,8 @@ const KajurDashboardPage: React.FC = () => {
   };
 
   // Handle Quick Access icon clicks
-  const handleProfile = () => {
-    navigate("/profile");
+  const handleJurusan = () => {
+    navigate("/jurusan");
   };
 
   const handleKoreksi = () => {
@@ -451,11 +451,11 @@ const KajurDashboardPage: React.FC = () => {
           >
             <Grid container spacing={1} justifyContent="space-around">
               <Grid sx={{ textAlign: "center" }}>
-                <IconButton color="primary" onClick={handleProfile}>
+                <IconButton color="primary" onClick={handleJurusan}>
                   <Person />
                 </IconButton>
                 <Typography variant="body2" color="textSecondary">
-                  Profil
+                  Jurusan
                 </Typography>
               </Grid>
               <Grid sx={{ textAlign: "center" }}>

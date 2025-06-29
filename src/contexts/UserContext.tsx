@@ -1,6 +1,7 @@
 // src/contexts/UsersContext.tsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, CreateUserDto, UpdateUserDto } from "../types/users";
+import { UserRole } from "../types/enums";
 import UsersService from "../services/UsersService";
 import { useAuth } from "./AuthContext";
 
@@ -11,6 +12,7 @@ interface UsersContextType {
   error: string | null;
   fetchUsers: () => Promise<void>;
   fetchUserByGuid: (guid: string) => Promise<void>;
+  fetchUsersByDepartment: (department: string) => Promise<User[]>;
   createUser: (userData: CreateUserDto) => Promise<void>;
   updateUser: (guid: string, userData: UpdateUserDto) => Promise<void>;
   deleteUser: (guid: string) => Promise<void>;
@@ -34,18 +36,26 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
   const [error, setError] = useState<string | null>(null);
   const { user: currentUser, isAuthenticated } = useAuth();
 
+  // Helper functions for role checking
+  const isAdminOrKajur = (role: string | undefined): boolean => {
+    if (!role) return false;
+    return role === UserRole.ADMIN || role === UserRole.KAJUR;
+  };
+
+  const isAdmin = (role: string | undefined): boolean => {
+    if (!role) return false;
+    return role === UserRole.ADMIN;
+  };
+
   // Load users data if the current user is an admin or kajur
   useEffect(() => {
-    if (
-      isAuthenticated &&
-      (currentUser?.role === "ADMIN" || currentUser?.role === "KAJUR")
-    ) {
+    if (isAuthenticated && isAdminOrKajur(currentUser?.role)) {
       fetchUsers();
     }
   }, [isAuthenticated, currentUser]);
 
   const fetchUsers = async (): Promise<void> => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !isAdminOrKajur(currentUser?.role)) {
       setError("Unauthorized: Only admins and kajur can view all users");
       return;
     }
@@ -81,6 +91,36 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const fetchUsersByDepartment = async (
+    department: string
+  ): Promise<User[]> => {
+    if (!isAuthenticated || !isAdminOrKajur(currentUser?.role)) {
+      setError(
+        "Unauthorized: Only admins and kajur can view users by department"
+      );
+      throw new Error(
+        "Unauthorized: Only admins and kajur can view users by department"
+      );
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const departmentUsers = await UsersService.getUsersByDepartment(
+        department
+      );
+      return departmentUsers;
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch users by department";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchProfile = async (): Promise<void> => {
     if (!isAuthenticated) {
       setError("Unauthorized: You must be logged in to view your profile");
@@ -103,7 +143,7 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const createUser = async (userData: CreateUserDto): Promise<void> => {
-    if (!isAuthenticated || currentUser?.role !== "ADMIN") {
+    if (!isAuthenticated || !isAdmin(currentUser?.role)) {
       setError("Unauthorized: Only admins can create users");
       return;
     }
@@ -155,7 +195,7 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const deleteUser = async (guid: string): Promise<void> => {
-    if (!isAuthenticated || currentUser?.role !== "ADMIN") {
+    if (!isAuthenticated || !isAdmin(currentUser?.role)) {
       setError("Unauthorized: Only admins can delete users");
       return;
     }
@@ -312,6 +352,7 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     error,
     fetchUsers,
     fetchUserByGuid,
+    fetchUsersByDepartment,
     createUser,
     updateUser,
     deleteUser,

@@ -11,6 +11,7 @@ interface LoginResponse {
     email: string;
     role: string;
     profileImage?: string;
+    department?: string;
   };
 }
 
