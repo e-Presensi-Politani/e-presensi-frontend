@@ -10,6 +10,9 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from "@mui/material";
 import {
   ArrowBack,
@@ -17,6 +20,8 @@ import {
   SendRounded,
   RestartAlt,
   LogoutRounded,
+  LocationOff,
+  Assignment,
 } from "@mui/icons-material";
 import { MapContainer, TileLayer, Circle, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -61,13 +66,14 @@ const PresensiPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isCheckOut, setIsCheckOut] = useState<boolean>(false);
+  const [showOutsideRadiusDialog, setShowOutsideRadiusDialog] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const isMounted = useRef<boolean>(true);
   const isInitializing = useRef<boolean>(false);
 
   const officeLocation: [number, number] = [
-    -0.1693371254374395, 100.66447587819418,
+    -0.17637386675598177, 100.61867449782696,
   ];
   const maxRadius = 450; // in meters
 
@@ -191,6 +197,13 @@ const PresensiPage: React.FC = () => {
     }
   }, [attendanceError]);
 
+  // Show dialog when user is outside radius and has captured image
+  useEffect(() => {
+    if (capturedImage && isWithinRadius === false) {
+      setShowOutsideRadiusDialog(true);
+    }
+  }, [capturedImage, isWithinRadius]);
+
   // Calculate distance between two points using the Haversine formula
   const calculateDistance = (
     lat1: number,
@@ -261,9 +274,23 @@ const PresensiPage: React.FC = () => {
   const resetCamera = () => {
     setCapturedImage(null);
     setImageFile(null);
+    setShowOutsideRadiusDialog(false);
     if (isMounted.current) {
       initializeCamera();
     }
+  };
+
+  const handleLeaveRequest = () => {
+    stopCameraStream();
+    navigate("/leave-request-form");
+  };
+
+  const handleDialogClose = () => {
+    setShowOutsideRadiusDialog(false);
+  };
+
+  const handleStayOnPage = () => {
+    setShowOutsideRadiusDialog(false);
   };
 
   const submitAttendance = async () => {
@@ -360,7 +387,6 @@ const PresensiPage: React.FC = () => {
           overflow: "auto",
         }}
       >
-
         <Paper
           elevation={2}
           sx={{
@@ -465,9 +491,6 @@ const PresensiPage: React.FC = () => {
               <Marker position={userLocation}>
                 <Popup>Your Location</Popup>
               </Marker>
-              <Marker position={officeLocation}>
-                <Popup>Office Location</Popup>
-              </Marker>
             </MapContainer>
           ) : (
             <Box
@@ -515,6 +538,7 @@ const PresensiPage: React.FC = () => {
           )}
         </Paper>
 
+        {/* Main action button */}
         <Button
           variant="contained"
           startIcon={
@@ -529,7 +553,10 @@ const PresensiPage: React.FC = () => {
             )
           }
           onClick={capturedImage ? submitAttendance : handleCameraCapture}
-          disabled={!!capturedImage && actionButtonDisabled}
+          disabled={
+            !!capturedImage &&
+            (actionButtonDisabled || isWithinRadius === false)
+          }
           sx={{
             bgcolor: isCheckOut ? "#ff9800" : "#0073e6",
             borderRadius: 6,
@@ -542,7 +569,9 @@ const PresensiPage: React.FC = () => {
           {attendanceLoading || isSubmitting ? (
             <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
           ) : capturedImage ? (
-            isCheckOut ? (
+            isWithinRadius === false ? (
+              "Tidak Dapat Presensi"
+            ) : isCheckOut ? (
               "Check Out"
             ) : (
               "Check In"
@@ -552,6 +581,90 @@ const PresensiPage: React.FC = () => {
           )}
         </Button>
       </Container>
+
+      {/* Outside Radius Dialog */}
+      <Dialog
+        open={showOutsideRadiusDialog}
+        onClose={handleDialogClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            pb: 1,
+            color: "#d32f2f",
+          }}
+        >
+          <LocationOff sx={{ mr: 1, fontSize: 28 }} />
+          <Typography variant="h6" component="span" fontWeight="bold">
+            Lokasi di Luar Radius
+          </Typography>
+        </DialogTitle>
+
+        <DialogContent>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+              Anda berada di luar radius kantor
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Jarak Anda dari kantor:{" "}
+              <strong>{Math.round(distanceToOffice || 0)}m</strong>
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Presensi hanya dapat dilakukan dalam radius {maxRadius}m dari
+              kantor. Jika Anda perlu bekerja dari lokasi lain, silakan ajukan
+              permohonan izin.
+            </Typography>
+          </Box>
+        </DialogContent>
+
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: "stretch",
+            px: 3,
+            pb: 3,
+            gap: 1,
+          }}
+        >
+          <Button
+            onClick={handleStayOnPage}
+            variant="outlined"
+            fullWidth
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              justifyContent: "center", // pastikan isi tombol rata tengah
+            }}
+          >
+            Keluar
+          </Button>
+          <Button
+            onClick={handleLeaveRequest}
+            variant="contained"
+            startIcon={<Assignment />}
+            fullWidth
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              justifyContent: "center", // pastikan isi tombol rata tengah
+              bgcolor: "#1976d2",
+              "&:hover": { bgcolor: "#1565c0" },
+            }}
+          >
+            Ajukan Izin
+          </Button>
+        </Box>
+      </Dialog>
 
       <Snackbar
         open={showAlert}
