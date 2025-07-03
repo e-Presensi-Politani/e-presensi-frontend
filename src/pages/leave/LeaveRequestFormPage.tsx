@@ -66,6 +66,34 @@ const LeaveRequestFormPage: React.FC = () => {
   const [fileName, setFileName] = useState<string>("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  // Function to get upload label based on leave type
+  const getUploadLabel = (): string => {
+    if (formData.leaveType === LeaveRequestType.LEAVE) {
+      return "Upload Dokumen Surat Cuti";
+    } else if (
+      formData.leaveType === LeaveRequestType.WFH ||
+      formData.leaveType === LeaveRequestType.WFA ||
+      formData.leaveType === LeaveRequestType.DL
+    ) {
+      return "Upload Dokumen Surat Tugas";
+    }
+    return "Upload Berkas";
+  };
+
+  // Function to get upload button text based on leave type
+  const getUploadButtonText = (): string => {
+    if (formData.leaveType === LeaveRequestType.LEAVE) {
+      return fileName || "File Upload Dokumen Surat Cuti (PDF/JPG, max 2MB)";
+    } else if (
+      formData.leaveType === LeaveRequestType.WFH ||
+      formData.leaveType === LeaveRequestType.WFA ||
+      formData.leaveType === LeaveRequestType.DL
+    ) {
+      return fileName || "File Upload Dokumen Surat Tugas (PDF/JPG, max 2MB)";
+    }
+    return fileName || "File Upload (PDF/JPG, max 2MB)";
+  };
+
   // Get current user information
   useEffect(() => {
     // Use sessionStorage or localStorage to get the current user GUID
@@ -443,7 +471,7 @@ const LeaveRequestFormPage: React.FC = () => {
 
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
-              Upload Berkas
+              {getUploadLabel()}
             </Typography>
             <Button
               variant="outlined"
@@ -459,7 +487,7 @@ const LeaveRequestFormPage: React.FC = () => {
                 color: formErrors.file ? "#f44336" : undefined,
               }}
             >
-              {fileName || "File Upload (PDF/JPG, max 2MB)"}
+              {getUploadButtonText()}
               <input
                 type="file"
                 hidden
