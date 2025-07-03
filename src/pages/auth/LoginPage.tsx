@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Container,
@@ -52,6 +52,47 @@ const LoginPage: React.FC = () => {
 
   // State for password visibility
   const [showPassword, setShowPassword] = useState<boolean>(false);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuthStatus = () => {
+      const accessToken = localStorage.getItem("access_token");
+      const user = localStorage.getItem("user");
+
+      if (accessToken && user) {
+        try {
+          const userData = JSON.parse(user);
+
+          // Check if token is still valid (not expired)
+          const tokenPayload = JSON.parse(atob(accessToken.split(".")[1]));
+          const currentTime = Math.floor(Date.now() / 1000);
+
+          if (tokenPayload.exp > currentTime) {
+            // Token is still valid, redirect to appropriate dashboard
+            if (userData.role === "kajur") {
+              navigate("/kajur-dashboard", { replace: true });
+            } else {
+              // Default for "dosen" or any other role
+              navigate("/dashboard", { replace: true });
+            }
+          } else {
+            // Token expired, clear localStorage
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
+            localStorage.removeItem("user");
+          }
+        } catch (error) {
+          console.error("Error parsing token or user data:", error);
+          // Clear invalid data
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          localStorage.removeItem("user");
+        }
+      }
+    };
+
+    checkAuthStatus();
+  }, [navigate]);
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
