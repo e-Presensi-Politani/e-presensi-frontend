@@ -122,7 +122,11 @@ const PresensiPage: React.FC = () => {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: {
+          facingMode: "user", // Use front camera
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
       });
       setVideoStream(stream);
 
@@ -317,6 +321,11 @@ const PresensiPage: React.FC = () => {
     const videoElement = videoRef.current;
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
+
+    // Flip the image horizontally to correct the mirror effect
+    context.translate(canvas.width, 0);
+    context.scale(-1, 1);
+
     context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
     const imageURL = canvas.toDataURL("image/jpeg");
@@ -504,6 +513,7 @@ const PresensiPage: React.FC = () => {
                 height: "100%",
                 objectFit: "cover",
                 display: "block",
+                transform: "scaleX(-1)", // Mirror the video preview
               }}
             />
           )}
