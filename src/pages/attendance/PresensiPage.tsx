@@ -13,6 +13,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  Tooltip,
+  Fab,
 } from "@mui/material";
 import {
   ArrowBack,
@@ -22,6 +24,9 @@ import {
   LogoutRounded,
   LocationOff,
   Assignment,
+  MyLocation,
+  GpsFixed,
+  LocationSearching,
 } from "@mui/icons-material";
 import { MapContainer, TileLayer, Circle, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -67,15 +72,21 @@ const PresensiPage: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isCheckOut, setIsCheckOut] = useState<boolean>(false);
   const [showOutsideRadiusDialog, setShowOutsideRadiusDialog] = useState(false);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isHighAccuracy, setIsHighAccuracy] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const isMounted = useRef<boolean>(true);
   const isInitializing = useRef<boolean>(false);
+  const mapRef = useRef<L.Map | null>(null);
 
   const officeLocation: [number, number] = [
-    -0.17637386675598177, 100.61867449782696,
+    parseFloat(import.meta.env.VITE_OFFICE_LAT),
+    parseFloat(import.meta.env.VITE_OFFICE_LNG),
   ];
-  const maxRadius = 450; // in meters
+
+  const maxRadius = parseInt(import.meta.env.VITE_MAX_RADIUS, 10);
 
   // Stop the camera stream function
   const stopCameraStream = () => {
@@ -140,12 +151,25 @@ const PresensiPage: React.FC = () => {
     }
   };
 
-  // Consolidated useEffect for initialization and cleanup
-  useEffect(() => {
-    isMounted.current = true;
+  // Get user location with options
+  const getUserLocation = (enableHighAccuracy: boolean = false) => {
+    if (!navigator.geolocation) {
+      showNotification(
+        "Geolocation is not supported by this browser.",
+        "error"
+      );
+      return;
+    }
 
-    // Fetch attendance and geolocation
-    fetchTodayAttendance();
+    setIsGettingLocation(true);
+    setIsHighAccuracy(enableHighAccuracy);
+
+    const options: PositionOptions = {
+      enableHighAccuracy,
+      timeout: enableHighAccuracy ? 30000 : 10000, // 30s for high accuracy, 10s for normal
+      maximumAge: enableHighAccuracy ? 0 : 30000, // No cache for high accuracy
+    };
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const userLoc: [number, number] = [
@@ -153,6 +177,8 @@ const PresensiPage: React.FC = () => {
           position.coords.longitude,
         ];
         setUserLocation(userLoc);
+        setLocationAccuracy(position.coords.accuracy);
+
         const distance = calculateDistance(
           userLoc[0],
           userLoc[1],
@@ -161,14 +187,55 @@ const PresensiPage: React.FC = () => {
         );
         setDistanceToOffice(distance);
         setIsWithinRadius(distance <= maxRadius);
-      },
-      (_) => {
+        setIsGettingLocation(false);
+
+        // Pan map to new location if map is available
+        if (mapRef.current) {
+          mapRef.current.setView(userLoc, 16);
+        }
+
         showNotification(
-          "Error accessing your location. Please enable location services.",
-          "error"
+          `Location updated ${
+            enableHighAccuracy ? "(High Accuracy)" : ""
+          }. Accuracy: ${Math.round(position.coords.accuracy)}m`,
+          "success"
         );
-      }
+      },
+      (error) => {
+        setIsGettingLocation(false);
+        let errorMessage = "Error accessing your location.";
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage =
+              "Location access denied. Please enable location services.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information is unavailable.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out. Please try again.";
+            break;
+        }
+
+        showNotification(errorMessage, "error");
+      },
+      options
     );
+  };
+
+  // Handle location button click
+  const handleLocationButtonClick = () => {
+    getUserLocation(true); // Always use high accuracy when manually requested
+  };
+
+  // Consolidated useEffect for initialization and cleanup
+  useEffect(() => {
+    isMounted.current = true;
+
+    // Fetch attendance and get initial location
+    fetchTodayAttendance();
+    getUserLocation(false); // Start with normal accuracy
 
     // Initialize camera only if no captured image
     if (!capturedImage) {
@@ -474,6 +541,7 @@ const PresensiPage: React.FC = () => {
               zoom={16}
               style={{ height: "100%", width: "100%" }}
               zoomControl={false}
+              ref={mapRef}
             >
               <TileLayer
                 attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -489,7 +557,18 @@ const PresensiPage: React.FC = () => {
                 }}
               />
               <Marker position={userLocation}>
-                <Popup>Your Location</Popup>
+                <Popup>
+                  <div>
+                    <strong>Your Location</strong>
+                    <br />
+                    Accuracy:{" "}
+                    {locationAccuracy
+                      ? `${Math.round(locationAccuracy)}m`
+                      : "Unknown"}
+                    <br />
+                    {isHighAccuracy && <em>High Accuracy Mode</em>}
+                  </div>
+                </Popup>
               </Marker>
             </MapContainer>
           ) : (
@@ -509,6 +588,38 @@ const PresensiPage: React.FC = () => {
               </Typography>
             </Box>
           )}
+
+          {/* Location Button */}
+          <Tooltip
+            title={
+              isGettingLocation ? "Getting location..." : "Get precise location"
+            }
+          >
+            <Fab
+              size="small"
+              color="primary"
+              sx={{
+                position: "absolute",
+                bottom: 50,
+                right: 16,
+                zIndex: 1000,
+                bgcolor: "white",
+                color: isGettingLocation ? "#1976d2" : "#666",
+                "&:hover": { bgcolor: "#f5f5f5" },
+                boxShadow: 2,
+              }}
+              onClick={handleLocationButtonClick}
+              disabled={isGettingLocation}
+            >
+              {isGettingLocation ? (
+                <LocationSearching />
+              ) : locationAccuracy && locationAccuracy < 20 ? (
+                <GpsFixed />
+              ) : (
+                <MyLocation />
+              )}
+            </Fab>
+          </Tooltip>
 
           {isWithinRadius !== null && (
             <Box
@@ -533,6 +644,12 @@ const PresensiPage: React.FC = () => {
                   : `Outside range (${Math.round(
                       distanceToOffice || 0
                     )}m from office)`}
+                {locationAccuracy && (
+                  <span style={{ opacity: 0.8, fontSize: "0.75em" }}>
+                    {" "}
+                    • Accuracy: {Math.round(locationAccuracy)}m
+                  </span>
+                )}
               </Typography>
             </Box>
           )}
@@ -643,7 +760,7 @@ const PresensiPage: React.FC = () => {
             sx={{
               borderRadius: 2,
               textTransform: "none",
-              justifyContent: "center", // pastikan isi tombol rata tengah
+              justifyContent: "center",
             }}
           >
             Keluar
@@ -656,7 +773,7 @@ const PresensiPage: React.FC = () => {
             sx={{
               borderRadius: 2,
               textTransform: "none",
-              justifyContent: "center", // pastikan isi tombol rata tengah
+              justifyContent: "center",
               bgcolor: "#1976d2",
               "&:hover": { bgcolor: "#1565c0" },
             }}
