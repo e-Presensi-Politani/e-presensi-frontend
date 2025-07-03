@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Box,
   Container,
@@ -11,8 +11,14 @@ import {
   useMediaQuery,
   Theme,
   Alert,
+  IconButton,
 } from "@mui/material";
-import { AccountCircle, Lock } from "@mui/icons-material";
+import {
+  AccountCircle,
+  Lock,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import loginSvg from "../../assets/images/login-logo.png";
@@ -25,8 +31,14 @@ interface LoginCredentials {
 
 const LoginPage: React.FC = () => {
   const isDesktop = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
+  const isMobile = useMediaQuery((theme: Theme) =>
+    theme.breakpoints.down("md")
+  );
   const navigate = useNavigate();
   const { login, loading: authLoading } = useAuth();
+
+  // Ref for form container to scroll to it on mobile
+  const formRef = useRef<HTMLDivElement>(null);
 
   // State for form inputs
   const [credentials, setCredentials] = useState<LoginCredentials>({
@@ -38,6 +50,9 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
+  // State for password visibility
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -45,6 +60,23 @@ const LoginPage: React.FC = () => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  // Handle password visibility toggle
+  const handleTogglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  // Handle input focus on mobile - scroll to form
+  const handleInputFocus = () => {
+    if (isMobile && formRef.current) {
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -141,6 +173,7 @@ const LoginPage: React.FC = () => {
 
         {/* Login form container */}
         <Container
+          ref={formRef}
           component={Paper}
           maxWidth={isDesktop ? "sm" : "xs"}
           sx={{
@@ -177,6 +210,7 @@ const LoginPage: React.FC = () => {
               variant="outlined"
               value={credentials.email}
               onChange={handleChange}
+              onFocus={handleInputFocus}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -198,14 +232,32 @@ const LoginPage: React.FC = () => {
               fullWidth
               name="password"
               placeholder="Password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               variant="outlined"
               value={credentials.password}
               onChange={handleChange}
+              onFocus={handleInputFocus}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
                     <Lock />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={handleTogglePasswordVisibility}
+                      edge="end"
+                      sx={{
+                        color: "#666",
+                        "&:hover": {
+                          color: "#0073e6",
+                        },
+                      }}
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}
